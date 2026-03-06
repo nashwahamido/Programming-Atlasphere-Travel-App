@@ -1,0 +1,47 @@
+/* styles of the country cards - pages: qcountriesvisited, ... */
+/* page where individual user chooses which countries he/she has visited */
+
+/* style of container which contains all cards */
+.locationContainer {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr); /* 6 equal columns */
+    gap: 20px; /* space between cards */
+}
+
+/* style of the cards */
+.locationCard {
+  box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);  /* shadows added to the cards */
+  transition: 0.3s;
+  border-radius: 5px;
+  padding: 10px;
+  text-align: center;
+}
+
+/* hovering over the cards to add a greater shadow */
+.locationCard:hover {
+  box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+}
+
+/* adding padding inside the card container */
+.locationCardText {
+  padding: 2px 16px;
+}
+
+/* size of the country images */
+.locationImg {
+  width: 100%;
+  border-radius: 5px 5px 0 0;
+}
+
+/* media queries to make the cards responsive for all devices */
+@media (max-width: 1200px) {
+  .locationContainer {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .locationContainer {
+    grid-template-columns: 1fr;
+  }
+}

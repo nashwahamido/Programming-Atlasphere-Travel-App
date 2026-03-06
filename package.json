@@ -1,0 +1,34 @@
+{
+  "name": "atlasphere-app",
+  "version": "1.0.0",
+  "description": "Travel planning application with group collaboration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "vite build",
+    "build:react": "vite build"
+  },
+  "keywords": [
+    "travel",
+    "planning",
+    "group",
+    "collaboration"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "mysql2": "^3.6.5",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.2.1",
+    "nodemon": "^3.0.2",
+    "vite": "^5.0.8"
+  }
+}

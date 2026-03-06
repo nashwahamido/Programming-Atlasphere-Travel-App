@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Group created and confirmed and inviting friends</title>
+
+    <meta charset="UTF-8">
+    <meta name="description" content="Group creation confirmed">
+    <meta name="keywords" content="Group created, group confirmed, add friends, invite friends, share link, change group name, upload group image">
+    <meta name="author" content="Group 4">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stykesheet" href="../css/styles_questions.css">
+    <link rel="stylesheet" href="../css/styles_group.css">
+
+</head>
+
+<body>
+  <!-- Navigation bar on top of the page -->
+  <nav class="navbar">
+    <a href="#"><img src="#" alt="logo icon of Atlasphere"></a>
+    <a href="#">Atlasphere</a>
+    <a href="#" class="right">Home</a>
+    <a href="#" class="right">Profile</a>
+    <a href="#" class="right">Settings</a>
+    <a href="#" class="right">Sign out</a>
+  </nav>
+  
+  <header>
+
+  </header>
+
+  <main>  
+    <h1>Your group "#" has been created</h1>
+    <p>Now you can add your friends by searching for them or sending them the link to join the group.</p>
+    
+    <!-- container that includes adding/inviting friends to your group and uploading a group image -->
+    <div class="groupfriendContainer">
+
+      <!-- container where users can add or invite friends to join the group -->
+      <section class="addfriendContainer">
+        <form action="mailto:someone@example.com" method="post" enctype="text/plain">
+          <label for="friendSearch">Search for a friend:</label>
+          <input type="search" placeholder="Search your friend...">
+        
+          <br>
+          <p>or</p>
+          <p>Send the link to a friend via e-mail:</p>
+
+          <label for="friendemail">Your friend's e-mail address:</label><br>
+          <input type="email" id="friendemail" name="friendemail" required><br>
+          <label for="friendmsg">A short message (optional):</label><br>
+          <input type="text" id="friendmsg" name="friendmsg"><br>
+          <input type="submit" onclick="" value="Share link">
+        </form>
+      </section>
+
+      <!-- container where users can change the groups name or -->
+      <section class="groupNameImgContainer">
+        <figure>
+          <img src="#" alt="image for group - optional">
+        </figure> 
+        <div>
+          <form action="#" method="post" enctype="">
+            <label for="changeGroupname">Change your group name: </label><br>
+            <input type="text" id="changeGroupname" name="changeGroupname"><br>
+            <input type="submit" onclick="" value="Change your group name"><br>
+          
+            <label for="uploadGroupImg">Upload a group image: </label><br>
+            <input type="file" id="uploadGroupImg" name="uploadGroupImg" accept="image/*"><br>
+            <input type="submit" onclick="" value="Upload a group image">
+          </form>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <footer>
+
+  </footer>
+  
+  </body>
+</html>

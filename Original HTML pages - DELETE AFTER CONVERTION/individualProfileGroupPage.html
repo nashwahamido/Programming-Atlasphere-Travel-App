@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Individual profile group page</title>
+
+    <meta charset="UTF-8">
+    <meta name="description" content="Individual profile group page">
+    <meta name="keywords" content="Individual profile group page">
+    <meta name="author" content="Group 4">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stykesheet" href="../css/styles_questions.css">
+    <link rel="stylesheet" href="../css/styles_group.css">
+
+    <script src="../js/group_code.js"></script>
+
+</head>
+
+<body>
+  <!-- Navigation bar on top of the page -->
+  <nav class="navbar">
+    <a href="#"><img src="#" alt="logo icon of Atlasphere"></a>
+    <a href="#">Atlasphere</a>
+    <a href="#" class="right">Home</a>
+    <a href="#" class="right">Profile</a>
+    <a href="#" class="right">Settings</a>
+    <a href="#" class="right">Sign out</a>
+  </nav>
+  
+  <header>
+
+  </header>
+
+  <main>
+    <!-- container that holds the create group section on the left side and the three toggleable tabs on the right side -->
+    <div class="sectionContainer">
+
+      <!-- container for displaying the joined groups or to create groups - on the left side -->
+      <section class="creategroupContainer">
+        <h4>Groups</h4>
+
+        <p><a href="groupcreation_q_country.html">Create a group</a></p>
+        <p>Search for a group</p>
+        <input type="search" id="groupsearch" name="groupsearch" placeholder="Search groups...">
+
+        <!-- container which displays all groups that a user joined -->
+        <!-- needs to be programmed and styled -->
+        <p>Your groups: </p>
+        <div class="joinedGroupsContainer">
+          <ul>
+            <li>Prague</li>
+            <li>Rome</li>
+            <li>Dublin</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- container for the toggleable menu - on the right side > styled with CSS and animated with JS -->
+      <section class="toggleTabsContainer">
+
+        <!-- tab links -->
+        <div class="tab">
+          <button class="tablink" onclick="openTab(event, 'chat')">Chat</button>
+          <button class="tablink" onclick="openTab(event, 'recommended')">Recommended</button>
+          <button class="tablink" onclick="openTab(event, 'itinerary')">Itinerary</button>
+        </div>
+
+        <!-- tab content -->
+          <div id="chat" class="tabcontent">
+            <h3>Chat</h3>
+            <p>Chat needs to be adapted</p>
+            
+            <!-- chat -->
+            <!-- chat needs to be changed > appearance, display of messages of each users, authors, timestamp,... -->
+            
+            <!-- container for the display of messages -->
+            <div class="msgContainer">
+              <div class="msgDisplay">
+                <figure>
+                  <img src="profileImg.jpg" alt="profile image" class="chatImg" style="width:100%;">
+                </figure>
+                <p>Hello. How are you?</p>
+                <span class="time-right">11:00</span>
+              </div>
+
+              <div class="msgDisplay darker">
+                <figure>
+                  <img src="profileImg.jpg" alt="profile image" class="chatImg" style="width:100%;">
+                </figure>
+                <p>Hello! I'm fine. How are you?</p>
+                <span class="time-left">11:01</span>
+              </div>
+
+              <div class="msgDisplay">
+                <figure>
+                  <img src="profileImg.jpg" alt="profile image" class="chatImg" style="width:100%;">
+                </figure>
+                <p>I also feel well. Thank you. Where would you like to go travelling?</p>
+                <span class="time-right">11:02</span>
+              </div>
+
+              <div class="msgDisplay darker">
+                <figure>
+                  <img src="profileImg.jpg" alt="profile image" class="chatImg" style="width:100%;">
+                </figure>
+                <p>I heard Dublin must be great and interesting.</p>
+                <span class="time-left">11:05</span>
+              </div>
+            </div>
+
+            <!-- container for sending messages -->
+            <div class="sendContainer">
+              <form action="/#.php" class="formchatContainer">
+
+                <label for="chatMsg"><b>Message</b></label>
+                <textarea name="chatMsg" placeholder="Type message.." rows="1" cols="10"></textarea><br>
+
+                <input type="file" id="chatMedia" name="chatMedia"><br>
+                <input type="submit" class="btn" value="Submit/Send"><br>
+              </form>
+            </div>
+          </div>
+
+          <div id="recommended" class="tabcontent">
+            <h3>Recommended</h3>
+
+            <!-- scrolling bar needs to be improved -->
+            <div class="scrollContainer">           
+
+              <div class="activityCard">
+                <figure>
+                  <img src="culture.jpg" alt="culture activity" class="activityImg">
+                </figure>    
+                <div class="activityName">
+                  <h4>Museum x</h4>
+                </div>
+                <div class="IconContainer">
+                  <button class="iconBtn"><i class="fa fa-yes"></i></button>
+                  <button class="iconBtn"><i class="fa fa-maybe"></i></button>
+                  <button class="iconBtn"><i class="fa fa-no"></i></button>
+                </div>
+              </div>
+
+              <div class="activityCard">
+                <figure>
+                  <img src="sports.jpg" alt="sport activity" class="activityImg">
+                </figure>
+                <div class="activityName">
+                  <h4>Museum y</h4>
+                </div>
+                <div class="IconContainer">
+                  <button class="iconBtn"><i class="fa fa-yes"></i></button>
+                  <button class="iconBtn"><i class="fa fa-maybe"></i></button>
+                  <button class="iconBtn"><i class="fa fa-no"></i></button>
+                </div>
+              </div>
+
+              <div class="activityCard">
+                <figure>
+                  <img src="entertain.jpg" alt="entertainment activity" class="activityImg">
+                </figure>
+                <div class="activityName">
+                  <h4>Sport x</h4>
+                </div>
+                <div class="IconContainer">
+                  <button class="iconBtn"><i class="fa fa-yes"></i></button>
+                  <button class="iconBtn"><i class="fa fa-maybe"></i></button>
+                  <button class="iconBtn"><i class="fa fa-no"></i></button>
+                </div>
+              </div>
+
+              <div class="activityCard">
+                <figure>
+                  <img src="relax.jpg" alt="relax activity" class="activityImg">
+                </figure>
+                <div class="activityName">
+                  <h4>Sport y</h4>
+                </div>
+                <div class="IconContainer">
+                  <button class="iconBtn"><i class="fa fa-yes"></i></button>
+                  <button class="iconBtn"><i class="fa fa-maybe"></i></button>
+                  <button class="iconBtn"><i class="fa fa-no"></i></button>
+                </div>
+              </div>
+
+              <div class="activityCard">
+                <figure>
+                  <img src="culture.jpg" alt="culture activity" class="activityImg">
+                </figure>
+                <div class="activityName">
+                  <h4>Culture</h4>
+                </div>
+                <div class="IconContainer">
+                  <button class="iconBtn"><i class="fa fa-yes"></i></button>
+                  <button class="iconBtn"><i class="fa fa-maybe"></i></button>
+                  <button class="iconBtn"><i class="fa fa-no"></i></button>
+                </div>
+              </div>
+
+              <div class="activityCard">
+                <figure>
+                  <img src="sports.jpg" alt="sport activity" class="activityImg">
+                </figure>
+                <div class="activityName">
+                  <h4>Sports</h4>
+                </div>
+                <div class="IconContainer">
+                  <button class="iconBtn"><i class="fa fa-yes"></i></button>
+                  <button class="iconBtn"><i class="fa fa-maybe"></i></button>
+                  <button class="iconBtn"><i class="fa fa-no"></i></button>
+                </div>
+              </div>
+
+              <div class="activityCard">
+                <figure>
+                  <img src="entertain.jpg" alt="entertainment activity" class="activityImg">
+                </figure>
+                <div class="activityName">
+                  <h4>Entertainment</h4>
+                </div>
+                <div class="IconContainer">
+                  <button class="iconBtn"><i class="fa fa-yes"></i></button>
+                  <button class="iconBtn"><i class="fa fa-maybe"></i></button>
+                  <button class="iconBtn"><i class="fa fa-no"></i></button>
+                </div>
+              </div>
+
+              <div class="activityCard">
+                <figure>
+                  <img src="relax.jpg" alt="relax activity" class="activityImg">
+                </figure>
+                <div class="activityName">
+                  <h4>Relax</h4>
+                </div>
+                <div class="IconContainer">
+                  <button class="iconBtn"><i class="fa fa-yes"></i></button>
+                  <button class="iconBtn"><i class="fa fa-maybe"></i></button>
+                  <button class="iconBtn"><i class="fa fa-no"></i></button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div id="itinerary" class="tabcontent">
+            <h3>Itinerary</h3>
+            <p>drag/drop function + calendar need to be added</p>
+            <input type="date">
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+
+    <!-- container for the pop up chat -->
+
+    <div class="chatpopupContainer" id="chatpopup">
+      <form action="/action_page.php" class="msgformContainer">
+        <h4>Chat</h4>
+
+        <label for="msg"><b>Message</b></label>
+        <textarea placeholder="Type message.." name="msg" required></textarea>
+
+        <button type="submit" class="sendBtn">Send</button>
+        <button type="button" class="btn closeBtn" onclick="closeForm()">Close</button>
+      </form>
+    </div>
+        <button class="openBtn" onclick="openForm()">Chat</button>
+
+  </main>
+
+  <footer>
+
+  </footer>
+
+  </body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Registration</title>
+
+    <meta charset="UTF-8">
+    <meta name="description" content="Registration to Atlasphere">
+    <meta name="keywords" content="Registration, form">
+    <meta name="author" content="Group 4">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="../css/registrationSettings.css">
+
+</head>
+
+<body>
+  <!-- Navigation bar on top of the page -->
+  <nav class="navbar">
+    <a href="#"><img src="#" alt="logo icon of Atlasphere"></a>
+    <a href="#">Atlasphere</a>
+    <a href="#" class="right">Sign in</a>
+  </nav>
+  
+  <header>
+    
+  </header>
+
+  <main>
+    <!-- Registration form > for new users to sign in on the website -->
+    <section id="regContainer">
+      <div class="divForm">
+        <form action="#" method="post">
+          <h1>Register</h1>
+          <p>Fill in this form to create an account.</p>
+          
+          <label for="username">Name: </label><br>
+          <input type="text" id="username" name="username" required><br>
+          <label for="useremail">E-mail: </label><br>
+          <input type="email" id="useremail" name="useremail" required><br>
+          <label for="userphone">Phone number: </label><br>
+          <input type="tel" id="userphone" name="userphone" required><br>
+          <label for="gender">Gender: </label>
+            <select id="gender" name="gender">
+              <option value="0">Select gender:</option>
+              <option value="m">Male</option>
+              <option value="f">Female</option>
+              <option value="d">Diverse</option>
+            </select><br>
+          <label for="psw">Password (a min. length of 6 characters and a max. length of 12): </label><br>
+          <input type="password" id="psw" name="psw" size="" minlength="6" maxlength="12" required><br>
+          <label for="repeatpsw">Repeat password: </label><br>
+          <input type="password" id="repeatpsw" name="repeatpsw" size="" minlength="6" maxlength="12" required><br>
+          
+          <p>By creating an account you agree to our <a href="#">Terms & Privacy</a>.</p>
+          
+          <input type="submit" id="registerBtn" value="Submit">
+          
+          <div class="#">
+            <p>Already have an account? <a href="#">Sign in</a>.</p>
+          </div>
+        </form>
+      </div>
+
+      <!-- image on the right side of the page -->
+      <figure class="figImg">
+        <img src="#" id="regImg" alt="image of the registration page">
+      </figure>
+    </section>
+
+  </main>
+
+  <footer>
+
+  </footer>
+
+  
+  </body>
+</html>

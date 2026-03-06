@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Settings</title>
+
+    <meta charset="UTF-8">
+    <meta name="description" content="Changing the settings">
+    <meta name="keywords" content="settings changing">
+    <meta name="author" content="Group 4">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stykesheet" href="../css/styles_questions.css">
+    <link rel="stylesheet" href="../css/styles_group.css">
+    <link rel="stylesheet" href="../css/registrationSettings.css">
+
+    <script src="../js/group_code.js"></script>
+</head>
+
+<body>
+  <!-- Navigation bar on top of the page -->
+  <nav class="navbar">
+    <a href="#"><img src="#" alt="logo icon of Atlasphere"></a>
+    <a href="#">Atlasphere</a>
+    <a href="#" class="right">Home</a>
+    <a href="#" class="right">Profile</a>
+    <a href="#" class="right">Settings</a>
+    <a href="#" class="right">Sign out</a>
+  </nav>
+  
+  <header>
+
+  </header>
+
+  <main>
+    <h1>Settings</h1>
+
+    <div class="tab">
+      <button class="tablinks tabBtn" onclick="openSetting(event, 'yourInfo')">Manage your information</button>
+      <button class="tablinks tabBtn" onclick="openSetting(event, 'visitedlocations')">Modifiy visited locations</button>
+      <button class="tablinks tabBtn" onclick="openSetting(event, 'yourGroups')">Manage your groups</button>
+      <button class="tablinks tabBtn" onclick="openSetting(event, 'deleteAccount')">Delete account</button>
+    </div>
+
+    <div id="yourInfo" class="tabcontent">
+      <form action="#" method="post">
+        <h3>Manage your information</h3>
+        <label for="username">Name: </label><br>
+        <input type="text" id="username" name="username"><br>
+        <label for="useremail">E-mail: </label><br>
+        <input type="email" id="useremail" name="useremail"><br>
+        <label for="userphone">Phone number: </label><br>
+        <input type="tel" id="userphone" name="userphone"><br>
+        <label for="gender">Gender: </label>
+        <select id="gender" name="gender">
+          <option value="0">Select gender:</option>
+          <option value="m">Male</option>
+          <option value="f">Female</option>
+          <option value="d">Diverse</option>
+        </select><br>
+          
+        <input type="submit" class="updateBtn" value="Update">
+      </form>
+    </div>
+
+    <div id="visitedlocations" class="tabcontent">
+      <form action="#" method="post" >
+        <h4>Change visited countries:</h4>
+        <input type="search" id="countrysearch" name="countrysearch" placeholder="Search..."><br>
+        <div class="checkboxGrid">
+          <label><input for="" type="checkbox" id="" name="" value="">Ireland</label>
+          <label><input for="" type="checkbox" id="" name="" value="">France</label>
+          <label><input for="" type="checkbox" id="" name="" value="">England</label>
+          <label><input for="" type="checkbox" id="" name="" value="">Italy</label>
+          <label><input for="" type="checkbox" id="" name="" value="">Scotland</label>
+          <label><input for="" type="checkbox" id="" name="" value="">Wales</label>
+        </div>
+        
+        <hr>
+
+        <h4>Change visited cities:</h4>
+        <input type="search" id="countrysearch" name="countrysearch" placeholder="Search..."><br>
+        <div class="checkboxGrid">
+          <label><input for="" type="checkbox" id="" name="" value="">Dublin</label>
+          <label><input for="" type="checkbox" id="" name="" value="">Paris</label>
+          <label><input for="" type="checkbox" id="" name="" value="">London</label>
+          <label><input for="" type="checkbox" id="" name="" value="">Rome</label>
+          <label><input for="" type="checkbox" id="" name="" value="">Edinbrugh</label>
+          <label><input for="" type="checkbox" id="" name="" value="">Cardiff</label>
+        </div>
+
+        <input type="submit" class="updateBtn" value="Update">
+      </form>
+    </div>
+
+    <div id="yourGroups" class="tabcontent">
+      <h3>Manage your groups</h3>
+      <input type="button" id="" onclick="" value="Prague">
+      <input type="button" id="" onclick="" value="Rome">
+      <input type="button" id="" onclick="" value="Dublin"><br>
+      <input type="button" id="" onclick="" value="Delete group">
+      <input type="button" id="" onclick="" value="Change name">
+      <input type="button" id="" onclick="" value="Modify interests">
+    </div>
+
+    <div id="deleteAccount" class="tabcontent">
+      <h3>Delete account</h3>
+      <p>Do you really want to delete your Atlasphere account?</p>
+      <input type="button" id="" onclick="" value="Confirm">
+      <input type="button" id="" onclick="" value="Cancel">
+    </div>
+
+  </main>
+
+  <footer>
+
+  </footer>
+  
+  </body>
+</html>
