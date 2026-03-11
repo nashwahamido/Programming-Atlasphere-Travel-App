@@ -1,0 +1,36 @@
+<!-- Navigation Bar Partial -->
+<nav class="navbar">
+    <div class="navbar-left">
+        <a href="/" class="navbar-brand">
+            <img src="/images/logo.png" alt="logo icon of Atlasphere" class="logo">
+            <span>Atlasphere</span>
+        </a>
+    </div>
+    
+    <div class="navbar-center">
+        <% if (user) { %>
+            <a href="/groups" class="nav-link">My Trips</a>
+            <a href="/groups/create-country" class="nav-link">Create Trip</a>
+            <a href="/profile" class="nav-link">Profile</a>
+        <% } %>
+    </div>
+    
+    <div class="navbar-right">
+        <% if (user) { %>
+            <!-- If user is logged in, show their name and logout -->
+            <div class="user-menu">
+                <img src="<%= user.avatar || '/images/default-avatar.png' %>" alt="<%= user.name %>" class="user-avatar">
+                <span class="user-name"><%= user.name %></span>
+                <div class="dropdown-menu">
+                    <a href="/profile" class="dropdown-item">Profile Settings</a>
+                    <a href="/profile/edit" class="dropdown-item">Edit Profile</a>
+                    <a href="/auth/logout" class="dropdown-item">Logout</a>
+                </div>
+            </div>
+        <% } else { %>
+            <!-- If user is not logged in, show sign in and register -->
+            <a href="/auth/login" class="nav-link btn btn-outline btn-sm">Sign in</a>
+            <a href="/auth/register" class="nav-link btn btn-primary btn-sm">Register</a>
+        <% } %>
+    </div>
+</nav>

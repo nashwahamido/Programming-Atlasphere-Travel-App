@@ -1,0 +1,127 @@
+<!-- Sidebar Partial -->
+<!-- Usage: <%- include('partials/sidebar', { activeMenu: 'dashboard' }) %> -->
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <h3>Menu</h3>
+        <button class="sidebar-close" id="sidebarClose">
+            <span>&times;</span>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <% if (user) { %>
+            <!-- Dashboard Section -->
+            <div class="sidebar-section">
+                <h4 class="sidebar-section-title">Dashboard</h4>
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="/dashboard" class="sidebar-link <%= activeMenu === 'dashboard' ? 'active' : '' %>">
+                            <i class="icon-dashboard"></i>
+                            <span>Dashboard</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/profile" class="sidebar-link <%= activeMenu === 'profile' ? 'active' : '' %>">
+                            <i class="icon-user"></i>
+                            <span>My Profile</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Trips Section -->
+            <div class="sidebar-section">
+                <h4 class="sidebar-section-title">Trips</h4>
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="/groups" class="sidebar-link <%= activeMenu === 'my-trips' ? 'active' : '' %>">
+                            <i class="icon-trips"></i>
+                            <span>My Trips</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/groups/create-country" class="sidebar-link <%= activeMenu === 'create-trip' ? 'active' : '' %>">
+                            <i class="icon-plus"></i>
+                            <span>Create New Trip</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/groups/invitations" class="sidebar-link <%= activeMenu === 'invitations' ? 'active' : '' %>">
+                            <i class="icon-invite"></i>
+                            <span>Invitations</span>
+                            <% if (invitationCount > 0) { %>
+                                <span class="badge"><%= invitationCount %></span>
+                            <% } %>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Features Section -->
+            <div class="sidebar-section">
+                <h4 class="sidebar-section-title">Features</h4>
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="/chat" class="sidebar-link <%= activeMenu === 'chat' ? 'active' : '' %>">
+                            <i class="icon-chat"></i>
+                            <span>Messages</span>
+                            <% if (unreadMessages > 0) { %>
+                                <span class="badge"><%= unreadMessages %></span>
+                            <% } %>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/activities" class="sidebar-link <%= activeMenu === 'activities' ? 'active' : '' %>">
+                            <i class="icon-activities"></i>
+                            <span>Activities</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/itinerary" class="sidebar-link <%= activeMenu === 'itinerary' ? 'active' : '' %>">
+                            <i class="icon-calendar"></i>
+                            <span>Itinerary</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Settings Section -->
+            <div class="sidebar-section">
+                <h4 class="sidebar-section-title">Settings</h4>
+                <ul class="sidebar-menu">
+                    <li>
+                        <a href="/profile/edit" class="sidebar-link <%= activeMenu === 'settings' ? 'active' : '' %>">
+                            <i class="icon-settings"></i>
+                            <span>Account Settings</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="/preferences" class="sidebar-link <%= activeMenu === 'preferences' ? 'active' : '' %>">
+                            <i class="icon-preferences"></i>
+                            <span>Preferences</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Logout -->
+            <div class="sidebar-section sidebar-footer">
+                <a href="/auth/logout" class="sidebar-link logout-link">
+                    <i class="icon-logout"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        <% } else { %>
+            <!-- Not logged in -->
+            <div class="sidebar-section">
+                <p class="sidebar-message">Please log in to access the menu.</p>
+                <a href="/auth/login" class="btn btn-primary btn-block">Sign In</a>
+                <a href="/auth/register" class="btn btn-secondary btn-block">Register</a>
+            </div>
+        <% } %>
+    </nav>
+</aside>
+
+<!-- Sidebar Overlay (for mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>

@@ -1,0 +1,163 @@
+<%
+    // Set page metadata
+    locals.title = 'My Profile';
+    locals.styles = '<link rel="stylesheet" href="/css/profile.css">';
+%>
+
+<div class="dashboard-layout">
+    <!-- Sidebar Navigation -->
+    <%- include('../partials/sidebar', { 
+        activeMenu: 'profile'
+    }) %>
+    
+    <main class="main-content">
+        <!-- Navigation Bar -->
+        <%- include('../partials/navbar') %>
+        
+        <!-- Page Header -->
+        <%- include('../partials/header', { 
+            title: 'My Profile',
+            subtitle: 'View and manage your profile information'
+        }) %>
+        
+        <!-- Profile Content -->
+        <div class="container">
+            <section class="profile-section">
+                <div class="profile-card">
+                    <!-- Profile Image -->
+                    <div class="profile-image-container">
+                        <figure class="profile-image">
+                            <img 
+                                src="<%= user.avatar || '/images/default-avatar.png' %>" 
+                                alt="<%= user.name %>'s profile image"
+                                class="avatar-large"
+                            >
+                        </figure>
+                        <a href="/profile/edit" class="btn btn-primary btn-sm">Edit Profile</a>
+                    </div>
+
+                    <!-- Profile Information -->
+                    <div class="profile-info">
+                        <div class="info-group">
+                            <label>Username:</label>
+                            <span class="info-value"><%= user.name %></span>
+                        </div>
+
+                        <div class="info-group">
+                            <label>Email:</label>
+                            <span class="info-value"><%= user.email %></span>
+                        </div>
+
+                        <% if (user.bio) { %>
+                            <div class="info-group">
+                                <label>Bio:</label>
+                                <span class="info-value"><%= user.bio %></span>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Travel Statistics -->
+                <div class="stats-section">
+                    <h2>Travel Statistics</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">🌍</div>
+                            <div class="stat-content">
+                                <h3>Places Visited</h3>
+                                <p class="stat-number"><%= stats.placesVisited || 0 %></p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">🏙️</div>
+                            <div class="stat-content">
+                                <h3>Cities Visited</h3>
+                                <p class="stat-number"><%= stats.citiesVisited || 0 %></p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <h3>Groups Created</h3>
+                                <p class="stat-number"><%= stats.groupsCreated || 0 %></p>
+                            </div>
+                        </div>
+
+                        <div class="stat-card">
+                            <div class="stat-icon">✈️</div>
+                            <div class="stat-content">
+                                <h3>Active Trips</h3>
+                                <p class="stat-number"><%= stats.activeTrips || 0 %></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="activity-section">
+                    <h2>Recent Activity</h2>
+                    <% if (recentActivity && recentActivity.length > 0) { %>
+                        <div class="activity-list">
+                            <% recentActivity.forEach(activity => { %>
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        <% if (activity.type === 'trip_created') { %>
+                                            ✈️
+                                        <% } else if (activity.type === 'group_joined') { %>
+                                            👥
+                                        <% } else if (activity.type === 'activity_voted') { %>
+                                            🗳️
+                                        <% } else { %>
+                                            📝
+                                        <% } %>
+                                    </div>
+                                    <div class="activity-content">
+                                        <p class="activity-text"><%= activity.description %></p>
+                                        <p class="activity-date"><%= new Date(activity.date).toLocaleDateString() %></p>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    <% } else { %>
+                        <p class="empty-state">No recent activity yet. Start by creating a trip!</p>
+                    <% } %>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="actions-section">
+                    <h2>Quick Actions</h2>
+                    <div class="actions-grid">
+                        <a href="/profile/edit" class="action-card">
+                            <div class="action-icon">✏️</div>
+                            <h3>Edit Profile</h3>
+                            <p>Update your personal information</p>
+                        </a>
+
+                        <a href="/groups/create-country" class="action-card">
+                            <div class="action-icon">➕</div>
+                            <h3>Create Trip</h3>
+                            <p>Start planning a new adventure</p>
+                        </a>
+
+                        <a href="/groups" class="action-card">
+                            <div class="action-icon">📋</div>
+                            <h3>My Trips</h3>
+                            <p>View all your travel plans</p>
+                        </a>
+
+                        <a href="/preferences" class="action-card">
+                            <div class="action-icon">⚙️</div>
+                            <h3>Preferences</h3>
+                            <p>Manage your settings</p>
+                        </a>
+                    </div>
+                </div>
+            </section>
+        </div>
+        
+        <!-- Footer -->
+        <%- include('../partials/footer') %>
+    </main>
+</div>

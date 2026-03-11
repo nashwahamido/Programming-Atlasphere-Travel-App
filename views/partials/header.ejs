@@ -1,0 +1,12 @@
+<!-- Page Header Partial -->
+<!-- Usage: <%- include('partials/header', { title: 'Page Title', subtitle: 'Optional subtitle', backgroundImage: '/images/bg.jpg' }) %> -->
+
+<header class="page-header" <% if (backgroundImage) { %>style="background-image: url('<%= backgroundImage %>');"<% } %>>
+    <div class="header-overlay"></div>
+    <div class="header-content">
+        <h1 class="header-title"><%= title %></h1>
+        <% if (subtitle) { %>
+            <p class="header-subtitle"><%= subtitle %></p>
+        <% } %>
+    </div>
+</header>

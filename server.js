@@ -42,3 +42,34 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
+// Show homepage
+app.get('/', (req, res) => {
+ // Check if user is logged in
+ const user = req.session.user || null;
+ // Render the template with user data
+ res.render('index', {
+ title: 'Homepage',
+ user: user
+ });
+});
+// Handle sign in
+app.get('/auth/login', (req, res) => {
+ res.render('auth/login', { title: 'Sign In' });
+});
+// Handle sign up
+app.get('/auth/register', (req, res) => {
+ res.render('auth/register', { title: 'Sign Up' });
+});
+// Handle logout
+app.get('/auth/logout', (req, res) => {
+ req.session.destroy();
+ res.redirect('/');
+});
+// Handle create group
+app.get('/groups/create', (req, res) => {
+ if (!req.session.user) {
+ return res.redirect('/auth/login');
+ }
+ res.render('groups/create-country', { title: 'Create Trip' });
+});

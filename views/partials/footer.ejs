@@ -1,0 +1,56 @@
+<!-- Footer Partial -->
+<!-- Usage: <%- include('partials/footer') %> -->
+
+<footer class="global-footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4>Atlasphere</h4>
+            <p>Making travel planning easy and fun with friends.</p>
+            <div class="social-links">
+                <a href="#" class="social-link" title="Facebook">
+                    <i class="fab fa-facebook"></i>
+                </a>
+                <a href="#" class="social-link" title="Twitter">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                <a href="#" class="social-link" title="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="footer-section">
+            <h4>Quick Links</h4>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/groups">My Trips</a></li>
+                <% if (!user) { %>
+                    <li><a href="/auth/login">Sign In</a></li>
+                    <li><a href="/auth/register">Register</a></li>
+                <% } %>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Support</h4>
+            <ul>
+                <li><a href="/help">Help Center</a></li>
+                <li><a href="/contact">Contact Us</a></li>
+                <li><a href="/privacy">Privacy Policy</a></li>
+                <li><a href="/terms">Terms of Service</a></li>
+            </ul>
+        </div>
+
+        <div class="footer-section">
+            <h4>Contact</h4>
+            <p>Email: <a href="mailto:info@atlasphere.com">info@atlasphere.com</a></p>
+            <p>Phone: <a href="tel:+15551234567">+1 (555) 123-4567</a></p>
+            <p>Address: 123 Travel Street, Adventure City, AC 12345</p>
+        </div>
+    </div>
+
+    <div class="footer-bottom">
+        <p>&copy; 2024 Atlasphere. All rights reserved.</p>
+        <p>Made with ❤️ by Group 4</p>
+    </div>
+</footer>
