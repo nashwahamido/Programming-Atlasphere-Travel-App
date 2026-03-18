@@ -1,0 +1,111 @@
+<%
+    // Set page metadata
+    locals.title = 'Homepage';
+    locals.styles = '<link rel="stylesheet" href="/css/home.css">';
+%>
+
+<!-- Navigation bar on top of the page -->
+<nav class="navbar">
+    <div class="navbar-left">
+        <a href="/" class="navbar-brand">
+            <img src="/images/logo.png" alt="logo icon of Atlasphere" class="logo">
+            <span>Atlasphere</span>
+        </a>
+    </div>
+    
+    <div class="navbar-right">
+        <% if (user) { %>
+            <!-- If user is logged in, show their name and logout -->
+            <a href="/profile" class="nav-link">
+                <span class="user-name"><%= user.name %></span>
+            </a>
+            <a href="/auth/logout" class="nav-link">Logout</a>
+        <% } else { %>
+            <!-- If user is not logged in, show sign in and register -->
+            <a href="/auth/login" class="nav-link">Sign in</a>
+            <a href="/auth/register" class="nav-link">Register</a>
+        <% } %>
+    </div>
+</nav>
+
+<!-- Header with hero image -->
+<header class="hero-header">
+    <figure class="hero-figure">
+        <img src="/images/hero.jpg" alt="Travel adventure image showing beautiful destinations">
+    </figure>
+</header>
+
+<!-- Main content -->
+<main class="main-content">
+    <section class="welcome-section">
+        <h1>Welcome to Atlasphere</h1>
+        <p class="welcome-text">Welcome to Atlasphere - a space where we help you and your friends to organise your travel trip.</p>
+
+        <% if (user) { %>
+            <!-- If logged in, show create group button -->
+            <div class="action-buttons">
+                <a href="/groups/create-country" class="btn btn-primary">Create a Trip</a>
+                <a href="/groups" class="btn btn-secondary">View My Trips</a>
+            </div>
+        <% } else { %>
+            <!-- If not logged in, show sign in/up buttons -->
+            <div class="action-buttons">
+                <a href="/auth/login" class="btn btn-primary">Sign in</a>
+                <a href="/auth/register" class="btn btn-secondary">Sign up</a>
+            </div>
+        <% } %>
+    </section>
+
+    <!-- Features section (optional) -->
+    <section class="features-section">
+        <h2>Why Choose Atlasphere?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🌍</div>
+                <h3>Easy Planning</h3>
+                <p>Plan your trips with friends in one place</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👥</div>
+                <h3>Collaborate</h3>
+                <p>Vote on activities and make decisions together</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📅</div>
+                <h3>Organize</h3>
+                <p>Create itineraries and manage your schedule</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3>Communicate</h3>
+                <p>Chat with your travel group in real-time</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- Footer -->
+<footer class="global-footer">
+    <div class="footer-content">
+        <div class="footer-section">
+            <h4>Atlasphere</h4>
+            <p>Making travel planning easy and fun with friends.</p>
+        </div>
+        <div class="footer-section">
+            <h4>Quick Links</h4>
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="/auth/login">Sign In</a></li>
+                <li><a href="/auth/register">Register</a></li>
+            </ul>
+        </div>
+        <div class="footer-section">
+            <h4>Contact</h4>
+            <p>Email: info@atlasphere.com</p>
+            <p>Phone: +1 (555) 123-4567</p>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 Atlasphere. All rights reserved.</p>
+    </div>
+</footer>
