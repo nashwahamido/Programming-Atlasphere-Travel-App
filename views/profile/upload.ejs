@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Profile picture upload</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Profile picture upload, optional">
+    <meta name="keywords" content="Profile picture upload, optional">
+    <meta name="author" content="Group 4">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <header></header>
+    <main>
+      <section>
+        <h1>Show people your picture</h1>
+        <figure>
+          <img src="<%= user.profile_image || '/images/default-avatar.png' %>" alt="personal profile image" class="personalProfileImg">
+        </figure>
+        <form action="/users/upload-avatar" method="post" enctype="multipart/form-data">
+          <label>Upload a profile picture or do it later:</label><br>
+          <input type="file" id="profileimg" name="profileimg" accept="image/*"><br>
+          <input type="submit" value="Upload">
+        </form>
+        <a href="/profile/countries">Skip</a>
+      </section>
+    </main>
+    <footer></footer>
+  </body>
+</html>

@@ -1,35 +1,164 @@
-/* styles of all pages */
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-/* style of the navigation bar  */
+body {
+  font-family: 'Lexend', sans-serif;
+  background-color: #ffffff;
+  color: #0B3856;
+}
+
+/* ===== NAVBAR ===== */
 .navbar {
-  background-color: lightgreen;
-  overflow: hidden;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  padding: 14px 40px;
+  justify-content: space-between;
+  border-bottom: 1px solid #e0e0e0;
 }
 
-/* style of the links inside the navigation bar */
-.navbar a {
-  float: left;
-  color: black;
-  text-align: center;
-  padding: 14px 16px;
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: bold;
+  font-size: 18px;
+  color: #0B3856;
   text-decoration: none;
-  font-size: 17px;
 }
 
-/* change the colour of the links when hovered */
-.navbar a:hover {
-  background-color: #ddd;
-  color: black;
+.logo {
+  width: 32px;
+  height: 32px;
 }
 
-/* the last <a> will be right-aligned (split) link inside the navigation bar */
-.navbar a.right {
-  float: right;
+.navbar-center {
+  display: flex;
+  gap: 32px;
+  align-items: center;
 }
 
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
 
+.nav-link {
+  color: #0B3856;
+  text-decoration: none;
+  font-size: 15px;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
 
+.nav-link:hover {
+  color: #209EBB;
+}
 
+.btn-primary {
+  background-color: #0B3856;
+  color: white !important;
+  border-radius: 20px;
+  font-weight: bold;
+  padding: 10px 24px !important;
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  background-color: #209EBB !important;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== PROFILE PAGE ===== */
+main {
+  max-width: 600px;
+  margin: 60px auto;
+  text-align: center;
+}
+
+main h1 {
+  font-size: 2.4rem;
+  font-weight: bold;
+  color: #0B3856;
+  margin-bottom: 32px;
+}
+
+.iprofileImg {
+  margin: 0 auto 20px;
+  width: 160px;
+  height: 160px;
+}
+
+.personalProfileImg {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  object-fit: cover;
+  background-color: #c8d8e8;
+}
+
+.username-pill {
+  display: inline-block;
+  background-color: #e8f0f7;
+  color: #0B3856;
+  padding: 10px 60px;
+  border-radius: 30px;
+  font-size: 16px;
+  margin: 16px auto 32px;
+}
+
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 16px 0;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.stat {
+  flex: 1;
+  text-align: left;
+}
+
+.stat p {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0B3856;
+  margin-bottom: 8px;
+}
+
+.stat span {
+  color: #0B3856;
+  font-weight: bold;
+  font-size: 22px;
+}
+
+/* ===== FOOTER ===== */
+footer {
+  margin-top: 80px;
+  background-color: white;
+  border-top: 1px solid #e0e0e0;
+  padding: 40px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  font-size: 14px;
+  color: #0B3856;
+}

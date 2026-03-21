@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Settings</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Changing the settings">
+    <meta name="keywords" content="settings changing">
+    <meta name="author" content="Group 4">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/styles_questions.css">
+    <link rel="stylesheet" href="/css/styles_group.css">
+    <link rel="stylesheet" href="/css/registrationSettings.css">
+    <script src="/js/group_code.js"></script>
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <header></header>
+    <main>
+      <h1>Settings</h1>
+
+      <div class="tab">
+        <button class="tablinks tabBtn" onclick="openSetting(event, 'yourInfo')">Manage your information</button>
+        <button class="tablinks tabBtn" onclick="openSetting(event, 'visitedlocations')">Modify visited locations</button>
+        <button class="tablinks tabBtn" onclick="openSetting(event, 'yourGroups')">Manage your groups</button>
+        <button class="tablinks tabBtn" onclick="openSetting(event, 'deleteAccount')">Delete account</button>
+      </div>
+
+      <!-- Manage your information tab -->
+      <div id="yourInfo" class="tabcontent">
+        <form action="/users/update" method="post">
+          <h3>Manage your information</h3>
+          <label for="username">Name: </label><br>
+          <input type="text" id="username" name="username" value="<%= user.username %>"><br>
+          <label for="useremail">E-mail: </label><br>
+          <input type="email" id="useremail" name="useremail" value="<%= user.email %>"><br>
+          <label for="userphone">Phone number: </label><br>
+          <input type="tel" id="userphone" name="userphone" value="<%= user.phone || '' %>"><br>
+          <label for="gender">Gender: </label>
+          <select id="gender" name="gender">
+            <option value="0">Select gender:</option>
+            <option value="m" <%= user.gender === 'm' ? 'selected' : '' %>>Male</option>
+            <option value="f" <%= user.gender === 'f' ? 'selected' : '' %>>Female</option>
+            <option value="d" <%= user.gender === 'd' ? 'selected' : '' %>>Diverse</option>
+          </select><br>
+          <input type="submit" class="updateBtn" value="Update">
+        </form>
+      </div>
+
+      <!-- Modify visited locations tab -->
+      <div id="visitedlocations" class="tabcontent">
+        <form action="/users/update-locations" method="post">
+          <h4>Change visited countries:</h4>
+          <input type="search" id="countrysearch" name="countrysearch" placeholder="Search..."><br>
+          <div class="checkboxGrid">
+            <% if (countries && countries.length > 0) { %>
+              <% countries.forEach(function(country) { %>
+                <label>
+                  <input type="checkbox" name="countries[]" value="<%= country.id %>"
+                    <%= user.visitedCountries && user.visitedCountries.includes(country.id) ? 'checked' : '' %>>
+                  <%= country.name %>
+                </label>
+              <% }) %>
+            <% } %>
+          </div>
+
+          <hr>
+
+          <h4>Change visited cities:</h4>
+          <input type="search" id="citysearch" name="citysearch" placeholder="Search..."><br>
+          <div class="checkboxGrid">
+            <% if (cities && cities.length > 0) { %>
+              <% cities.forEach(function(city) { %>
+                <label>
+                  <input type="checkbox" name="cities[]" value="<%= city.id %>"
+                    <%= user.visitedCities && user.visitedCities.includes(city.id) ? 'checked' : '' %>>
+                  <%= city.name %>
+                </label>
+              <% }) %>
+            <% } %>
+          </div>
+          <input type="submit" class="updateBtn" value="Update">
+        </form>
+      </div>
+
+      <!-- Manage your groups tab -->
+      <div id="yourGroups" class="tabcontent">
+        <h3>Manage your groups</h3>
+        <% if (groups && groups.length > 0) { %>
+          <% groups.forEach(function(group) { %>
+            <input type="button" value="<%= group.name %>" onclick="window.location='/groups/<%= group.id %>'">
+          <% }) %>
+        <% } else { %>
+          <p>You haven't joined any groups yet.</p>
+        <% } %>
+        <br>
+        <input type="button" value="Delete group" onclick="">
+        <input type="button" value="Change name" onclick="">
+        <input type="button" value="Modify interests" onclick="">
+      </div>
+
+      <!-- Delete account tab -->

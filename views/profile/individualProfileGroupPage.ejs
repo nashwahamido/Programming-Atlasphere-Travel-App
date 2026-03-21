@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Individual profile group page</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Individual profile group page">
+    <meta name="keywords" content="Individual profile group page">
+    <meta name="author" content="Group 4">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/styles_questions.css">
+    <link rel="stylesheet" href="/css/styles_group.css">
+    <script src="/js/group_code.js"></script>
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <header></header>
+    <main>
+      <div class="sectionContainer">
+
+        <!-- Left side: groups list -->
+        <section class="creategroupContainer">
+          <h4>Groups</h4>
+          <p><a href="/groups/create">Create a group</a></p>
+          <p>Search for a group</p>
+          <input type="search" id="groupsearch" name="groupsearch" placeholder="Search groups...">
+          <p>Your groups:</p>
+          <div class="joinedGroupsContainer">
+            <ul>
+              <% if (groups && groups.length > 0) { %>
+                <% groups.forEach(function(group) { %>
+                  <li><a href="/groups/<%= group.id %>"><%= group.name %></a></li>
+                <% }) %>
+              <% } else { %>
+                <li>You haven't joined any groups yet.</li>
+              <% } %>
+            </ul>
+          </div>
+        </section>
+
+        <!-- Right side: toggleable tabs -->
+        <section class="toggleTabsContainer">
+          <div class="tab">
+            <button class="tablink" onclick="openTab(event, 'chat')">Chat</button>
+            <button class="tablink" onclick="openTab(event, 'recommended')">Recommended</button>
+            <button class="tablink" onclick="openTab(event, 'itinerary')">Itinerary</button>
+          </div>
+
+          <!-- Chat tab -->
+          <div id="chat" class="tabcontent">
+            <h3>Chat</h3>
+            <div class="msgContainer">
+              <% if (messages && messages.length > 0) { %>
+                <% messages.forEach(function(msg) { %>
+                  <div class="msgDisplay <%= msg.user_id === user.id ? 'darker' : '' %>">
+                    <figure>
+                      <img src="<%= msg.profile_image || '/images/default-avatar.png' %>" alt="profile image" class="chatImg" style="width:100%;">
+                    </figure>
+                    <p><%= msg.content %></p>
+                    <span class="<%= msg.user_id === user.id ? 'time-left' : 'time-right' %>">
+                      <%= msg.timestamp %>
+                    </span>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <p>No messages yet. Start the conversation!</p>
+              <% } %>
+            </div>
+            <div class="sendContainer">
+              <form action="/chat/send" method="post" class="formchatContainer">
+                <input type="hidden" name="group_id" value="<%= currentGroup ? currentGroup.id : '' %>">
+                <label for="chatMsg"><b>Message</b></label>
+                <textarea name="chatMsg" placeholder="Type message.." rows="1" cols="10"></textarea><br>
+                <input type="file" id="chatMedia" name="chatMedia"><br>
+                <input type="submit" class="btn" value="Send"><br>
+              </form>
+            </div>
+          </div>
+
+          <!-- Recommended tab -->
+          <div id="recommended" class="tabcontent">
+            <h3>Recommended</h3>
+            <div class="scrollContainer">
+              <% if (recommendations && recommendations.length > 0) { %>
+                <% recommendations.forEach(function(item) { %>
+                  <div class="activityCard">
+                    <figure>
+                      <img src="<%= item.image || '/images/default-activity.jpg' %>" alt="<%= item.name %>" class="activityImg">
+                    </figure>
+                    <div class="activityName">
+                      <h4><%= item.name %></h4>
+                    </div>
+                    <div class="IconContainer">
+                      <form action="/recommendations/vote" method="post" style="display:inline">
+                        <input type="hidden" name="activity_id" value="<%= item.id %>">
+                        <input type="hidden" name="group_id" value="<%= currentGroup ? currentGroup.id : '' %>">
+                        <input type="hidden" name="vote" value="yes">
+                        <button class="iconBtn" type="submit">👍</button>
+                      </form>
+                      <form action="/recommendations/vote" method="post" style="display:inline">
+                        <input type="hidden" name="activity_id" value="<%= item.id %>">
+                        <input type="hidden" name="group_id" value="<%= currentGroup ? currentGroup.id : '' %>">
+                        <input type="hidden" name="vote" value="maybe">
+                        <button class="iconBtn" type="submit">🤔</button>
+                      </form>
+                      <form action="/recommendations/vote" method="post" style="display:inline">
+                        <input type="hidden" name="activity_id" value="<%= item.id %>">
+                        <input type="hidden" name="group_id" value="<%= currentGroup ? currentGroup.id : '' %>">
+                        <input type="hidden" name="vote" value="no">
+                        <button class="iconBtn" type="submit">👎</button>
+                      </form>
+                    </div>
+                  </div>
+                <% }) %>
+              <% } else { %>
+                <p>No recommendations yet for this group.</p>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Itinerary tab -->
+          <div id="itinerary" class="tabcontent">
+            <h3>Itinerary</h3>
+            <p>drag/drop function + calendar need to be added</p>
+            <input type="date">
+          </div>
+
+        </section>
+      </div>
+
+      <!-- Chat popup -->
+      <div class="chatpopupContainer" id="chatpopup">
+        <form action="/chat/send" method="post" class="msgformContainer">
+          <h4>Chat</h4>
+          <input type="hidden" name="group_id" value="<%= currentGroup ? currentGroup.id : '' %>">
+          <label for="msg"><b>Message</b></label>
+          <textarea placeholder="Type message.." name="msg" required></textarea>
+          <button type="submit" class="sendBtn">Send</button>
+          <button type="button" class="btn closeBtn" onclick="closeForm()">Close</button>
+        </form>
+      </div>
+      <button class="openBtn" onclick="openForm()">Chat</button>
+
+    </main>
+    <footer></footer>
+  </body>
+</html>
