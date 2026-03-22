@@ -45,18 +45,27 @@
     <section class="toggleTabsContainer">
 
       <!--
-        REACT MOUNT POINT
-        groupTabs.jsx reads data-* attributes and mounts:
-          - Tabs component (Chat / Recommended / Itinerary)
-          - Inside Recommended tab: RecommendedContent + VotingSystem
-          - Inside Itinerary tab: ItineraryBuilder
-        EJS partials (navbar, footer) are rendered server-side above/below.
+        REACT MOUNT POINTS
+        The pre-built groupTabs.js looks for all 3 divs.
+        After you run `npx vite build`, only #group-tabs-root is needed.
       -->
       <div id="group-tabs-root"
            data-group-id="<%= typeof group !== 'undefined' && group ? group.id : '' %>"
            data-user-id="<%= typeof user !== 'undefined' && user ? user.id : '' %>"
            data-group-name="<%= typeof group !== 'undefined' && group ? group.name : '' %>">
         <p class="react-loading">Loading tabs...</p>
+      </div>
+
+      <!-- These are used by the pre-built bundle; safe to remove after npx vite build -->
+      <div id="chat-root"
+           data-group-id="<%= typeof group !== 'undefined' && group ? group.id : '' %>"
+           data-user-id="<%= typeof user !== 'undefined' && user ? user.id : '' %>"
+           data-user-name="<%= typeof user !== 'undefined' && user ? user.name : 'Guest' %>">
+      </div>
+      <div id="voting-root"
+           data-group-id="<%= typeof group !== 'undefined' && group ? group.id : '' %>"
+           data-user-id="<%= typeof user !== 'undefined' && user ? user.id : '' %>"
+           data-user-name="<%= typeof user !== 'undefined' && user ? user.name : 'Guest' %>">
       </div>
 
     </section>

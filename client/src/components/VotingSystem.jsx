@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import '../styles/voting-system.css';
 
 const defaultActivities = [
   {
@@ -121,7 +122,7 @@ export default function VotingSystem({
             ))}
           </div>
 
-          <div className="submitContainer" style={{ marginTop: "20px" }}>
+          <div className="submitContainer">
             <button type="submit">Submit Votes</button>
           </div>
         </form>

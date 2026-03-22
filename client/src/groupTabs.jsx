@@ -7,7 +7,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 
 // ── Components ─────────────────────────────────────────────────────────────
-import Tabs from './components/Tabs';
+import Tabs from './components/groupTabs';
 import ItineraryBuilder from './components/ItineraryBuilder';
 import RecommendedContent from './components/RecommendedContent';
 import VotingSystem from './components/VotingSystem';

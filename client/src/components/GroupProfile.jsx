@@ -13,7 +13,7 @@
  */
 
 import React, { useState } from 'react';
-import Tabs from './Tabs';
+import Tabs from './groupTabs';
 import RecommendedContent from './RecommendedContent';
 import ItineraryBuilder from './ItineraryBuilder';
 import VotingSystem from './VotingSystem';
@@ -40,7 +40,7 @@ const GroupProfile = ({ groupId = 1 }) => {
   // Chat placeholder until ChatBox.jsx is built
   const ChatPlaceholder = () => (
     <div className="tab-placeholder">
-      <div className="placeholder-icon">💬</div>
+      <div className="placeholder-icon">Icon</div>
       <h3>Group Chat</h3>
       <p>Chat for <strong>{group.name}</strong> will appear here.</p>
     </div>
@@ -50,14 +50,12 @@ const GroupProfile = ({ groupId = 1 }) => {
     {
       id: 'chat',
       label: 'Chat',
-      icon: '💬',
       badge: 3,
       content: <ChatPlaceholder />,
     },
     {
       id: 'recommended',
       label: 'Recommended',
-      icon: '⭐',
       content: (
         <div>
           <RecommendedContent groupId={groupId} />
@@ -70,7 +68,6 @@ const GroupProfile = ({ groupId = 1 }) => {
     {
       id: 'itinerary',
       label: 'Itinerary',
-      icon: '📅',
       content: (
         <ItineraryBuilder
           tripId={groupId}
@@ -91,8 +88,8 @@ const GroupProfile = ({ groupId = 1 }) => {
         <h1>{group.name}</h1>
         <p className="group-description">{group.description}</p>
         <div className="group-meta">
-          <span>👥 {group.members} members</span>
-          <span>📅 {group.startDate} → {group.endDate}</span>
+          <span> {group.members} members</span>
+          <span> {group.startDate} → {group.endDate}</span>
         </div>
       </div>
 

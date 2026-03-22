@@ -4,58 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Register — Atlasphere</title>
-  <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 
 <%- include('partials/navbar', { user: null }) %>
 
-<!-- Registration Page — matches Figma wireframe -->
-<div class="auth-page">
-  <div class="auth-bg">
-    <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&q=80" alt="Tropical water landscape">
-  </div>
+<main>
+  <h1>Register</h1>
 
-  <div class="auth-card">
-    <h1>Registration</h1>
+  <form action="/auth/register" method="post">
+    <label for="username">Name</label>
+    <input type="text" id="username" name="username" placeholder="Enter your name" required>
 
-    <form action="/auth/register" method="post">
-      <div class="form-group">
-        <label for="username">Name</label>
-        <input type="text" id="username" name="username" placeholder="Enter your name" required>
-      </div>
+    <label for="useremail">Email</label>
+    <input type="email" id="useremail" name="useremail" placeholder="Enter your email" required>
 
-      <div class="form-group">
-        <label for="useremail">Email</label>
-        <input type="email" id="useremail" name="useremail" placeholder="Enter your email" required>
-      </div>
+    <label for="userphone">Phone</label>
+    <input type="tel" id="userphone" name="userphone" placeholder="Phone number" required>
 
-      <div class="form-group">
-        <label for="userphone">Phone</label>
-        <div class="phone-row">
-          <input type="text" class="phone-prefix" value="+353" readonly>
-          <input type="tel" id="userphone" name="userphone" class="phone-number" placeholder="Phone number" required>
-        </div>
-      </div>
+    <label for="gender">Gender</label>
+    <select id="gender" name="gender">
+      <option value="">Select gender</option>
+      <option value="m">Male</option>
+      <option value="f">Female</option>
+      <option value="d">Diverse</option>
+    </select>
 
-      <div class="form-group">
-        <label for="gender">Gender</label>
-        <select id="gender" name="gender">
-          <option value="">Select gender</option>
-          <option value="m">Male</option>
-          <option value="f">Female</option>
-          <option value="d">Diverse</option>
-        </select>
-      </div>
+    <button type="submit">Register</button>
+  </form>
 
-      <button type="submit" class="btn btn-primary">Register</button>
-    </form>
-
-    <div class="auth-footer">
-      <p>Already have an account? <a href="/auth/login">Sign in</a></p>
-    </div>
-  </div>
-</div>
+  <p>Already have an account? <a href="/auth/login">Sign in</a></p>
+</main>
 
 </body>
 </html>
