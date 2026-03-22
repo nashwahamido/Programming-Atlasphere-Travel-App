@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Homepage</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Welcome to Atlasphere">
+    <meta name="keywords" content="Homepage, welcome, about the page, overview, introduction">
+    <meta name="author" content="Group 4">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <header>
+      <figure>
+        <img src="/images/hero.jpg" alt="Travel adventure image showing beautiful destinations">
+      </figure>
+    </header>
+    <main>
+      <section>
+        <h1>Welcome to Atlasphere</h1>
+        <p>Welcome to Atlasphere - a space where we help you and your friends to organise your travel trip.</p>
+
+        <% if (user) { %>
+          <a href="/home"><button>Go to your dashboard</button></a>
+        <% } else { %>
+          <a href="/auth/login"><button>Sign in</button></a>
+          <a href="/auth/register"><button>Sign up</button></a>
+        <% } %>
+      </section>
+    </main>
+    <footer></footer>
+  </body>
+</html>

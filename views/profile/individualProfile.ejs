@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title><%= user.username %>'s Profile</title>
+    <meta charset="UTF-8">
+    <meta name="description" content="Your individual profile settings can be changed">
+    <meta name="keywords" content="Your individual profile settings">
+    <meta name="author" content="Group 4">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/styles_questions.css">
+    <link rel="stylesheet" href="/css/styles_group.css">
+  </head>
+  <body>
+    <%- include('../partials/navbar') %>
+    <header></header>
+    <main>
+      <h1>Profile</h1>
+      <figure class="iprofileImg">
+        <img src="<%= user.profile_image || '/images/default-avatar.png' %>" alt="<%= user.username %>'s profile picture">
+      </figure>
+      <div>
+        <p>Username: </p><span><%= user.username %></span>
+      </div>
+      <div>
+        <p>Countries visited: </p><span><%= user.countries_visited || 0 %></span>
+        <p>Cities visited: </p><span><%= user.cities_visited || 0 %></span>
+        <p>Number of created groups: </p><span><%= user.groups_created || 0 %></span>
+      </div>
+    </main>
+    <footer></footer>
+  </body>
+</html>

@@ -1,57 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-
     <meta charset="UTF-8">
-    <title><%= title %></title>
-
-    <meta name="description" content="Your individual profile settings can be changed">
-    <meta name="keywords" content="Your individual profile settings">
-    <meta name="author" content="Group 4">
-
+    <title>Profile</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="stylesheet" href="/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/css/style.css">
-
-</head>
-
-<body>
-  <!-- include header and navbar template from partials -->
-  <%- include('../partials/navbar') %>
-
-  <!-- each page's content is injected here -->
-  <div class="container-fluid">
-    <%- 
-        <main>
-            <h1>Profile</h1>
-            <!-- form to upload your own profile image - this is optional -->
-            <figure class="iprofileImg">
-              <img src="<% # >" alt="personal profile image" class="personalProfileImg">
-            </figure>
-            <form action="#" method="post" enctype="form-data">
-                <label>Upload a profile picture or do it later:</label><br>
-                <input type="file" id="profileimg" accept="image/*"><br>
-            </form>
-
-            <div>
-                <p>user name: </p><span><% username %></span>
-            </div>
-            
-            <div>
-                <p>places visited: </p><span><% placesVisited %></span>
-                <p>cities visited: </p><span><% citiesVisited %></span>
-                <p>number of created groups: </p><span><% %></span>
-            </div>
-        </main>
-
-    %>
-  </div>
-
-  <!-- include footer template from partials -->
-  <%- include('..partials/footer') %>
-  <script src="/js/bootstrap.bundle.min.js"> </script>
-
-  
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/partials.css">
+  </head>
+  <body>
+    <%- include('partials/navbar') %>
+    <main>
+      <h1>Profile</h1>
+      <figure class="iprofileImg">
+        <img src="<%= user.profile_image || '/images/default-avatar.png' %>" alt="profile image" class="personalProfileImg">
+      </figure>
+      <div class="username-pill">
+        <%= user.username %>
+      </div>
+      <div class="stats-row">
+        <div class="stat">
+          <p>Countries visited</p>
+          <span><%= user.countries_visited || 0 %></span>
+        </div>
+        <div class="stat">
+          <p>Planning to visit</p>
+          <span><%= user.planning_to_visit || 0 %></span>
+        </div>
+        <div class="stat">
+          <p>Number of Created Groups</p>
+          <span><%= user.groups_created || 0 %></span>
+        </div>
+      </div>
+    </main>
+    <%- include('partials/footer') %>
   </body>
 </html>
