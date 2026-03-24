@@ -1,78 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Choose Cities — Atlasphere</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
 
-<%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null }) %>
+  <%- include('../partials/navbar', { user: typeof user !=='undefined' ? user : null }) %>
 
-<!-- Group Creation: City — matches Figma "Which cities in Country?" -->
-<div class="group-creation-page">
-  <div class="group-creation-bg">
-    <img src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1600&q=80" alt="Desert landscape at sunset">
-  </div>
+    <!-- Group Creation: City — matches Figma "Which cities in Country?" -->
+    <div class="group-creation-page">
+      <div class="group-creation-bg">
+        <img src="https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=1600&q=80"
+          alt="Desert landscape at sunset">
+      </div>
 
-  <div class="group-creation-content">
-    <h1>Which cities in &ldquo;Country&rdquo;?</h1>
-    <p>Select at least one city</p>
+      <div class="group-creation-content">
+        <h1>Which cities in &ldquo;Country&rdquo;?</h1>
+        <p>Select at least one city</p>
 
-    <div class="search-input" style="margin: 24px auto;">
-      <span class="search-icon">🔍</span>
-      <input type="text" id="citySearch" placeholder="Search...">
+        <div class="search-input" style="margin: 24px auto;">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="citySearch" placeholder="Search...">
+        </div>
+
+
+
+        <form action="/groups/create/days" method="get">
+          <input type="hidden" name="cities" id="selectedCities" value="">
+          <div class="destination-grid" id="cityGrid">
+            <div class="destination-card" data-value="city1">
+              <div class="card-img">🖼️</div>
+              <span class="card-name">City Name</span>
+            </div>
+            <div class="destination-card" data-value="city2">
+              <div class="card-img">🖼️</div>
+              <span class="card-name">City Name</span>
+            </div>
+            <div class="destination-card" data-value="city3">
+              <div class="card-img">🖼️</div>
+              <span class="card-name">City Name</span>
+            </div>
+            <div class="destination-card" data-value="city4">
+              <div class="card-img">🖼️</div>
+              <span class="card-name">City Name</span>
+            </div>
+            <div class="destination-card" data-value="city5">
+              <div class="card-img">🖼️</div>
+              <span class="card-name">City Name</span>
+            </div>
+            <div class="destination-card" data-value="city6">
+              <div class="card-img">🖼️</div>
+              <span class="card-name">City Name</span>
+            </div>
+          </div>
+
+          <div class="setup-actions" style="margin-top: 32px;">
+            <button type="submit" class="btn btn-primary">Next</button>
+          </div>
+        </form>
+      </div>
     </div>
 
-    <form action="/groups/create/days" method="get">
-      <div class="destination-grid" id="cityGrid">
-        <div class="destination-card" data-value="city1">
-          <div class="card-img">🖼️</div>
-          <span class="card-name">City Name</span>
-        </div>
-        <div class="destination-card" data-value="city2">
-          <div class="card-img">🖼️</div>
-          <span class="card-name">City Name</span>
-        </div>
-        <div class="destination-card" data-value="city3">
-          <div class="card-img">🖼️</div>
-          <span class="card-name">City Name</span>
-        </div>
-        <div class="destination-card" data-value="city4">
-          <div class="card-img">🖼️</div>
-          <span class="card-name">City Name</span>
-        </div>
-        <div class="destination-card" data-value="city5">
-          <div class="card-img">🖼️</div>
-          <span class="card-name">City Name</span>
-        </div>
-        <div class="destination-card" data-value="city6">
-          <div class="card-img">🖼️</div>
-          <span class="card-name">City Name</span>
-        </div>
-      </div>
-
-      <div class="setup-actions" style="margin-top: 32px;">
-        <button type="submit" class="btn btn-primary">Next</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script>
-  // Multi-select city cards
-  document.querySelectorAll('#cityGrid .destination-card').forEach(card => {
-    card.addEventListener('click', () => card.classList.toggle('selected'));
-  });
-  document.getElementById('citySearch').addEventListener('input', (e) => {
-    const q = e.target.value.toLowerCase();
-    document.querySelectorAll('#cityGrid .destination-card').forEach(card => {
-      const name = card.querySelector('.card-name').textContent.toLowerCase();
-      card.style.display = name.includes(q) ? '' : 'none';
-    });
-  });
-</script>
+    <script>
+      // Multi-select city cards
+      document.querySelectorAll('#cityGrid .destination-card').forEach(card => {
+        card.addEventListener('click', () => card.classList.toggle('selected'));
+      });
+      document.getElementById('citySearch').addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        document.querySelectorAll('#cityGrid .destination-card').forEach(card => {
+          const name = card.querySelector('.card-name').textContent.toLowerCase();
+          card.style.display = name.includes(q) ? '' : 'none';
+        });
+      });
+    </script>
 
 </body>
+
 </html>
