@@ -1,309 +1,373 @@
 require("dotenv").config();
-var express = require("express");
-var path = require("path");
-var session = require("express-session");
-var bcrypt = require("bcrypt");
-var nodemailer = require("nodemailer");
+const express = require('express');
+const path = require('path');
+const session = require('express-session');
 
-var app = express();
+const app = express();
 
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+// View engine setup
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-app.use(express.static(path.join(__dirname, "public")));
+// Middleware
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-var sessionConfig = require("./config/session");
+// Session configuration
+const sessionConfig = require('./config/session');
 app.use(session(sessionConfig));
 
+// Static assets
 app.use(express.static("assets"));
 
-// ── Email setup ─────────────────────────────────────────────────────────
-var transporter = null;
+// ── Password hashing ────────────────────────────────────────────────────
+const bcrypt = require('bcrypt');
+
+// ── Email verification with Nodemailer ──────────────────────────────────
+const nodemailer = require('nodemailer');
+
+// Auto-create Ethereal test account on startup (no config needed!)
+let transporter = null;
 
 async function setupEmail() {
   if (process.env.MAIL_HOST && process.env.MAIL_USER) {
     transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
       port: parseInt(process.env.MAIL_PORT) || 587,
-      auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS }
+      auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASS },
     });
-    console.log("Email: using configured SMTP");
+    console.log('Email: using configured SMTP (' + process.env.MAIL_HOST + ')');
   } else {
-    var testAccount = await nodemailer.createTestAccount();
+    const testAccount = await nodemailer.createTestAccount();
     transporter = nodemailer.createTransport({
-      host: "smtp.ethereal.email",
+      host: 'smtp.ethereal.email',
       port: 587,
-      auth: { user: testAccount.user, pass: testAccount.pass }
+      auth: { user: testAccount.user, pass: testAccount.pass },
     });
-    console.log("Email: using Ethereal test account");
-    console.log("  View emails at: https://ethereal.email");
-    console.log("  Login: " + testAccount.user + " / " + testAccount.pass);
+    console.log('Email: using Ethereal test account');
+    console.log('  View sent emails at: https://ethereal.email');
+    console.log('  Login:', testAccount.user, '/', testAccount.pass);
   }
+  // Share transporter with routes (used by groups.js for invite emails)
+  app.locals.transporter = transporter;
 }
-
 setupEmail();
 
+// Generate random 6-digit code
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// Send verification email
 async function sendVerificationEmail(toEmail, code) {
   if (!transporter) {
-    console.log("Email not ready. Code is: " + code);
+    console.log('Email not ready yet — code is:', code);
     return false;
   }
+
   try {
-    var info = await transporter.sendMail({
-      from: "Atlasphere <noreply@atlasphere.com>",
+    const info = await transporter.sendMail({
+      from: process.env.MAIL_FROM || '"Atlasphere" <noreply@atlasphere.com>',
       to: toEmail,
-      subject: "Atlasphere - Verify your email",
-      html: "<div style=\"font-family:Arial;max-width:480px;margin:0 auto;padding:32px\">" +
-            "<h1 style=\"color:#0B3856\">Welcome to Atlasphere!</h1>" +
-            "<p>Your verification code is:</p>" +
-            "<div style=\"background:#f0f4f8;border-radius:12px;padding:24px;text-align:center;margin:24px 0\">" +
-            "<span style=\"font-size:36px;font-weight:700;letter-spacing:8px;color:#0B3856\">" + code + "</span>" +
-            "</div>" +
-            "<p style=\"color:#888;font-size:14px\">This code expires in 10 minutes.</p>" +
-            "</div>"
+      subject: 'Atlasphere — Verify your email',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+          <h1 style="color: #0B3856; font-size: 24px;">Welcome to Atlasphere!</h1>
+          <p style="color: #555; font-size: 16px; line-height: 1.6;">Your verification code is:</p>
+          <div style="background: #f0f4f8; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+            <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #0B3856;">${code}</span>
+          </div>
+          <p style="color: #888; font-size: 14px;">This code expires in 10 minutes.</p>
+        </div>
+      `,
     });
-    console.log("Email sent: " + info.messageId);
-    var url = nodemailer.getTestMessageUrl(info);
-    if (url) console.log("Preview: " + url);
+
+    console.log('Email sent:', info.messageId);
+    // Show Ethereal preview URL
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    if (previewUrl) console.log('Preview email at:', previewUrl);
     return true;
   } catch (err) {
-    console.error("Email error: " + err.message);
+    console.error('Email error:', err.message);
     return false;
   }
 }
 
-// ── In-memory user storage (no MySQL needed) ────────────────────────────
-var users = [];
+// ── In-memory user store (replaces MySQL for now) ───────────────────────
+// When you reconnect MySQL, swap these back to database queries
+const users = [];
 
-// ── Routes ──────────────────────────────────────────────────────────────
+// ── DATABASE (optional — uncomment when MySQL is available) ─────────────
+// const mysql = require("mysql2");
+// const connection = mysql.createConnection({
+//   host: "localhost",
+//   user: process.env.DB_USERNAME,
+//   password: process.env.DB_PASSWORD,
+//   database: process.env.DB_DATABASE
+// });
+// connection.connect((err) => {
+//   if (err) console.error('DB connection failed:', err.message);
+//   else console.log('DB connected');
+// });
+
+
+// ═════════════════════════════════════════════════════════════════════════
+// ROUTES
+// ═════════════════════════════════════════════════════════════════════════
 
 // Homepage
-app.get("/", function (req, res) {
-  res.render("index", { user: req.session.user || null });
+app.get('/', (req, res) => {
+  res.render('index', { user: req.session.user || null });
 });
 
-// Login
-app.get("/auth/login", function (req, res) {
-  res.render("login", { title: "Sign In", error: null });
+// ── LOGIN ────────────────────────────────────────────────────────────────
+app.get('/auth/login', (req, res) => {
+  res.render('login', { title: 'Sign In', error: null });
 });
 
-app.post("/auth/login", async function (req, res) {
-  var user = users.find(function (u) { return u.email === req.body.loginemail; });
+app.post('/auth/login', async (req, res) => {
+  const { loginemail, loginpsw } = req.body;
+
+  // Find user in memory
+  const user = users.find(u => u.email === loginemail);
+
   if (!user) {
-    return res.render("login", { error: "Invalid email or password" });
+    return res.render('login', { error: 'Invalid email or password' });
   }
-  var match = await bcrypt.compare(req.body.loginpsw, user.password);
+
+  const match = await bcrypt.compare(loginpsw, user.password);
   if (!match) {
-    return res.render("login", { error: "Invalid email or password" });
+    return res.render('login', { error: 'Invalid email or password' });
   }
-  req.session.user = { id: user.id, username: user.username, email: user.email };
-  req.session.save(function () {
-    res.redirect("/profile");
+
+  // Successful login
+  req.session.user = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+  };
+
+  req.session.save(() => {
+    res.redirect('/profile');
   });
 });
 
-// Register
-app.get("/auth/register", function (req, res) {
-  res.render("register", { title: "Register", user: null });
+// ── REGISTER ─────────────────────────────────────────────────────────────
+app.get('/auth/register', (req, res) => {
+  res.render('register', { title: 'Register', user: null });
 });
 
-app.post("/auth/register", async function (req, res) {
-  console.log("New registration:", req.body);
+app.post('/auth/register', async (req, res) => {
+  console.log('New registration:', req.body);
+
   try {
-    var username = req.body.username;
-    var useremail = req.body.useremail;
-    var userphone = req.body.userphone;
-    var gender = req.body.gender;
-    var psw = req.body.psw;
+    const { username, useremail, userphone, gender, psw } = req.body;
 
+    // Basic validation
     if (!username || !useremail || !psw) {
-      return res.status(400).send("Missing required fields");
+      return res.status(400).send('Missing required fields');
     }
 
-    var existing = users.find(function (u) { return u.email === useremail; });
-    if (existing) {
-      return res.status(400).send("Email already registered");
+    // Check if email already exists
+    if (users.find(u => u.email === useremail)) {
+      return res.status(400).send('Email already registered');
     }
 
-    var hashedPassword = await bcrypt.hash(psw, 10);
+    // Hash password
+    const hashedPassword = await bcrypt.hash(psw, 10);
 
-    var newUser = {
+    // Store user in memory (replace with DB insert when MySQL is available)
+    const newUser = {
       id: Date.now(),
-      username: username,
+      username,
       email: useremail,
       phone: userphone,
-      gender: gender,
+      gender,
       password: hashedPassword,
-      verified: false
+      verified: false,
     };
     users.push(newUser);
-    console.log("User stored in memory: " + useremail);
+    console.log('User stored in memory:', newUser.email);
 
-    var code = generateCode();
+    // Generate verification code
+    const code = generateCode();
     req.session.pendingVerification = {
       userId: newUser.id,
       email: useremail,
       code: code,
-      expiresAt: Date.now() + 10 * 60 * 1000
+      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
     };
 
-    await sendVerificationEmail(useremail, code);
-    console.log("=================================");
-    console.log("VERIFICATION CODE: " + code);
-    console.log("=================================");
+    // Send verification email
+    const sent = await sendVerificationEmail(useremail, code);
+    if (sent) {
+      console.log('Verification code sent to:', useremail);
+    } else {
+      console.log('Email failed — code is:', code);
+    }
 
-    req.session.save(function () {
-      res.redirect("/auth/verify");
+    // ALWAYS log the code to terminal (as fallback)
+    console.log('=================================');
+    console.log('VERIFICATION CODE:', code);
+    console.log('=================================');
+
+    req.session.save(() => {
+      res.redirect('/auth/verify');
     });
+
   } catch (err) {
-    console.error("Registration error:", err);
-    res.status(500).send("Server error");
+    console.error('Registration error:', err);
+    res.status(500).send('Server error');
   }
 });
 
-// Verify
-app.get("/auth/verify", function (req, res) {
+// ── VERIFY ───────────────────────────────────────────────────────────────
+app.get('/auth/verify', (req, res) => {
   if (!req.session.pendingVerification) {
-    return res.redirect("/auth/register");
+    return res.redirect('/auth/register');
   }
-  res.render("register-step2", {
-    title: "Verify",
+  res.render('register-step2', {
+    title: 'Verify',
     user: null,
     email: req.session.pendingVerification.email,
     error: null,
-    success: null
+    success: null,
   });
 });
 
-app.post("/auth/verify", function (req, res) {
-  var pending = req.session.pendingVerification;
+app.post('/auth/verify', (req, res) => {
+  const pending = req.session.pendingVerification;
+
   if (!pending) {
-    return res.redirect("/auth/register");
+    return res.redirect('/auth/register');
   }
 
-  var enteredCode = (req.body.code1 || "") + (req.body.code2 || "") +
-                    (req.body.code3 || "") + (req.body.code4 || "") +
-                    (req.body.code5 || "") + (req.body.code6 || "");
+  // Combine 6 code inputs
+  const enteredCode = [
+    req.body.code1, req.body.code2, req.body.code3,
+    req.body.code4, req.body.code5, req.body.code6,
+  ].join('');
 
+  // Check expiry
   if (Date.now() > pending.expiresAt) {
-    return res.render("register-step2", {
-      title: "Verify", user: null, email: pending.email,
-      error: "Code expired. Click resend below.", success: null
+    return res.render('register-step2', {
+      title: 'Verify', user: null, email: pending.email,
+      error: 'Code has expired. Click "Send code again" below.',
+      success: null,
     });
   }
 
+  // Check code
   if (enteredCode !== pending.code) {
-    return res.render("register-step2", {
-      title: "Verify", user: null, email: pending.email,
-      error: "Invalid code. Try again.", success: null
+    return res.render('register-step2', {
+      title: 'Verify', user: null, email: pending.email,
+      error: 'Invalid code. Please try again.',
+      success: null,
     });
   }
 
-  var user = users.find(function (u) { return u.id === pending.userId; });
+  // Code correct — mark user as verified
+  const user = users.find(u => u.id === pending.userId);
   if (user) user.verified = true;
 
+  // Auto-login
   req.session.user = {
     id: pending.userId,
-    username: user ? user.username : pending.email.split("@")[0],
-    email: pending.email
+    username: user ? user.username : pending.email.split('@')[0],
+    email: pending.email,
   };
+
+  // Clear pending
   delete req.session.pendingVerification;
 
-  req.session.save(function () {
-    res.redirect("/groups/create/country");
+  req.session.save(() => {
+    res.redirect('/setup');
   });
 });
 
-// Resend code
-app.get("/auth/resend-code", async function (req, res) {
-  var pending = req.session.pendingVerification;
-  if (!pending) {
-    return res.redirect("/auth/register");
-  }
+// ── RESEND CODE ──────────────────────────────────────────────────────────
+app.get('/auth/resend-code', async (req, res) => {
+  const pending = req.session.pendingVerification;
+  if (!pending) return res.redirect('/auth/register');
 
-  var newCode = generateCode();
-  pending.code = newCode;
-  pending.expiresAt = Date.now() + 10 * 60 * 1000;
+  const newCode = generateCode();
+  req.session.pendingVerification.code = newCode;
+  req.session.pendingVerification.expiresAt = Date.now() + 10 * 60 * 1000;
 
-  await sendVerificationEmail(pending.email, newCode);
-  console.log("=================================");
-  console.log("NEW CODE: " + newCode);
-  console.log("=================================");
+  const sent = await sendVerificationEmail(pending.email, newCode);
+  console.log(sent ? 'Resend OK' : 'Resend failed — code: ' + newCode);
+  console.log('=================================');
+  console.log('NEW VERIFICATION CODE:', newCode);
+  console.log('=================================');
 
-  req.session.save(function () {
-    res.render("register-step2", {
-      title: "Verify", user: null, email: pending.email,
-      error: null, success: "New code sent!"
+  req.session.save(() => {
+    res.render('register-step2', {
+      title: 'Verify', user: null, email: pending.email,
+      error: null, success: 'A new code has been sent to your email.',
     });
   });
 });
 
-// Logout
-app.get("/auth/logout", function (req, res) {
+// ── LOGOUT ───────────────────────────────────────────────────────────────
+app.get('/auth/logout', (req, res) => {
   req.session.destroy();
-  res.redirect("/");
+  res.redirect('/');
 });
 
-// Setup
-app.get("/setup", function (req, res) {
-  res.render("setup", { title: "Profile Setup", user: req.session.user || null });
+// ── PROFILE SETUP ────────────────────────────────────────────────────────
+app.get('/setup', (req, res) => {
+  res.render('setup', { title: 'Profile Setup', user: req.session.user || null });
 });
 
-app.get("/setup/countries", function (req, res) {
-  res.render("groups/profile/countries", { title: "Countries Visited", user: req.session.user || null });
+app.get('/setup/countries', (req, res) => {
+  res.render('groups/profile/countries', { title: 'Countries Visited', user: req.session.user || null });
 });
 
-app.get("/setup/cities", function (req, res) {
-  res.render("groups/profile/cities", { title: "Cities Visited", user: req.session.user || null });
+app.get('/setup/cities', (req, res) => {
+  res.render('groups/profile/cities', { title: 'Cities Visited', user: req.session.user || null });
 });
 
-// Profile
-app.get("/profile", function (req, res) {
-  var user = req.session.user || {
-    name: "TestUser", username: "TestUser", profile_image: null,
+// ── PROFILE ──────────────────────────────────────────────────────────────
+app.get('/profile', (req, res) => {
+  const user = req.session.user || {
+    name: 'TestUser', username: 'TestUser', profile_image: null,
     countries_visited: 5, cities_visited: 12, groups_created: 3
   };
-  res.render("profile", { user: user });
+  res.render('profile', { user });
 });
 
-app.get("/profile/confirmed", function (req, res) {
-  res.render("profile/confirmed", { user: req.session.user || null });
+app.get('/profile/confirmed', (req, res) => {
+  res.render('profile/confirmed', { user: req.session.user || null });
 });
 
-// Settings
-app.get("/settings", function (req, res) {
-  res.render("settings", { user: req.session.user || null });
+// ── SETTINGS ─────────────────────────────────────────────────────────────
+app.get('/settings', (req, res) => {
+  res.render('settings', { user: req.session.user || null });
 });
 
-// Groups
-app.use("/groups", require("./routes/groups"));
+// ── GROUPS ───────────────────────────────────────────────────────────────
+app.use('/groups', require('./routes/groups'));
 
-// 404
-app.use(function (req, res) {
-  res.status(404).render("error", {
-    status: 404, message: "Page not found", user: req.session.user || null
+// ── ERROR HANDLING ───────────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).render('error', {
+    status: 404, message: 'Page not found', user: req.session.user || null
   });
 });
 
-// 500
-app.use(function (err, req, res, next) {
+app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).render("error", {
-    status: 500, message: "Something went wrong", user: req.session.user || null
+  res.status(500).render('error', {
+    status: 500, message: 'Something went wrong', user: req.session.user || null
   });
 });
 
-// Start
-var PORT = process.env.PORT || 3000;
-app.listen(PORT, function () {
-  console.log("Server running on http://localhost:" + PORT);
-  console.log("No MySQL needed - users stored in memory");
+// ── START SERVER ─────────────────────────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  console.log('Users are stored in memory (no MySQL needed)');
 });
 
 module.exports = app;

@@ -6,186 +6,47 @@
   <title>Welcome to Atlasphere</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root { --font: 'Lexend', sans-serif; }
-
-    [data-theme="dark"] {
-      --bg: #121212; --text: #FFFFFF;
-      --hero-border: rgba(255,255,255,0.08);
-      --hero-shadow: 0 4px 40px rgba(0,0,0,0.5);
-      --toggle-bg: #3B5068; --toggle-knob: #E4EAF2;
-    }
-    [data-theme="light"] {
-      --bg: #E4EAF2; --text: #1A1A2E;
-      --hero-border: rgba(0,0,0,0.06);
-      --hero-shadow: 0 4px 40px rgba(0,0,0,0.12);
-      --toggle-bg: #3B5068; --toggle-knob: #E4EAF2;
-    }
-
-    html, body { height: 100%; }
-    body {
-      font-family: var(--font); background: var(--bg); color: var(--text);
-      min-height: 100vh; transition: background-color 0.4s ease, color 0.4s ease;
-      -webkit-font-smoothing: antialiased; display: flex; flex-direction: column;
-    }
-
-    /* ── Navbar ── */
-    .lp-nav {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 16px 40px; background: transparent; z-index: 10;
-    }
-    .lp-nav__brand {
-      display: flex; align-items: center; gap: 10px; text-decoration: none;
-      color: var(--text); font-weight: 700; font-size: 18px;
-    }
-    .lp-nav__right { display: flex; align-items: center; gap: 16px; }
-
-    /* ── Toggle Switch (CSS only, matches screenshot) ── */
-    .theme-switch {
-      position: relative; width: 56px; height: 30px; cursor: pointer;
-    }
-    .theme-switch input { opacity: 0; width: 0; height: 0; }
-    .theme-switch__track {
-      position: absolute; inset: 0; border-radius: 15px;
-      background: var(--toggle-bg); transition: background 0.3s ease;
-    }
-    .theme-switch__knob {
-      position: absolute; top: 3px; left: 3px;
-      width: 24px; height: 24px; border-radius: 50%;
-      background: var(--toggle-knob);
-      transition: transform 0.3s ease;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-    }
-    /* When checked (light mode), slide knob right */
-    .theme-switch input:checked ~ .theme-switch__knob {
-      transform: translateX(26px);
-    }
-    /* Outline ring on the knob in dark mode */
-    [data-theme="dark"] .theme-switch__knob::after {
-      content: ''; position: absolute; top: 3px; left: 3px;
-      width: 18px; height: 18px; border-radius: 50%;
-      border: 2px solid var(--toggle-bg);
-    }
-
-    .lp-login {
-      display: inline-flex; align-items: center; padding: 10px 28px;
-      border-radius: 30px; background: #3B5F8A; color: #fff;
-      font-weight: 600; font-size: 15px; text-decoration: none;
-      transition: all 0.3s ease;
-    }
-    .lp-login:hover { background: #1C3550; transform: translateY(-1px); }
-
-    /* ── Hero ── */
-    .lp-hero {
-      flex: 1; display: flex; align-items: center; justify-content: center;
-      padding: 0 40px 40px;
-    }
-    .lp-hero__box {
-      position: relative; width: 100%; max-width: 1280px;
-      aspect-ratio: 16 / 8.5; border-radius: 24px; overflow: hidden;
-      border: 1px solid var(--hero-border); box-shadow: var(--hero-shadow);
-    }
-    .lp-hero__img {
-      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
-      background: linear-gradient(160deg, #3a5a40, #4a7c59 40%, #4a6a4a);
-    }
-    .lp-hero__overlay {
-      position: absolute; inset: 0; z-index: 1;
-      background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.35) 60%, rgba(0,0,0,0.55) 100%);
-    }
-    .lp-hero__content {
-      position: relative; z-index: 2; width: 100%; height: 100%;
-      display: flex; flex-direction: column; justify-content: space-between;
-      padding: 50px 60px;
-    }
-    .lp-hero__title {
-      font-size: clamp(3rem, 8vw, 6rem); font-weight: 800;
-      color: #fff; line-height: 1.0; letter-spacing: -0.02em; max-width: 700px;
-    }
-    .lp-hero__buttons { display: flex; gap: 20px; justify-content: center; }
-    .lp-btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 14px 48px; border-radius: 30px; font-weight: 600; font-size: 16px;
-      text-decoration: none; cursor: pointer; transition: all 0.3s ease;
-      min-width: 160px; font-family: var(--font);
-    }
-    .lp-btn--outline {
-      background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.5);
-    }
-    .lp-btn--outline:hover { border-color: #fff; background: rgba(255,255,255,0.08); }
-    .lp-btn--orange {
-      background: #E8933A; color: #fff; border: 2px solid #E8933A;
-    }
-    .lp-btn--orange:hover {
-      background: #D4822F; border-color: #D4822F;
-      transform: translateY(-2px); box-shadow: 0 6px 20px rgba(232,147,58,0.35);
-    }
-
-    @media (max-width: 768px) {
-      .lp-nav { padding: 14px 20px; }
-      .lp-hero { padding: 0 16px 24px; }
-      .lp-hero__box { aspect-ratio: auto; min-height: 420px; }
-      .lp-hero__content { padding: 30px 24px; }
-      .lp-hero__title { font-size: clamp(2rem, 10vw, 3.5rem); }
-      .lp-hero__buttons { flex-direction: column; gap: 12px; }
-      .lp-btn { width: 100%; max-width: 260px; }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
 
-  <nav class="lp-nav">
-    <a href="/" class="lp-nav__brand">
-      <span>Atlasphere</span>
-    </a>
-    <div class="lp-nav__right">
-      <!-- Toggle switch (matches Figma screenshot) -->
-      <label class="theme-switch" aria-label="Toggle dark/light mode">
-        <input type="checkbox" id="themeToggle">
-        <div class="theme-switch__track"></div>
-        <div class="theme-switch__knob"></div>
-      </label>
+<nav class="lp-nav">
+  <a href="/" class="lp-nav__brand"><span>Atlasphere</span></a>
+  <div class="lp-nav__right">
+    <label class="theme-switch" aria-label="Toggle theme">
+      <input type="checkbox" id="themeToggle">
+      <div class="theme-switch__track"></div>
+      <div class="theme-switch__knob"></div>
+    </label>
+    <% if (typeof user !== 'undefined' && user) { %>
+      <a href="/auth/logout" class="lp-login">Sign out</a>
+    <% } else { %>
+      <a href="/auth/login" class="lp-login">Log in</a>
+    <% } %>
+  </div>
+</nav>
 
+<div style="padding:0 32px 32px;flex:1;display:flex;min-height:calc(100vh - 70px);">
+  <div style="flex:1;border-radius:24px;overflow:hidden;border:2px solid rgba(100,140,200,0.3);background-image:url('/images/travel-van.jpg');background-size:cover;background-position:center;position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:50px 60px;">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.1) 0%,rgba(0,0,0,0.35) 60%,rgba(0,0,0,0.55) 100%);"></div>
+    <h1 style="position:relative;z-index:1;font-size:clamp(3rem,8vw,5.5rem);font-weight:800;color:#fff;line-height:1.0;letter-spacing:-0.02em;max-width:700px;font-family:'Lexend',sans-serif;">Welcome to<br>Atlasphere</h1>
+    <div style="position:relative;z-index:1;display:flex;gap:20px;justify-content:center;">
       <% if (typeof user !== 'undefined' && user) { %>
-        <a href="/auth/logout" class="lp-login">Sign out</a>
+        <a href="/groups" class="lp-btn lp-btn--outline">My Trips</a>
+        <a href="/groups/create/country" class="lp-btn lp-btn--orange">Create a Trip</a>
       <% } else { %>
-        <a href="/auth/login" class="lp-login">Log in</a>
+        <a href="/auth/register" class="lp-btn lp-btn--outline">Register</a>
+        <a href="/auth/login" class="lp-btn lp-btn--orange">login</a>
       <% } %>
     </div>
-  </nav>
+  </div>
+</div>
 
-  <main class="lp-hero">
-    <div class="lp-hero__box">
-      <!-- PLACEHOLDER: replace src with your hero image -->
-      <img class="lp-hero__img" src="" alt="Hero image" onerror="this.style.display='none'">
-      <div class="lp-hero__overlay"></div>
-      <div class="lp-hero__content">
-        <h1 class="lp-hero__title">Welcome to<br>Atlasphere</h1>
-        <div class="lp-hero__buttons">
-          <% if (typeof user !== 'undefined' && user) { %>
-            <a href="/groups" class="lp-btn lp-btn--outline">My Trips</a>
-            <a href="/groups/create/country" class="lp-btn lp-btn--orange">Create a Trip</a>
-          <% } else { %>
-            <a href="/auth/register" class="lp-btn lp-btn--outline">Register</a>
-            <a href="/auth/login" class="lp-btn lp-btn--orange">login</a>
-          <% } %>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <script>
-    const toggle = document.getElementById('themeToggle');
-    const html = document.documentElement;
-    const saved = localStorage.getItem('atlasphere-theme');
-    if (saved === 'light') { html.setAttribute('data-theme', 'light'); toggle.checked = true; }
-    toggle.addEventListener('change', () => {
-      const next = toggle.checked ? 'light' : 'dark';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem('atlasphere-theme', next);
-    });
-  </script>
-
+<script>
+  var t=document.getElementById('themeToggle'),h=document.documentElement;
+  var s=localStorage.getItem('atlasphere-theme');
+  if(s==='light'){h.setAttribute('data-theme','light');t.checked=true;}
+  t.addEventListener('change',function(){var n=t.checked?'light':'dark';h.setAttribute('data-theme',n);localStorage.setItem('atlasphere-theme',n);});
+</script>
 </body>
 </html>
