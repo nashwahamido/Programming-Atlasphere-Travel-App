@@ -4,38 +4,80 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Verify Email — Atlasphere</title>
-  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Lexend', Arial, sans-serif; background: #0f1923; color: #fff; min-height: 100vh; display: flex; flex-direction: column; }
+
+    .verify-page { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
+
+    .verify-card {
+      background: rgba(26, 39, 54, 0.95); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 48px 40px; width: 100%; max-width: 440px;
+      text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .verify-card h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 8px; }
+    .verify-subtitle { color: #8a94a6; margin-bottom: 8px; font-size: 0.95rem; }
+    .verify-email { color: #E8933A; font-weight: 600; font-size: 0.95rem; margin-bottom: 24px; display: block; }
+
+    .code-inputs { display: flex; gap: 10px; justify-content: center; margin-bottom: 24px; }
+    .code-inputs input {
+      width: 48px; height: 48px; text-align: center; font-size: 1.2rem; font-weight: 700;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 8px; color: #fff; outline: none; transition: all 0.2s;
+    }
+    .code-inputs input:focus { border-color: #E8933A; box-shadow: 0 0 0 3px rgba(232,147,58,0.2); }
+
+    .btn-verify {
+      width: 100%; padding: 14px; border-radius: 30px; border: none;
+      background: #E8933A; color: #fff; font-weight: 700; font-size: 16px;
+      cursor: pointer; transition: all 0.3s; font-family: inherit;
+    }
+    .btn-verify:hover { background: #D4822F; transform: translateY(-1px); }
+
+    .msg-error { color: #ef4444; font-size: 14px; margin-bottom: 16px; padding: 10px; background: rgba(239,68,68,0.1); border-radius: 8px; }
+    .msg-success { color: #22c55e; font-size: 14px; margin-bottom: 16px; padding: 10px; background: rgba(34,197,94,0.1); border-radius: 8px; }
+
+    .resend-link { color: #E8933A; font-size: 14px; margin-top: 20px; display: inline-block; text-decoration: none; }
+    .resend-link:hover { text-decoration: underline; }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <%- include('partials/navbar', { user: null }) %>
 
-<!-- Verification Page — matches Figma wireframe -->
-<div class="auth-page">
-  <div class="auth-bg">
-    <img src="https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=1600&q=80" alt="Waterfall landscape">
-  </div>
-
-  <div class="auth-card verify-card">
+<div class="verify-page">
+  <div class="verify-card">
     <h1>We've sent you an email</h1>
     <p class="verify-subtitle">Enter the 6-digit code to verify your account</p>
+    <% if (typeof email !== 'undefined' && email) { %>
+      <span class="verify-email"><%= email %></span>
+    <% } %>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="msg-error"><%= error %></div>
+    <% } %>
+
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div class="msg-success"><%= success %></div>
+    <% } %>
 
     <form action="/auth/verify" method="post">
       <div class="code-inputs">
-        <input type="text" maxlength="1" name="code1" autocomplete="off" autofocus>
-        <input type="text" maxlength="1" name="code2" autocomplete="off">
-        <input type="text" maxlength="1" name="code3" autocomplete="off">
-        <input type="text" maxlength="1" name="code4" autocomplete="off">
-        <input type="text" maxlength="1" name="code5" autocomplete="off">
-        <input type="text" maxlength="1" name="code6" autocomplete="off">
+        <input type="text" maxlength="1" name="code1" autocomplete="off" autofocus required>
+        <input type="text" maxlength="1" name="code2" autocomplete="off" required>
+        <input type="text" maxlength="1" name="code3" autocomplete="off" required>
+        <input type="text" maxlength="1" name="code4" autocomplete="off" required>
+        <input type="text" maxlength="1" name="code5" autocomplete="off" required>
+        <input type="text" maxlength="1" name="code6" autocomplete="off" required>
       </div>
 
-      <button type="submit" class="btn btn-primary">Verify</button>
+      <button type="submit" class="btn-verify">Verify</button>
     </form>
 
-    <div class="auth-footer mt-2">
-      <p><a href="#" class="resend-link">Expired code? Send code again?</a></p>
-    </div>
+    <a href="/auth/resend-code" class="resend-link">Expired code? Send code again</a>
   </div>
 </div>
 
@@ -47,6 +89,15 @@
     });
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Backspace' && !e.target.value && i > 0) inputs[i - 1].focus();
+    });
+    // Allow paste of full code
+    input.addEventListener('paste', (e) => {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData).getData('text').trim();
+      if (pasted.length === 6 && /^\d{6}$/.test(pasted)) {
+        inputs.forEach((inp, j) => { inp.value = pasted[j]; });
+        inputs[5].focus();
+      }
     });
   });
 </script>
