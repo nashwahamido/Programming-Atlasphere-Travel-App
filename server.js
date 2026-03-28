@@ -21,6 +21,14 @@ app.use(session(sessionConfig));
 // Static assets
 app.use(express.static("assets"));
 
+// variable to upload files such as images
+const fileUpload = require("express-fileupload"); // this line imports the express-fileupload middleware into our application. The fileUpload variable now contains the functionality provided by this middleware
+app.use(fileUpload()); // this line tells our Express application to use the express-fileupload middleware for all routes. 
+
+app.use('/uploads', express.static(path.join(__dirname, 'assets/uploads'))); // path to assets/uploads > to make the image in the uploads folder accessible
+
+
+
 // ── Password hashing ────────────────────────────────────────────────────
 const bcrypt = require('bcrypt');
 
@@ -126,32 +134,58 @@ app.get('/auth/login', (req, res) => {
   res.render('login', { title: 'Sign In', error: null });
 });
 
-app.post('/auth/login', async (req, res) => {
-  const { loginemail, loginpsw } = req.body;
+app.post('/auth/login', (req, res) => {
+  console.log(
+    "Successfully inside handler for POST new-user-session",
+    req.body
+  );
 
-  // Find user in memory
-  const user = users.find(u => u.email === loginemail);
+  connection.query(
+    "SELECT * FROM tbl_users WHERE username = ?",
+    [req.body.loginuser],
+    async (dbErr, results) => {
+      if (dbErr) {
+        console.log(dbErr);
+        return res.status(500).send("Database error");
+      }
 
-  if (!user) {
-    return res.render('login', { error: 'Invalid email or password' });
-  }
+      if (results.length === 0) {
+        return res.render("loginuser", {
+          type: "error",
+          message: "Invalid username or password. Try again."
+        });
+      }
 
-  const match = await bcrypt.compare(loginpsw, user.password);
-  if (!match) {
-    return res.render('login', { error: 'Invalid email or password' });
-  }
+      const user = results[0];
 
-  // Successful login
-  req.session.user = {
-    id: user.id,
-    username: user.username,
-    email: user.email,
-  };
+      // we compare the password typed into the login form with the hashed password in the database
+      const match = await bcrypt.compare(req.body.loginpsw, user.password);
 
-  req.session.save(() => {
-    res.redirect('/profile');
-  });
+      if (!match) {
+        return res.render("loginuser", {
+          type: "error",
+          message: "Invalid username or password. Try again."
+        });
+      }
+
+      req.session.user = {
+        id: user.IDuser,
+        username: user.username,
+        email: user.email
+      };
+
+      req.session.save((err) => {
+        if (err) {
+          console.log("Session save error:", err);
+          return res.status(500).send("Session error");
+        }
+
+        res.redirect("/profile");
+      });
+    }
+  );
 });
+
 
 // ── REGISTER ─────────────────────────────────────────────────────────────
 app.get('/auth/register', (req, res) => {
@@ -330,12 +364,40 @@ app.get('/setup/cities', (req, res) => {
 
 // ── PROFILE ──────────────────────────────────────────────────────────────
 app.get('/profile', (req, res) => {
-  const user = req.session.user || {
+  /*const user = req.session.user || {
     name: 'TestUser', username: 'TestUser', profile_image: null,
     countries_visited: 5, cities_visited: 12, groups_created: 3
   };
-  res.render('profile', { user });
+  res.render('profile', { user });*/
+
+  if (!req.session.user) {
+    return res.redirect("/login");
+  }
+  
+  const userId = req.session.user.id;
+  
+  connection.query(
+    "SELECT profilePictureUrl, profilePictureAlt FROM tbl_users WHERE IDuser = ?",
+    [userId],
+    (err, results) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send("Database error");
+      }
+  
+      const userData = results[0];
+  
+      res.render("profile", {
+        user: req.session.user,
+        message: null,
+        type: null,
+        image: userData?.profilePictureUrl || null,
+        altcaption: userData?.profilePictureAlt || ""
+      });
+    }
+  );
 });
+
 
 app.get('/profile/confirmed', (req, res) => {
   res.render('profile/confirmed', { user: req.session.user || null });
