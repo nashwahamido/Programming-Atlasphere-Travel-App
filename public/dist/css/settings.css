@@ -1,0 +1,259 @@
+.settings-page {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+.settings-page h1 {
+  font-size: 2.2rem;
+  font-weight: bold;
+  color: #0B3856;
+  margin-bottom: 32px;
+}
+
+.settings-container {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+}
+
+/* ===== SIDEBAR ===== */
+.settings-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.settings-tab {
+  background: white;
+  border: 1px solid #dce6f0;
+  border-radius: 12px;
+  padding: 18px 20px;
+  text-align: left;
+  font-size: 15px;
+  color: #0B3856;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-tab:hover {
+  background-color: #f0f7ff;
+  border-color: #209EBB;
+}
+
+.settings-tab.active {
+  background-color: #f0f7ff;
+  border-color: #0B3856;
+  font-weight: bold;
+}
+
+/* ===== CONTENT PANELS ===== */
+.settings-panel {
+  display: none;
+  flex: 1;
+}
+
+.settings-panel.active {
+  display: block;
+}
+
+/* ===== FORM STYLES ===== */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #0B3856;
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background-color: #dce6f0;
+  font-size: 14px;
+  color: #0B3856;
+  outline: none;
+}
+
+.phone-row {
+  display: flex;
+  gap: 8px;
+}
+
+.phone-code {
+  width: 80px !important;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn-save {
+  background: white;
+  border: 2px solid #0B3856;
+  border-radius: 20px;
+  padding: 10px 32px;
+  font-size: 15px;
+  color: #0B3856;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-save:hover {
+  background-color: #0B3856;
+  color: white;
+}
+
+/* ===== SEARCH BAR ===== */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid #dce6f0;
+  border-radius: 20px;
+  padding: 8px 14px;
+  margin-bottom: 16px;
+  width: fit-content;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: #0B3856;
+  background: transparent;
+  width: 160px;
+}
+
+/* ===== LOCATION GRID ===== */
+.location-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.location-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #dce6f0;
+  border-radius: 12px;
+  cursor: pointer;
+  width: 90px;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.location-card input[type="checkbox"] {
+  display: none;
+}
+
+.location-card:has(input:checked) {
+  border-color: #0B3856;
+  background-color: #f0f7ff;
+}
+
+.location-flag {
+  font-size: 28px;
+}
+
+.location-name {
+  font-size: 12px;
+  color: #0B3856;
+  font-weight: 500;
+}
+
+/* ===== GROUPS ===== */
+.groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.group-row {
+  display: flex;
+  align-items: center;
+}
+
+.group-name-btn {
+  background: white;
+  border: 1px solid #dce6f0;
+  border-radius: 20px;
+  padding: 14px 40px;
+  font-size: 15px;
+  color: #0B3856;
+  cursor: pointer;
+  min-width: 200px;
+}
+
+.group-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.btn-action {
+  background: white;
+  border: 1px solid #dce6f0;
+  border-radius: 20px;
+  padding: 10px 24px;
+  font-size: 14px;
+  color: #0B3856;
+  cursor: pointer;
+  min-width: 160px;
+}
+
+.btn-action:hover {
+  border-color: #0B3856;
+}
+
+/* ===== DELETE ACCOUNT ===== */
+.delete-msg {
+  font-size: 18px;
+  color: #0B3856;
+  margin: 40px 0 32px;
+  text-align: center;
+}
+
+.delete-actions {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.btn-confirm, .btn-cancel {
+  background: white;
+  border: 2px solid #0B3856;
+  border-radius: 20px;
+  padding: 10px 40px;
+  font-size: 15px;
+  color: #0B3856;
+  cursor: pointer;
+}
+
+.btn-confirm:hover {
+  background-color: #e74c3c;
+  border-color: #e74c3c;
+  color: white;
+}
+
+.btn-cancel:hover {
+  background-color: #0B3856;
+  color: white;
+}

@@ -5,16 +5,16 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   build: {
-    emptyOutDir: false,
+    outDir: 'public/dist',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
         groupTabs: path.resolve(__dirname, 'client/src/groupTabs.jsx'),
       },
       output: {
-        entryFileNames: 'js/[name].js',
-        chunkFileNames: 'js/[name].js',
-        assetFileNames: 'css/[name][extname]',
-        dir: 'public',
+        entryFileNames: '[name].js',
+        chunkFileNames: '[name].js',
+        assetFileNames: '[name][extname]',
       },
     },
   },
