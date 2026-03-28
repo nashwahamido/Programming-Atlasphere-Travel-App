@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 
-router.get('/profile', (req, res) => {
-  res.render('profile/setup', { user: req.session.user || null });
+router.post('/delete', (req, res) => {
+  req.session.destroy(function(err) {
+    res.render('account-deleted', { user: null });
+  });
 });
 
 module.exports = router;

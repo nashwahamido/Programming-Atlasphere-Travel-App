@@ -413,6 +413,7 @@ app.get('/settings', (req, res) => {
 
 // ── GROUPS ───────────────────────────────────────────────────────────────
 app.use('/groups', require('./routes/groups'));
+app.use('/users', require('./routes/users'));
 
 // ── ERROR HANDLING ───────────────────────────────────────────────────────
 app.use((req, res) => {

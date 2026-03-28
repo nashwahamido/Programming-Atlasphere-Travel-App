@@ -1,17 +1,17 @@
 /**
  * ItineraryBuilder.jsx
  * ─────────────────────────────────────────────────────────────────────────────
-]
  *   LEFT:   Monthly calendar — click days to select range
  *   CENTER: Weekly schedule — hourly time slots, drag-drop targets
  *   RIGHT:  Activities panel — draggable items from recommendations
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import '../styles/itinerary-builder.css';
 
 const HOURS = ['08.00','09.00','10.00','11.00','12.00','13.00','14.00','15.00','16.00','17.00','18.00','19.00','20.00','21.00','22.00','23.00','00.00','01.00','02.00'];
 const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 const defaultActivities = [
@@ -23,26 +23,34 @@ const defaultActivities = [
   { id: 'a6', name: "Saint Peter's Basilica", desc: "Haha that's terrifying", emoji: '😄', time: '1h', color: '#3B5F8A' },
 ];
 
-const ItineraryBuilder = ({ tripId = null, onSave = null }) => {
+const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
   // ── Calendar state ────────────────────────────────────────────────────────
-  const [calYear, setCalYear] = useState(2021);
-  const [calMonth, setCalMonth] = useState(1); // Feb
-  const [rangeStart, setRangeStart] = useState(23);
-  const [rangeEnd, setRangeEnd] = useState(27);
-  const [picking, setPicking] = useState(false);
+  const today = new Date();
+  const [calYear, setCalYear] = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth());
+  const [rangeStart, setRangeStart] = useState(null);
+  const [rangeEnd, setRangeEnd] = useState(null);
 
   // ── Week state ────────────────────────────────────────────────────────────
-  const weekDays = [
-    { num: 18, label: 'Mo' }, { num: 19, label: 'Tu' }, { num: 20, label: 'Wed' },
-    { num: 21, label: 'Th' }, { num: 22, label: 'Fr' }, { num: 23, label: 'Sa' }, { num: 24, label: 'Su' },
-  ];
-  const [activeDay, setActiveDay] = useState(21);
+  const [activeDay, setActiveDay] = useState(0);
+
+  // Build week days dynamically from selected range
+  const weekDays = useMemo(() => {
+    if (!rangeStart) return [];
+    return Array.from({ length: tripDays }, (_, i) => {
+      const date = new Date(calYear, calMonth, rangeStart + i);
+      return {
+        index: i,
+        num: date.getDate(),
+        month: date.getMonth(),
+        year: date.getFullYear(),
+        label: DAY_NAMES[date.getDay()]
+      };
+    });
+  }, [rangeStart, tripDays, calYear, calMonth]);
 
   // ── Schedule state ────────────────────────────────────────────────────────
-  const [blocks, setBlocks] = useState({
-    '08.00': { id: 's1', text: 'Rapat dengan Bruce Wayne' },
-    '13.00': { id: 's2', text: 'Test wawasan kebangasaan di Dusun Wakanda' },
-  });
+  const [blocks, setBlocks] = useState({});
 
   // ── Panel state ───────────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
@@ -63,16 +71,30 @@ const ItineraryBuilder = ({ tripId = null, onSave = null }) => {
   const goNext = () => calMonth === 11 ? (setCalMonth(0), setCalYear(calYear + 1)) : setCalMonth(calMonth + 1);
 
   const clickDay = (d) => {
-    if (!picking) { setRangeStart(d); setRangeEnd(d); setPicking(true); }
-    else { const s = Math.min(rangeStart, d); const e = Math.max(rangeStart, d); setRangeStart(s); setRangeEnd(e); setPicking(false); }
+    const end = Math.min(d + tripDays - 1, daysInMonth);
+    setRangeStart(d);
+    setRangeEnd(end);
+    setActiveDay(0);
+    setBlocks({});
   };
 
   const dayClass = (d) => {
+    if (rangeStart === null) return 'ib-cal__day';
     if (d === rangeStart) return 'ib-cal__day ib-cal__day--start';
     if (d === rangeEnd) return 'ib-cal__day ib-cal__day--end';
     if (d > rangeStart && d < rangeEnd) return 'ib-cal__day ib-cal__day--range';
     return 'ib-cal__day';
   };
+
+  // Current active day label for schedule title
+  const activeDayInfo = weekDays[activeDay];
+  const scheduleTitle = activeDayInfo
+    ? `${MONTHS[activeDayInfo.month]} ${activeDayInfo.num} (Day ${activeDay + 1})`
+    : 'Schedule';
+
+  // Blocks are stored per day index
+  const [allBlocks, setAllBlocks] = useState({});
+  const dayBlocks = allBlocks[activeDay] || {};
 
   // ── Drag from panel ───────────────────────────────────────────────────────
   const panelDragStart = (e, act) => {
@@ -94,20 +116,24 @@ const ItineraryBuilder = ({ tripId = null, onSave = null }) => {
     setOverSlot(null);
     if (!dragInfo) return;
 
-    if (dragInfo.type === 'panel') {
-      setBlocks(prev => ({ ...prev, [timeKey]: { id: 'sb-' + Date.now(), text: dragInfo.name } }));
-    } else if (dragInfo.type === 'block') {
-      setBlocks(prev => {
-        const n = { ...prev };
-        if (dragInfo.from) delete n[dragInfo.from];
-        n[timeKey] = { id: dragInfo.id, text: dragInfo.text };
-        return n;
-      });
-    }
+    setAllBlocks(prev => {
+      const dayData = { ...(prev[activeDay] || {}) };
+      if (dragInfo.type === 'panel') {
+        dayData[timeKey] = { id: 'sb-' + Date.now(), text: dragInfo.name };
+      } else if (dragInfo.type === 'block') {
+        if (dragInfo.from) delete dayData[dragInfo.from];
+        dayData[timeKey] = { id: dragInfo.id, text: dragInfo.text };
+      }
+      return { ...prev, [activeDay]: dayData };
+    });
     setDragInfo(null);
-  }, [dragInfo]);
+  }, [dragInfo, activeDay]);
 
-  const removeBlock = (k) => setBlocks(prev => { const n = { ...prev }; delete n[k]; return n; });
+  const removeBlock = (k) => setAllBlocks(prev => {
+    const dayData = { ...(prev[activeDay] || {}) };
+    delete dayData[k];
+    return { ...prev, [activeDay]: dayData };
+  });
 
   // ── Filter activities ─────────────────────────────────────────────────────
   const filtered = defaultActivities.filter(a =>
@@ -127,6 +153,13 @@ const ItineraryBuilder = ({ tripId = null, onSave = null }) => {
             <button className="ib-cal__arrow" onClick={goNext}>&rsaquo;</button>
           </div>
         </div>
+        {rangeStart ? (
+          <p className="ib-cal__hint">
+            Trip: {MONTHS[calMonth]} {rangeStart} – {rangeEnd} ({tripDays} days)
+          </p>
+        ) : (
+          <p className="ib-cal__hint">Click a start date to highlight your {tripDays}-day trip</p>
+        )}
         <div className="ib-cal__grid">
           {DAY_LABELS.map(d => <div key={d} className="ib-cal__head">{d}</div>)}
           {Array.from({ length: firstDay }, (_, i) => (
@@ -143,16 +176,23 @@ const ItineraryBuilder = ({ tripId = null, onSave = null }) => {
 
       {/* ═══ CENTER: Schedule ═══ */}
       <div className="ib-schedule">
-        <div className="ib-week">
-          {weekDays.map(d => (
-            <div key={d.num} className={`ib-week__day${activeDay === d.num ? ' ib-week__day--active' : ''}`}
-              onClick={() => setActiveDay(d.num)}>
-              <span className="ib-week__num">{d.num}</span>
-              <span className="ib-week__label">{d.label}</span>
-            </div>
-          ))}
-        </div>
-        <h4 className="ib-schedule__title">Schedule Today</h4>
+        {weekDays.length > 0 ? (
+          <div className="ib-week">
+            {weekDays.map((d, i) => (
+              <div key={i}
+                className={`ib-week__day${activeDay === i ? ' ib-week__day--active' : ''}`}
+                onClick={() => setActiveDay(i)}>
+                <span className="ib-week__num">{d.num}</span>
+                <span className="ib-week__label">{d.label}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="ib-week" style={{ justifyContent: 'center', opacity: 0.5, fontSize: 13, padding: '12px 0' }}>
+            Select a start date on the calendar
+          </div>
+        )}
+        <h4 className="ib-schedule__title">{scheduleTitle}</h4>
         <div className="ib-timeslots">
           {HOURS.map(h => (
             <div key={h} className="ib-timerow">
@@ -162,9 +202,9 @@ const ItineraryBuilder = ({ tripId = null, onSave = null }) => {
                 onDragEnter={e => { e.preventDefault(); setOverSlot(h); }}
                 onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOverSlot(null); }}
                 onDrop={e => slotDrop(e, h)}>
-                {blocks[h] && (
-                  <div className="ib-block" draggable onDragStart={e => blockDragStart(e, h, blocks[h])}>
-                    <span className="ib-block__text">{blocks[h].text}</span>
+                {dayBlocks[h] && (
+                  <div className="ib-block" draggable onDragStart={e => blockDragStart(e, h, dayBlocks[h])}>
+                    <span className="ib-block__text">{dayBlocks[h].text}</span>
                     <button className="ib-block__x" onClick={() => removeBlock(h)}>&times;</button>
                   </div>
                 )}

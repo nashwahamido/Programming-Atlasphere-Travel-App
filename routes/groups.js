@@ -3,13 +3,12 @@ var router = express.Router();
 var crypto = require("crypto");
 
 // ── In-memory groups storage ────────────────────────────────────────────
-// Shared with server.js via app.locals (set in server.js)
 function getGroups(req) {
   if (!req.app.locals.groups) {
     req.app.locals.groups = [
-      { id: 1, name: "Prague", destination: "Czech Republic", inviteCode: "prague-abc123", members: [], createdBy: null },
-      { id: 2, name: "Rome", destination: "Italy", inviteCode: "rome-def456", members: [], createdBy: null },
-      { id: 3, name: "Dublin", destination: "Ireland", inviteCode: "dublin-ghi789", members: [], createdBy: null }
+      { id: 1, name: "Prague", destination: "Czech Republic", inviteCode: "prague-abc123", days: 7, members: [], createdBy: null },
+      { id: 2, name: "Rome", destination: "Italy", inviteCode: "rome-def456", days: 7, members: [], createdBy: null },
+      { id: 3, name: "Dublin", destination: "Ireland", inviteCode: "dublin-ghi789", days: 7, members: [], createdBy: null }
     ];
   }
   return req.app.locals.groups;
@@ -40,12 +39,14 @@ router.get("/create/confirm", function (req, res) {
 
   // Create a new group
   var groupName = req.query.country || "My Trip";
+  var days = parseInt(req.query.days) || 7;
   var inviteCode = generateInviteCode();
   var newGroup = {
     id: Date.now(),
     name: groupName,
     destination: groupName,
     inviteCode: inviteCode,
+    days: days,
     members: user ? [{ id: user.id, username: user.username, email: user.email }] : [],
     createdBy: user ? user.id : null
   };
@@ -80,12 +81,10 @@ router.post("/invite", async function (req, res) {
 
   var inviteLink = req.protocol + "://" + req.get("host") + "/groups/join/" + group.inviteCode;
 
-  // Send invite email using the transporter from server.js
   var nodemailer = require("nodemailer");
   var transporter = req.app.locals.transporter;
 
   if (!transporter) {
-    // Fallback: just log it
     console.log("No email transporter. Invite link: " + inviteLink);
     return res.render("groups/create-confirm", {
       title: "Group Created", user: user || null, group: group,
@@ -112,7 +111,6 @@ router.post("/invite", async function (req, res) {
     });
 
     console.log("Invite email sent to: " + friendEmail);
-    var previewUrl = nodemailer.getTestMessageUrl && nodemailer.getTestMessageUrl(arguments);
 
     res.render("groups/create-confirm", {
       title: "Group Created", user: user || null, group: group,
@@ -144,7 +142,6 @@ router.get("/join/:code", function (req, res) {
 
   var user = req.session.user;
 
-  // If not logged in, save the invite code and redirect to register
   if (!user) {
     req.session.pendingInvite = req.params.code;
     req.session.save(function () {
@@ -153,7 +150,6 @@ router.get("/join/:code", function (req, res) {
     return;
   }
 
-  // Add user to group if not already a member
   var alreadyMember = group.members.find(function (m) { return m.id === user.id; });
   if (!alreadyMember) {
     group.members.push({ id: user.id, username: user.username, email: user.email });
@@ -168,7 +164,6 @@ router.get("/", function (req, res) {
   var groups = getGroups(req);
   var user = req.session.user;
 
-  // Filter to groups the user is a member of (or show all for now)
   var userGroups = user
     ? groups.filter(function (g) {
         return g.members.some(function (m) { return m.id === user.id; }) || g.createdBy === user.id;
@@ -189,14 +184,33 @@ router.get("/:id", function (req, res) {
   var group = groups.find(function (g) { return g.id == groupId; });
 
   if (!group) {
-    group = { id: groupId, name: "Group " + groupId, destination: "", inviteCode: "", members: [] };
+    group = { id: groupId, name: "Group " + groupId, destination: "", inviteCode: "", days: 7, members: [] };
   }
 
   res.render("groups/groupPage", {
     user: req.session.user || null,
     group: group,
-    groups: groups
+    groups: groups,
+    tripDays: group.days || 7
   });
+});
+
+
+// ── Delete group ────────────────────────────────────────────────────────
+router.post("/delete/:id", function (req, res) {
+  var groups = getGroups(req);
+  req.app.locals.groups = groups.filter(function (g) { return g.id != req.params.id; });
+  res.redirect("/settings");
+});
+
+// ── Rename group ────────────────────────────────────────────────────────
+router.post("/rename/:id", function (req, res) {
+  var groups = getGroups(req);
+  var group = groups.find(function (g) { return g.id == req.params.id; });
+  if (group && req.body.newName) {
+    group.name = req.body.newName;
+  }
+  res.redirect("/settings");
 });
 
 module.exports = router;

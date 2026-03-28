@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Deleted - Atlasphere</title>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .deleted-page {
+      min-height: 70vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 20px;
+    }
+    .deleted-card {
+      max-width: 480px;
+      width: 100%;
+    }
+    .deleted-icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+    }
+    .deleted-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #0B3856;
+      margin-bottom: 16px;
+    }
+    .deleted-msg {
+      font-size: 16px;
+      color: #6b7a8d;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+    .deleted-btn {
+      display: inline-block;
+      background-color: #0B3856;
+      color: white;
+      padding: 14px 40px;
+      border-radius: 30px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      transition: background 0.3s;
+    }
+    .deleted-btn:hover {
+      background-color: #209EBB;
+    }
+  </style>
+</head>
+<body>
+  <main class="deleted-page">
+    <div class="deleted-card">
+      <div class="deleted-icon">👋</div>
+      <h1 class="deleted-title">Your account has been deleted</h1>
+      <p class="deleted-msg">
+        We're sorry to see you go. Your account and all associated data has been removed from Atlasphere.
+        We hope to see you again someday!
+      </p>
+      <a href="/" class="deleted-btn">Back to homepage</a>
+    </div>
+  </main>
+  <%- include('partials/footer') %>
+  <script>
+    var s = localStorage.getItem('atlasphere-theme');
+    if (s) document.documentElement.setAttribute('data-theme', s);
+  </script>
+</body>
+</html>

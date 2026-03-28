@@ -122,28 +122,49 @@
       <div id="manageGroups" class="settings-panel">
         <div class="search-bar">
           <span class="search-icon">🔍</span>
-          <input type="search" name="groupsearch" placeholder="Search">
+          <input type="search" placeholder="Search" oninput="filterGroups(this.value)">
           <span class="clear-icon">⊗</span>
         </div>
         <div class="groups-container">
-          <div class="groups-list">
+          <div class="groups-list" id="groupsList">
             <% const groupList = typeof groups !== 'undefined' && groups ? groups : [
               { id: 1, name: 'Prague' },
               { id: 2, name: 'Rome' },
               { id: 3, name: 'Dublin' }
             ]; %>
             <% groupList.forEach(function(group) { %>
-              <div class="group-row">
-                <button class="group-name-btn"><%= group.name %></button>
+              <div class="group-row" data-name="<%= group.name.toLowerCase() %>">
+                <button class="group-name-btn"
+                  onclick="selectGroup(<%= group.id %>, '<%= group.name %>', this)">
+                  <%= group.name %>
+                </button>
               </div>
             <% }) %>
           </div>
           <div class="group-actions">
-            <button class="btn-action">Delete Group</button>
-            <button class="btn-action">Change Name</button>
+            <button class="btn-action" onclick="deleteSelectedGroup()">Delete Group</button>
+            <button class="btn-action" onclick="showRenameForm()">Change Name</button>
             <button class="btn-action">Modify Interests</button>
           </div>
         </div>
+
+        <!-- Rename form (hidden by default) -->
+        <div id="renameForm" style="display:none; margin-top:20px;">
+          <form id="renameGroupForm" method="post">
+            <div class="form-group">
+              <label>New group name</label>
+              <input type="text" id="newGroupName" name="newName" placeholder="Enter new name">
+            </div>
+            <div class="form-actions" style="gap:8px;">
+              <button type="submit" class="btn-save">Save Name</button>
+              <button type="button" class="btn-action" onclick="hideRenameForm()">Cancel</button>
+            </div>
+          </form>
+        </div>
+
+        <p id="noGroupSelected" style="color:#aaa; font-size:13px; margin-top:12px; display:none;">
+          Please select a group first.
+        </p>
       </div>
 
       <!-- Delete account -->
@@ -169,6 +190,56 @@
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     e.target.classList.add('active');
+  }
+
+  var selectedGroupId = null;
+  var selectedGroupName = null;
+
+  function selectGroup(id, name, btn) {
+    selectedGroupId = id;
+    selectedGroupName = name;
+    document.querySelectorAll('.group-name-btn').forEach(function(b) {
+      b.style.background = '';
+      b.style.color = '';
+      b.style.borderColor = '';
+    });
+    btn.style.background = '#0B3856';
+    btn.style.color = 'white';
+    btn.style.borderColor = '#0B3856';
+    document.getElementById('noGroupSelected').style.display = 'none';
+    hideRenameForm();
+  }
+
+  function deleteSelectedGroup() {
+    if (!selectedGroupId) {
+      document.getElementById('noGroupSelected').style.display = 'block';
+      return;
+    }
+    if (confirm('Are you sure you want to delete "' + selectedGroupName + '"?')) {
+      fetch('/groups/delete/' + selectedGroupId, { method: 'POST' })
+        .then(function() { window.location.reload(); });
+    }
+  }
+
+  function showRenameForm() {
+    if (!selectedGroupId) {
+      document.getElementById('noGroupSelected').style.display = 'block';
+      return;
+    }
+    document.getElementById('newGroupName').value = selectedGroupName;
+    document.getElementById('renameGroupForm').action = '/groups/rename/' + selectedGroupId;
+    document.getElementById('renameForm').style.display = 'block';
+    document.getElementById('noGroupSelected').style.display = 'none';
+  }
+
+  function hideRenameForm() {
+    document.getElementById('renameForm').style.display = 'none';
+  }
+
+  function filterGroups(query) {
+    document.querySelectorAll('.group-row').forEach(function(row) {
+      row.style.display = row.dataset.name.includes(query.toLowerCase()) ? '' : 'none';
+    });
   }
 </script>
 
