@@ -364,12 +364,18 @@ app.get('/setup/cities', (req, res) => {
 
 // ── PROFILE ──────────────────────────────────────────────────────────────
 app.get('/profile', (req, res) => {
-  /*const user = req.session.user || {
+  const user = req.session.user || {
     name: 'TestUser', username: 'TestUser', profile_image: null,
     countries_visited: 5, cities_visited: 12, groups_created: 3
   };
-  res.render('profile', { user });*/
+  res.render('profile', { user });
+});
 
+app.get('/profile/confirmed', (req, res) => {
+  res.render('profile/confirmed', { user: req.session.user || null });
+});
+
+app.get('/upload', (req, res) => {
   if (!req.session.user) {
     return res.redirect("/login");
   }
@@ -377,7 +383,7 @@ app.get('/profile', (req, res) => {
   const userId = req.session.user.id;
   
   connection.query(
-    "SELECT profilePictureUrl, profilePictureAlt FROM tbl_users WHERE IDuser = ?",
+    "SELECT profilePictureUrl FROM tbl_users WHERE IDuser = ?",
     [userId],
     (err, results) => {
       if (err) {
@@ -391,17 +397,14 @@ app.get('/profile', (req, res) => {
         user: req.session.user,
         message: null,
         type: null,
-        image: userData?.profilePictureUrl || null,
-        altcaption: userData?.profilePictureAlt || ""
+        image: userData?.profilePictureUrl || null
       });
     }
   );
 });
 
 
-app.get('/profile/confirmed', (req, res) => {
-  res.render('profile/confirmed', { user: req.session.user || null });
-});
+
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────
 app.get('/settings', (req, res) => {

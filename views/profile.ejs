@@ -5,6 +5,21 @@
     <title>Profile Atlasphere</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/css/styles.css">
+
+    <style>
+      .iprofileImg {
+        width: 200px;
+        height: auto;
+      }
+
+      .personalProfileImg {
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+        border-radius: 50%;
+      }
+
+    </style>
   </head>
   <body>
     <%- include('partials/navbar', { user: typeof user !== 'undefined' ? user : null }) %>
@@ -13,9 +28,9 @@
       <h1>Profile</h1>
 
       <div class="profile-avatar">
-        <img src="<%= image %>"
-          alt="profile picture" class="avatar-img"
-          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+        <figure class="iprofileImg">
+          <img src="<%= image %>" alt="profile picture" class="personalProfileImg">
+        </figure>
         <div class="avatar-placeholder">
           <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
             <circle cx="50" cy="35" r="20" fill="#9ab"/>
