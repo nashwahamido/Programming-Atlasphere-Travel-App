@@ -4,10 +4,12 @@ import TabSwitcher from './components/TabSwitcher';
 import Sidebar from './components/Sidebar';
 import ChatBox from './components/ChatBox';
 import ItineraryBuilder from './components/ItineraryBuilder';
+import VotingSystem from './components/VotingSystem';
 import './styles/tab-switcher.css';
 import './styles/sidebar.css';
 import './styles/chatbox.css';
 import './styles/itinerary-builder.css';
+import './styles/voting-system.css';
 
 var mount = document.getElementById('group-tabs-root');
 
@@ -46,9 +48,8 @@ if (mount) {
           tripId: groupId,
           tripDays: tripDays
         }),
-        activeTab === 'discover' && React.createElement('div', {
-          style: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40, opacity: 0.5 }
-        }, 'Recommended content coming soon')
+        activeTab === 'discover' &&
+        React.createElement(VotingSystem)
       )
     );
   };
