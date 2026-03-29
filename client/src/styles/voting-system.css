@@ -241,27 +241,6 @@
   filter: brightness(0) invert(1);
 }
 
-.submit-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 44px;
-}
-
-.submit-votes-button {
-  border: none;
-  border-radius: 999px;
-  background: #ff9811;
-  color: #111;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 14px 24px;
-  cursor: pointer;
-}
-
-.submit-votes-button:hover {
-  background: #feb75b;
-}
-
 @media (max-width: 900px) {
   .carousel-3d {
     width: 21rem;
