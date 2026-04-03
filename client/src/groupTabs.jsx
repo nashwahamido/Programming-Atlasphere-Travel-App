@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import TabSwitcher from './components/TabSwitcher';
 import Sidebar from './components/Sidebar';
 import ChatBox from './components/ChatBox';
+import VotingSystem from './components/VotingSystem';
 import ItineraryBuilder from './components/ItineraryBuilder';
 
 import './styles/tab-switcher.css';
