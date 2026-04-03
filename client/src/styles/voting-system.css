@@ -1,31 +1,70 @@
 .voting-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 120px);
+  background: var(--bg, #e4f1ff);
   padding: 32px 24px 44px;
   font-family: "Lexend", sans-serif;
   overflow: hidden;
-  background: transparent;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .voting-section {
   max-width: 1400px;
   margin: 0 auto;
+  width: 100%;
+  text-align: center;
 }
 
 .voting-header {
   margin-bottom: 26px;
+  text-align: left;
 }
 
 .voting-header h1 {
   font-size: clamp(3rem, 6vw, 5rem);
   line-height: 0.95;
   font-weight: 700;
-  color: #000;
+  color: var(--text, #000);
   margin-bottom: 8px;
 }
 
 .voting-header p {
   font-size: 1rem;
-  color: #111;
+  color: var(--text-secondary, #111);
+}
+
+.voting-toggle {
+  width: fit-content;
+  margin: 0 auto 40px;
+  background: #2364aa;
+  border-radius: 999px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.toggle-btn.active {
+  background: #eef4fb;
+}
+
+.toggle-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
 }
 
 .carousel-3d {
@@ -238,7 +277,35 @@
 .nav-icon-white {
   width: 60px;
   height: 60px;
+}
+
+[data-theme="light"] .nav-icon-white {
+  filter: none;
+}
+
+[data-theme="dark"] .nav-icon-white {
   filter: brightness(0) invert(1);
+}
+
+.submit-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 44px;
+}
+
+.submit-votes-button {
+  border: none;
+  border-radius: 999px;
+  background: #ff9811;
+  color: #111;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px 24px;
+  cursor: pointer;
+}
+
+.submit-votes-button:hover {
+  background: #feb75b;
 }
 
 @media (max-width: 900px) {

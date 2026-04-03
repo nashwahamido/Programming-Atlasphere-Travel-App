@@ -1,16 +1,3 @@
-/**
- * GroupProfile.jsx
- * ─────────────────────────────────────────────────────────────────────────────
- * Standalone React component for the group profile view.
- *
- * NOTE: In the current architecture, groupPage.ejs uses groupTabs.jsx
- * as the mount entry point (not this file directly). This component exists
- * as a reusable alternative if you want to mount a full group profile
- * from a different entry point.
- *
- * The EJS partials (navbar, header, sidebar, footer) are rendered server-side.
- * This component only handles the interactive tab content area.
- */
 
 import React, { useState } from 'react';
 import Tabs from './groupTabs';
