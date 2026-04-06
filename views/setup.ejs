@@ -16,13 +16,13 @@
       <div class="setup-content">
         <h1>Show People Your Profile</h1>
         <form action="/setup/upload" method="post" enctype="multipart/form-data" id="uploadForm">
-          <div class="upload-circle-lg" id="uploadCircle">
+          <div class="upload-circle-lg" id="uploadCircle" onclick="document.getElementById('fileInput').click();" style="cursor:pointer;">
             <img id="previewImg" style="width:100%;height:100%;object-fit:cover;display:none;border-radius:50%;" alt="Preview">
             <span class="upload-icon" id="uploadPlaceholder">&#128444;</span>
-            <input type="file" name="profilePicture" accept="image/*" id="fileInput">
+            <input type="file" name="profilePicture" accept="image/*" id="fileInput" style="display:none;">
           </div>
           <div class="setup-actions">
-            <button type="submit" class="upload-link" id="uploadBtn">Upload Profile Picture</button>
+            <button type="button" class="upload-link" id="uploadBtn" onclick="document.getElementById('fileInput').click();">Upload Profile Picture</button>
             <a href="/setup/countries" class="skip-btn">Skip</a>
           </div>
         </form>
@@ -35,6 +35,8 @@
   var fileInput=document.getElementById('fileInput');
   var previewImg=document.getElementById('previewImg');
   var placeholder=document.getElementById('uploadPlaceholder');
+  var uploadBtn=document.getElementById('uploadBtn');
+
   fileInput.addEventListener('change',function(e){
     var file=e.target.files[0];
     if(!file)return;
@@ -45,6 +47,10 @@
       placeholder.style.display='none';
     };
     reader.readAsDataURL(file);
+
+    // Change button to submit the form
+    uploadBtn.textContent='Save & Continue';
+    uploadBtn.onclick=function(){ document.getElementById('uploadForm').submit(); };
   });
 </script>
 </body>

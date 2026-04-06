@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
+const countries = require("./data/countries");
 const session = require("express-session");
 const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
@@ -47,6 +48,9 @@ connection.getConnection((err, conn) => {
     conn.release();
   }
 });
+
+// Make DB connection accessible to route files
+app.set('db', connection);
 
 // ── EMAIL SETUP ──────────────────────────────────────────────────────────
 let transporter = null;
@@ -479,33 +483,142 @@ app.get("/setup/countries", requireAuth, (req, res) => {
   res.render("groups/profile/countries", {
     title: "Countries Visited",
     user: req.session.user || null,
+    countries: countries
   });
 });
 
 app.get("/setup/cities", requireAuth, (req, res) => {
+  // Get selected country codes from query params
+  var selectedCodes = req.query["countries[]"] || req.query.countries || [];
+  if (typeof selectedCodes === "string") selectedCodes = selectedCodes.split(",").filter(Boolean);
+
+  // Look up cities for each selected country
+  var cities = [];
+  var selectedCountryNames = [];
+  selectedCodes.forEach(function(code) {
+    var country = countries.find(function(c) { return c.code.toLowerCase() === code.toLowerCase(); });
+    if (country) {
+      selectedCountryNames.push(country.name);
+      country.cities.forEach(function(cityName) {
+        cities.push({ name: cityName, flag: country.flag, countryCode: country.code });
+      });
+    }
+  });
+
+  // If no countries selected, show all cities
+  if (cities.length === 0) {
+    countries.forEach(function(c) {
+      c.cities.forEach(function(cityName) {
+        cities.push({ name: cityName, flag: c.flag, countryCode: c.code });
+      });
+    });
+  }
+
   res.render("groups/profile/cities", {
     title: "Cities Visited",
     user: req.session.user || null,
+    cities: cities,
+    selectedCodes: selectedCodes,
+    selectedCountryNames: selectedCountryNames
   });
 });
+
+// Save visited countries + cities to session and DB
+app.post("/setup/save-visited", requireAuth, (req, res) => {
+  var visitedCountryCodes = (req.body.countries || "").split(",").filter(Boolean);
+  var visitedCities = req.body["cities[]"] || [];
+  if (typeof visitedCities === "string") visitedCities = [visitedCities];
+
+  // Build flag strings for visited countries
+  var visitedFlags = [];
+  var visitedCountryNames = [];
+  visitedCountryCodes.forEach(function(code) {
+    var country = countries.find(function(c) { return c.code.toLowerCase() === code.toLowerCase(); });
+    if (country) {
+      visitedFlags.push(country.flag);
+      visitedCountryNames.push(country.name);
+    }
+  });
+
+  // Save to session
+  req.session.user.visitedCountries = visitedFlags;
+  req.session.user.visitedCountryNames = visitedCountryNames;
+  req.session.user.visitedCities = visitedCities;
+
+  // Save to DB
+  connection.query(
+    "UPDATE tbl_users SET visitedCountries = ?, visitedCities = ? WHERE IDuser = ?",
+    [visitedCountryCodes.join(","), visitedCities.join(","), req.session.user.id],
+    function(err) {
+      if (err) console.error("Save visited error:", err.message);
+      req.session.save(function() {
+        res.redirect("/profile/confirmed");
+      });
+    }
+  );
+});
+
 
 // ── PROFILE ──────────────────────────────────────────────────────────────
 app.get("/profile", requireAuth, (req, res) => {
   var userId = req.session.user.id;
 
   connection.query(
-    "SELECT profilePictureUrl FROM tbl_users WHERE IDuser = ?",
+    "SELECT profilePictureUrl, visitedCountries, visitedCities FROM tbl_users WHERE IDuser = ?",
     [userId],
     function (err, results) {
       var image = null;
-      if (!err && results && results.length > 0) {
-        image = results[0].profilePictureUrl || null;
+      var visitedFlags = [];
+      var visitedCityList = [];
+      var planningFlags = [];
+
+      if (err) {
+        console.error("Profile query error:", err.message);
       }
 
-      var user = req.session.user || {
-        username: "TestUser",
-        groups_created: 0,
-      };
+      if (!err && results && results.length > 0) {
+        image = results[0].profilePictureUrl || null;
+
+        // Parse visited countries into flags
+        var visitedCodes = (results[0].visitedCountries || "").split(",").filter(Boolean);
+        visitedCodes.forEach(function(code) {
+          var country = countries.find(function(c) { return c.code.toLowerCase() === code.toLowerCase(); });
+          if (country) visitedFlags.push(country.flag);
+        });
+
+        // Parse visited cities
+        visitedCityList = (results[0].visitedCities || "").split(",").filter(Boolean);
+      }
+
+      // Also use session data as fallback
+      if (!image && req.session.user.profilePictureUrl) {
+        image = req.session.user.profilePictureUrl;
+      }
+      if (visitedFlags.length === 0 && req.session.user.visitedCountries) {
+        visitedFlags = req.session.user.visitedCountries;
+      }
+      if (visitedCityList.length === 0 && req.session.user.visitedCities) {
+        visitedCityList = req.session.user.visitedCities;
+      }
+
+      // Count user's groups
+      var allGroups = req.app.locals.groups || [];
+      var groupCount = allGroups.filter(function(g) {
+        return g.createdBy === userId || (g.members && g.members.some(function(m) { return m.id === userId; }));
+      }).length;
+
+      // Build planning flags from user's groups
+      allGroups.forEach(function(g) {
+        if ((g.createdBy === userId || (g.members && g.members.some(function(m) { return m.id === userId; }))) && g.flag) {
+          if (planningFlags.indexOf(g.flag) === -1) planningFlags.push(g.flag);
+        }
+      });
+
+      var user = req.session.user;
+      user.visitedCountries = visitedFlags;
+      user.visitedCities = visitedCityList;
+      user.planningCountries = planningFlags;
+      user.groups_created = groupCount;
 
       res.render("profile", { user: user, image: image });
     }

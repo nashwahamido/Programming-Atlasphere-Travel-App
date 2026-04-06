@@ -113,11 +113,14 @@
                 <span class="flag"><%= flag %></span>
               <% }) %>
             <% } else { %>
-              <span class="flag">&#127470;&#127466;</span>
-              <span class="flag">&#127462;&#127481;</span>
-              <span class="flag">&#127470;&#127481;</span>
+              <span style="color: var(--text-secondary, #888); font-size: 14px;">None yet</span>
             <% } %>
           </div>
+          <% if (user && user.visitedCities && user.visitedCities.length > 0) { %>
+            <div style="margin-top: 8px; font-size: 13px; color: var(--text-secondary, #888);">
+              <%= user.visitedCities.join(', ') %>
+            </div>
+          <% } %>
         </div>
 
         <div class="stat">
@@ -128,15 +131,14 @@
                 <span class="flag"><%= flag %></span>
               <% }) %>
             <% } else { %>
-              <span class="flag">&#127475;&#127473;</span>
-              <span class="flag">&#127465;&#127466;</span>
+              <span style="color: var(--text-secondary, #888); font-size: 14px;">No trips yet</span>
             <% } %>
           </div>
         </div>
 
         <div class="stat">
           <p>Number of Created Groups</p>
-          <span class="stat-number"><%= user ? (user.groups_created || 0) : 4 %></span>
+          <span class="stat-number"><%= user ? (user.groups_created || 0) : 0 %></span>
         </div>
       </div>
     </main>

@@ -14,29 +14,100 @@
     <div class="framed-box__bg"><img src="/images/profile-created-coast.jpg" alt="Coast"></div>
     <div class="framed-box__content">
       <div class="sel-content">
-        <div class="sel-header"><h1>What cities have you visited?</h1><a href="/profile/confirmed" class="skip-btn">Skip</a></div>
-        <div class="sel-search"><span>&#128269;</span><input type="text" placeholder="Search" id="citySearch"></div>
-        <form action="/profile/confirmed" method="get">
-          <div class="flag-grid">
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="dub"><span class="flag-card__img">&#127470;&#127466;</span><span class="flag-card__name">Dublin</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="vie"><span class="flag-card__img">&#127462;&#127481;</span><span class="flag-card__name">Vienna</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="rom"><span class="flag-card__img">&#127470;&#127481;</span><span class="flag-card__name">Rome</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="bru"><span class="flag-card__img">&#127463;&#127466;</span><span class="flag-card__name">Brussels</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="par"><span class="flag-card__img">&#127467;&#127479;</span><span class="flag-card__name">Paris</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="zur"><span class="flag-card__img">&#127464;&#127469;</span><span class="flag-card__name">Zurich</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="lon"><span class="flag-card__img">&#127988;&#917607;&#917602;&#917605;&#917614;&#917607;&#917631;</span><span class="flag-card__name">London</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="gla"><span class="flag-card__img">&#127988;&#917607;&#917602;&#917619;&#917603;&#917620;&#917631;</span><span class="flag-card__name">Glasgow</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="ams"><span class="flag-card__img">&#127475;&#127473;</span><span class="flag-card__name">Amsterdam</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="ber"><span class="flag-card__img">&#127465;&#127466;</span><span class="flag-card__name">Berlin</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="hel"><span class="flag-card__img">&#127467;&#127470;</span><span class="flag-card__name">Helsinki</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="cities[]" value="sto"><span class="flag-card__img">&#127480;&#127466;</span><span class="flag-card__name">Stockholm</span></label>
+        <div class="sel-header">
+          <h1>What cities have you visited?</h1>
+          <a href="/profile/confirmed" class="skip-btn">Skip</a>
+        </div>
+        <% if (typeof selectedCountryNames !== 'undefined' && selectedCountryNames.length > 0) { %>
+          <p style="color: rgba(255,255,255,0.6); font-size: 14px; margin-bottom: 8px;">
+            Showing cities in: <strong><%= selectedCountryNames.join(', ') %></strong>
+          </p>
+        <% } %>
+        <div class="sel-search"><span>&#128269;</span><input type="text" placeholder="Search cities..." id="citySearch"></div>
+        <form action="/setup/save-visited" method="post" id="cityForm">
+          <input type="hidden" name="countries" value="<%= typeof selectedCodes !== 'undefined' ? selectedCodes.join(',') : '' %>">
+          <div class="flag-grid" id="cityGrid">
+            <% if (typeof cities !== 'undefined' && cities.length > 0) { %>
+              <% cities.forEach(function(city, i) { %>
+                <label class="flag-card<%= i >= 12 ? ' hidden-card' : '' %>" data-index="<%= i %>">
+                  <input type="checkbox" name="cities[]" value="<%= city.name %>">
+                  <span class="flag-card__img"><%= city.flag %></span>
+                  <span class="flag-card__name"><%= city.name %></span>
+                </label>
+              <% }); %>
+            <% } else { %>
+              <p style="text-align: center; color: rgba(255,255,255,0.6); grid-column: 1 / -1; padding: 40px 0;">
+                No cities to show. <a href="/setup/countries" style="color: #E8933A;">Go back and select countries</a>.
+              </p>
+            <% } %>
           </div>
-          <div class="sel-actions"><button type="submit" class="btn-next">Next</button></div>
+          <div class="sel-actions">
+            <% if (typeof cities !== 'undefined' && cities.length > 12) { %>
+              <button type="button" class="btn-load-more" id="loadMoreBtn" style="margin-bottom:12px;">Load more cities</button>
+            <% } %>
+            <button type="submit" class="btn-next">Save & Continue</button>
+          </div>
         </form>
       </div>
     </div>
   </div>
 </div>
-<script>var s=localStorage.getItem('atlasphere-theme');if(s)document.documentElement.setAttribute('data-theme',s);document.getElementById('citySearch').addEventListener('input',function(e){var v=e.target.value.toLowerCase();document.querySelectorAll('.flag-card').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});});</script>
+<script>
+  var s=localStorage.getItem('atlasphere-theme');if(s)document.documentElement.setAttribute('data-theme',s);
+
+  var PAGE_SIZE = 12;
+  var visible = PAGE_SIZE;
+  var cards = document.querySelectorAll('#cityGrid .flag-card');
+  var loadMoreBtn = document.getElementById('loadMoreBtn');
+
+  // Toggle selection via checkbox change
+  cards.forEach(function(card) {
+    var cb = card.querySelector('input[type="checkbox"]');
+    if (cb) {
+      cb.addEventListener('change', function() {
+        card.classList.toggle('selected', cb.checked);
+      });
+    }
+  });
+
+  // Load more
+  function updateVisibility() {
+    if (!loadMoreBtn) return;
+    var hiddenCount = 0;
+    cards.forEach(function(card) {
+      var idx = parseInt(card.dataset.index);
+      if (idx < visible) {
+        card.classList.remove('hidden-card');
+      } else {
+        card.classList.add('hidden-card');
+        hiddenCount++;
+      }
+    });
+    loadMoreBtn.style.display = hiddenCount > 0 ? '' : 'none';
+  }
+
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener('click', function() {
+      visible += PAGE_SIZE;
+      updateVisibility();
+    });
+    updateVisibility();
+  }
+
+  // Search
+  document.getElementById('citySearch').addEventListener('input', function(e) {
+    var q = e.target.value.toLowerCase().trim();
+    if (q.length > 0) {
+      cards.forEach(function(card) {
+        var name = card.querySelector('.flag-card__name').textContent.toLowerCase();
+        card.classList.toggle('hidden-card', !name.includes(q));
+      });
+      if (loadMoreBtn) loadMoreBtn.style.display = 'none';
+    } else {
+      visible = PAGE_SIZE;
+      updateVisibility();
+    }
+  });
+</script>
 </body>
 </html>

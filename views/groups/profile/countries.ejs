@@ -14,29 +14,86 @@
     <div class="framed-box__bg"><img src="/images/registration-lake.jpg" alt="Lake"></div>
     <div class="framed-box__content">
       <div class="sel-content">
-        <div class="sel-header"><h1>What countries have you visited?</h1><a href="/setup/cities" class="skip-btn">Skip</a></div>
-        <div class="sel-search"><span>&#128269;</span><input type="text" placeholder="Search" id="countrySearch"></div>
-        <form action="/setup/cities" method="get">
-          <div class="flag-grid">
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="ie"><span class="flag-card__img">&#127470;&#127466;</span><span class="flag-card__name">Ireland</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="at"><span class="flag-card__img">&#127462;&#127481;</span><span class="flag-card__name">Austria</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="it"><span class="flag-card__img">&#127470;&#127481;</span><span class="flag-card__name">Italy</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="be"><span class="flag-card__img">&#127463;&#127466;</span><span class="flag-card__name">Belgium</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="fr"><span class="flag-card__img">&#127467;&#127479;</span><span class="flag-card__name">France</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="ch"><span class="flag-card__img">&#127464;&#127469;</span><span class="flag-card__name">Switzerland</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="gb-eng"><span class="flag-card__img">&#127988;&#917607;&#917602;&#917605;&#917614;&#917607;&#917631;</span><span class="flag-card__name">England</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="gb-sct"><span class="flag-card__img">&#127988;&#917607;&#917602;&#917619;&#917603;&#917620;&#917631;</span><span class="flag-card__name">Scotland</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="nl"><span class="flag-card__img">&#127475;&#127473;</span><span class="flag-card__name">The Netherlands</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="de"><span class="flag-card__img">&#127465;&#127466;</span><span class="flag-card__name">Germany</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="fi"><span class="flag-card__img">&#127467;&#127470;</span><span class="flag-card__name">Finland</span></label>
-            <label class="flag-card" onclick="this.classList.toggle('selected')"><input type="checkbox" name="countries[]" value="se"><span class="flag-card__img">&#127480;&#127466;</span><span class="flag-card__name">Sweden</span></label>
+        <div class="sel-header">
+          <h1>What countries have you visited?</h1>
+          <a href="/setup/cities" class="skip-btn">Skip</a>
+        </div>
+        <div class="sel-search"><span>&#128269;</span><input type="text" placeholder="Search countries..." id="countrySearch"></div>
+        <form action="/setup/cities" method="get" id="countryForm">
+          <div class="flag-grid" id="countryGrid">
+            <% if (typeof countries !== 'undefined') { %>
+              <% countries.forEach(function(c, i) { %>
+                <label class="flag-card<%= i >= 12 ? ' hidden-card' : '' %>" data-index="<%= i %>">
+                  <input type="checkbox" name="countries[]" value="<%= c.code %>">
+                  <span class="flag-card__img"><%= c.flag %></span>
+                  <span class="flag-card__name"><%= c.name %></span>
+                </label>
+              <% }); %>
+            <% } %>
           </div>
-          <div class="sel-actions"><button type="submit" class="btn-next">Next</button></div>
+          <div class="sel-actions">
+            <button type="button" class="btn-load-more" id="loadMoreBtn" style="margin-bottom:12px;">Load more countries</button>
+            <button type="submit" class="btn-next">Next</button>
+          </div>
         </form>
       </div>
     </div>
   </div>
 </div>
-<script>var s=localStorage.getItem('atlasphere-theme');if(s)document.documentElement.setAttribute('data-theme',s);document.getElementById('countrySearch').addEventListener('input',function(e){var v=e.target.value.toLowerCase();document.querySelectorAll('.flag-card').forEach(function(c){c.style.display=c.textContent.toLowerCase().includes(v)?'':'none';});});</script>
+<script>
+  var s=localStorage.getItem('atlasphere-theme');if(s)document.documentElement.setAttribute('data-theme',s);
+
+  var PAGE_SIZE = 12;
+  var visible = PAGE_SIZE;
+  var cards = document.querySelectorAll('#countryGrid .flag-card');
+  var loadMoreBtn = document.getElementById('loadMoreBtn');
+
+  // Toggle selection via checkbox change (not click, to avoid double-toggle)
+  cards.forEach(function(card) {
+    var cb = card.querySelector('input[type="checkbox"]');
+    if (cb) {
+      cb.addEventListener('change', function() {
+        card.classList.toggle('selected', cb.checked);
+      });
+    }
+  });
+
+  // Load more
+  function updateVisibility() {
+    var hiddenCount = 0;
+    cards.forEach(function(card) {
+      var idx = parseInt(card.dataset.index);
+      if (idx < visible) {
+        card.classList.remove('hidden-card');
+      } else {
+        card.classList.add('hidden-card');
+        hiddenCount++;
+      }
+    });
+    loadMoreBtn.style.display = hiddenCount > 0 ? '' : 'none';
+  }
+
+  loadMoreBtn.addEventListener('click', function() {
+    visible += PAGE_SIZE;
+    updateVisibility();
+  });
+
+  // Search
+  document.getElementById('countrySearch').addEventListener('input', function(e) {
+    var q = e.target.value.toLowerCase().trim();
+    if (q.length > 0) {
+      cards.forEach(function(card) {
+        var name = card.querySelector('.flag-card__name').textContent.toLowerCase();
+        card.classList.toggle('hidden-card', !name.includes(q));
+      });
+      loadMoreBtn.style.display = 'none';
+    } else {
+      visible = PAGE_SIZE;
+      updateVisibility();
+    }
+  });
+
+  updateVisibility();
+</script>
 </body>
 </html>
