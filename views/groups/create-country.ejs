@@ -26,15 +26,17 @@
           <input type="hidden" name="country" id="selectedCountry" value="">
           <div class="destination-grid" id="countryGrid">
             <% if (typeof countries !== 'undefined') { %>
-              <% countries.forEach(function(c) { %>
-                <div class="destination-card" data-value="<%= c.name %>">
+              <% countries.forEach(function(c, i) { %>
+                <div class="destination-card<%= i >= 6 ? ' hidden-card' : '' %>" data-value="<%= c.name %>" data-index="<%= i %>">
                   <div class="card-flag"><%= c.flag %></div>
                   <span class="card-name"><%= c.name %></span>
                 </div>
               <% }); %>
             <% } %>
           </div>
-          <div class="setup-actions" style="margin-top: 32px;">
+
+          <div class="setup-actions" style="margin-top: 24px; flex-direction: column; gap: 16px;">
+            <button type="button" class="btn-load-more" id="loadMoreBtn">Load more countries</button>
             <button type="submit" class="btn btn-primary" id="nextBtn" disabled>Next</button>
           </div>
         </form>
@@ -44,10 +46,16 @@
 </div>
 
 <script>
+  var PAGE_SIZE = 6;
+  var visible = PAGE_SIZE;
   var cards = document.querySelectorAll('#countryGrid .destination-card');
   var selectedInput = document.getElementById('selectedCountry');
   var nextBtn = document.getElementById('nextBtn');
+  var loadMoreBtn = document.getElementById('loadMoreBtn');
+  var searchInput = document.getElementById('countrySearch');
+  var isSearching = false;
 
+  // Selection
   cards.forEach(function(card) {
     card.addEventListener('click', function() {
       cards.forEach(function(c) { c.classList.remove('selected'); });
@@ -57,20 +65,54 @@
     });
   });
 
-  document.getElementById('countrySearch').addEventListener('input', function(e) {
-    var q = e.target.value.toLowerCase();
+  // Load more
+  function updateVisibility() {
+    var hiddenCount = 0;
     cards.forEach(function(card) {
-      var name = card.querySelector('.card-name').textContent.toLowerCase();
-      card.style.display = name.includes(q) ? '' : 'none';
+      var idx = parseInt(card.dataset.index);
+      if (idx < visible) {
+        card.classList.remove('hidden-card');
+      } else {
+        card.classList.add('hidden-card');
+        hiddenCount++;
+      }
     });
+    loadMoreBtn.style.display = hiddenCount > 0 ? '' : 'none';
+  }
+
+  loadMoreBtn.addEventListener('click', function() {
+    visible += PAGE_SIZE;
+    updateVisibility();
   });
 
+  // Search — show all matches, hide Load More while searching
+  searchInput.addEventListener('input', function(e) {
+    var q = e.target.value.toLowerCase().trim();
+    isSearching = q.length > 0;
+
+    if (isSearching) {
+      cards.forEach(function(card) {
+        var name = card.querySelector('.card-name').textContent.toLowerCase();
+        card.classList.toggle('hidden-card', !name.includes(q));
+      });
+      loadMoreBtn.style.display = 'none';
+    } else {
+      // Reset to paginated view
+      visible = PAGE_SIZE;
+      updateVisibility();
+    }
+  });
+
+  // Form validation
   document.getElementById('countryForm').addEventListener('submit', function(e) {
     if (!selectedInput.value) {
       e.preventDefault();
       alert('Please select a country first.');
     }
   });
+
+  // Initial state
+  updateVisibility();
 </script>
 </body>
 </html>
