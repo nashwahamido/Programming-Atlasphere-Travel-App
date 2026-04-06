@@ -611,11 +611,53 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ── START SERVER ─────────────────────────────────────────────────────────
+// ── SOCKET.IO + START SERVER ───────────────────────────────────────────────
+const http = require("http");
+const { Server } = require("socket.io");
+
+const server = http.createServer(app);
+const io = new Server(server);
+
+// In-memory chat history per group
+var chatHistory = {};
+
+io.on("connection", function(socket) {
+  console.log("Socket connected:", socket.id);
+
+  socket.on("join-group", function(data) {
+    var room = "group-" + data.groupId;
+    socket.join(room);
+    socket.userData = { userId: data.userId, userName: data.userName, groupId: data.groupId };
+    socket.emit("chat-history", chatHistory[room] || []);
+    socket.to(room).emit("user-joined", { userName: data.userName });
+    console.log(data.userName + " joined room " + room);
+  });
+
+  socket.on("send-message", function(data) {
+    var room = "group-" + data.groupId;
+    var msg = {
+      id: Date.now() + "-" + Math.random().toString(36).substr(2, 5),
+      userId: data.userId,
+      userName: data.userName,
+      user: data.userName,
+      text: data.text,
+      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    };
+    if (!chatHistory[room]) chatHistory[room] = [];
+    chatHistory[room].push(msg);
+    if (chatHistory[room].length > 200) chatHistory[room] = chatHistory[room].slice(-200);
+    io.to(room).emit("new-message", msg);
+  });
+
+  socket.on("disconnect", function() {
+    console.log("Socket disconnected:", socket.id);
+  });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  console.log("App started with MySQL database connection");
+server.listen(PORT, function() {
+  console.log("Server running on http://localhost:" + PORT);
+  console.log("Socket.io enabled for real-time chat");
 });
 
 module.exports = app;
