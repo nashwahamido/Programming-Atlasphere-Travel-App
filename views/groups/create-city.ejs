@@ -15,26 +15,36 @@
     <div class="framed-box__bg"><img src="/images/setup-desert.jpg" alt="Desert landscape"></div>
     <div class="framed-box__content">
       <div class="group-creation-content">
-        <h1>Which cities in &ldquo;Country&rdquo;?</h1>
+        <h1>Which cities in &ldquo;<%= typeof countryFlag !== 'undefined' ? countryFlag + ' ' : '' %><%= typeof countryName !== 'undefined' ? countryName : 'Country' %>&rdquo;?</h1>
         <p>Select at least one city</p>
 
         <div class="search-input" style="margin: 24px auto;">
           <span class="search-icon">&#128269;</span>
-          <input type="text" id="citySearch" placeholder="Search...">
+          <input type="text" id="citySearch" placeholder="Search cities...">
         </div>
 
-        <form action="/groups/create/days" method="get">
+        <form action="/groups/create/days" method="get" id="cityForm">
+          <input type="hidden" name="country" value="<%= typeof countryName !== 'undefined' ? countryName : '' %>">
           <input type="hidden" name="cities" id="selectedCities" value="">
+
           <div class="destination-grid" id="cityGrid">
-            <div class="destination-card" data-value="city1"><div class="card-img">&#128444;</div><span class="card-name">City Name</span></div>
-            <div class="destination-card" data-value="city2"><div class="card-img">&#128444;</div><span class="card-name">City Name</span></div>
-            <div class="destination-card" data-value="city3"><div class="card-img">&#128444;</div><span class="card-name">City Name</span></div>
-            <div class="destination-card" data-value="city4"><div class="card-img">&#128444;</div><span class="card-name">City Name</span></div>
-            <div class="destination-card" data-value="city5"><div class="card-img">&#128444;</div><span class="card-name">City Name</span></div>
-            <div class="destination-card" data-value="city6"><div class="card-img">&#128444;</div><span class="card-name">City Name</span></div>
+            <% if (typeof cities !== 'undefined' && cities.length > 0) { %>
+              <% cities.forEach(function(city) { %>
+                <div class="destination-card" data-value="<%= city %>">
+                  <div class="card-flag" style="font-size: 28px;">&#127961;</div>
+                  <span class="card-name"><%= city %></span>
+                </div>
+              <% }); %>
+            <% } else { %>
+              <p style="text-align: center; color: rgba(255,255,255,0.6); grid-column: 1 / -1; padding: 40px 0;">
+                No cities found. <a href="/groups/create/country" style="color: #E8933A;">Go back and select a country</a>.
+              </p>
+            <% } %>
           </div>
+
           <div class="setup-actions" style="margin-top: 32px;">
-            <button type="submit" class="btn btn-primary">Next</button>
+            <a href="/groups/create/country" class="btn btn-secondary" style="margin-right: 12px;">Back</a>
+            <button type="submit" class="btn btn-primary" id="nextBtn" disabled>Next</button>
           </div>
         </form>
       </div>
@@ -43,14 +53,41 @@
 </div>
 
 <script>
-  document.querySelectorAll('#cityGrid .destination-card').forEach(function(card){
-    card.addEventListener('click',function(){card.classList.toggle('selected');});
-  });
-  document.getElementById('citySearch').addEventListener('input',function(e){
-    var q=e.target.value.toLowerCase();
-    document.querySelectorAll('#cityGrid .destination-card').forEach(function(card){
-      card.style.display=card.querySelector('.card-name').textContent.toLowerCase().includes(q)?'':'none';
+  var cards = document.querySelectorAll('#cityGrid .destination-card');
+  var selectedInput = document.getElementById('selectedCities');
+  var nextBtn = document.getElementById('nextBtn');
+
+  function updateSelected() {
+    var selected = [];
+    cards.forEach(function(card) {
+      if (card.classList.contains('selected')) {
+        selected.push(card.dataset.value);
+      }
     });
+    selectedInput.value = selected.join(',');
+    nextBtn.disabled = selected.length === 0;
+  }
+
+  cards.forEach(function(card) {
+    card.addEventListener('click', function() {
+      card.classList.toggle('selected');
+      updateSelected();
+    });
+  });
+
+  document.getElementById('citySearch').addEventListener('input', function(e) {
+    var q = e.target.value.toLowerCase();
+    cards.forEach(function(card) {
+      var name = card.querySelector('.card-name').textContent.toLowerCase();
+      card.style.display = name.includes(q) ? '' : 'none';
+    });
+  });
+
+  document.getElementById('cityForm').addEventListener('submit', function(e) {
+    if (!selectedInput.value) {
+      e.preventDefault();
+      alert('Please select at least one city.');
+    }
   });
 </script>
 </body>

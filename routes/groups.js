@@ -1,15 +1,12 @@
 var express = require("express");
 var router = express.Router();
 var crypto = require("crypto");
+var countries = require("../data/countries");
 
-// ── In-memory groups storage ────────────────────────────────────────────
+// ── In-memory groups storage (starts empty — no template groups) ────────
 function getGroups(req) {
   if (!req.app.locals.groups) {
-    req.app.locals.groups = [
-      { id: 1, name: "Prague", destination: "Czech Republic", inviteCode: "prague-abc123", days: 7, members: [], createdBy: null },
-      { id: 2, name: "Rome", destination: "Italy", inviteCode: "rome-def456", days: 7, members: [], createdBy: null },
-      { id: 3, name: "Dublin", destination: "Ireland", inviteCode: "dublin-ghi789", days: 7, members: [], createdBy: null }
-    ];
+    req.app.locals.groups = [];
   }
   return req.app.locals.groups;
 }
@@ -18,18 +15,56 @@ function generateInviteCode() {
   return crypto.randomBytes(6).toString("hex");
 }
 
+// ── API: return user's groups as JSON (for sidebar) ─────────────────────
+router.get("/api/my-groups", function (req, res) {
+  var groups = getGroups(req);
+  var user = req.session.user;
+
+  var userGroups = user
+    ? groups.filter(function (g) {
+        return g.members.some(function (m) { return m.id === user.id; }) || g.createdBy === user.id;
+      })
+    : [];
+
+  res.json(userGroups.map(function (g) {
+    return { id: g.id, name: g.name, destination: g.destination, flag: g.flag || "", color: g.color || "#3B5F8A" };
+  }));
+});
+
 // ── Group creation flow (MUST be before /:id) ───────────────────────────
 
 router.get("/create/country", function (req, res) {
-  res.render("groups/create-country", { title: "Choose Destination", user: req.session.user || null });
+  res.render("groups/create-country", {
+    title: "Choose Destination",
+    user: req.session.user || null,
+    countries: countries
+  });
 });
 
 router.get("/create/city", function (req, res) {
-  res.render("groups/create-city", { title: "Choose Cities", user: req.session.user || null });
+  var countryName = req.query.country || "";
+  var country = countries.find(function (c) {
+    return c.name.toLowerCase() === countryName.toLowerCase();
+  });
+  var cities = country ? country.cities : [];
+  var flag = country ? country.flag : "";
+
+  res.render("groups/create-city", {
+    title: "Choose Cities",
+    user: req.session.user || null,
+    countryName: country ? country.name : countryName,
+    countryFlag: flag,
+    cities: cities
+  });
 });
 
 router.get("/create/days", function (req, res) {
-  res.render("groups/create-days", { title: "Trip Length", user: req.session.user || null });
+  res.render("groups/create-days", {
+    title: "Trip Length",
+    user: req.session.user || null,
+    country: req.query.country || "",
+    cities: req.query.cities || ""
+  });
 });
 
 // Create the group and show confirm page with invite options
@@ -37,22 +72,35 @@ router.get("/create/confirm", function (req, res) {
   var groups = getGroups(req);
   var user = req.session.user;
 
-  // Create a new group
-  var groupName = req.query.country || "My Trip";
+  var countryName = req.query.country || "My Trip";
+  var cities = req.query.cities || "";
   var days = parseInt(req.query.days) || 7;
   var inviteCode = generateInviteCode();
+
+  // Look up the flag
+  var country = countries.find(function (c) {
+    return c.name.toLowerCase() === countryName.toLowerCase();
+  });
+  var flag = country ? country.flag : "";
+
+  // Assign alternating colors
+  var colors = ["#3B5F8A", "#E8933A", "#2D8B6F", "#8B5A2B", "#6A5ACD"];
+  var colorIndex = groups.length % colors.length;
+
   var newGroup = {
     id: Date.now(),
-    name: groupName,
-    destination: groupName,
+    name: countryName,
+    destination: countryName,
+    flag: flag,
+    cities: cities.split(",").filter(Boolean),
     inviteCode: inviteCode,
     days: days,
+    color: colors[colorIndex],
     members: user ? [{ id: user.id, username: user.username, email: user.email }] : [],
     createdBy: user ? user.id : null
   };
   groups.push(newGroup);
 
-  // Store in session so the confirm page knows which group
   req.session.currentGroupId = newGroup.id;
 
   var inviteLink = req.protocol + "://" + req.get("host") + "/groups/join/" + inviteCode;
@@ -168,29 +216,43 @@ router.get("/", function (req, res) {
     ? groups.filter(function (g) {
         return g.members.some(function (m) { return m.id === user.id; }) || g.createdBy === user.id;
       })
-    : groups;
+    : [];
+
+  if (userGroups.length === 0) {
+    return res.redirect("/groups/create/country");
+  }
 
   res.render("groups/groupPage", {
     user: user || null,
-    group: null,
-    groups: userGroups.length > 0 ? userGroups : groups
+    group: userGroups[0],
+    groups: userGroups,
+    tripDays: userGroups[0].days || 7
   });
 });
 
 // ── Individual group page (MUST be last) ────────────────────────────────
 router.get("/:id", function (req, res) {
   var groups = getGroups(req);
+  var user = req.session.user;
   var groupId = req.params.id;
   var group = groups.find(function (g) { return g.id == groupId; });
 
   if (!group) {
-    group = { id: groupId, name: "Group " + groupId, destination: "", inviteCode: "", days: 7, members: [] };
+    return res.status(404).render("error", {
+      status: 404, message: "Group not found", user: user || null
+    });
   }
 
+  var userGroups = user
+    ? groups.filter(function (g) {
+        return g.members.some(function (m) { return m.id === user.id; }) || g.createdBy === user.id;
+      })
+    : [group];
+
   res.render("groups/groupPage", {
-    user: req.session.user || null,
+    user: user || null,
     group: group,
-    groups: groups,
+    groups: userGroups,
     tripDays: group.days || 7
   });
 });

@@ -19,21 +19,23 @@
 
         <div class="search-input" style="margin: 24px auto;">
           <span class="search-icon">&#128269;</span>
-          <input type="text" id="countrySearch" placeholder="Search...">
+          <input type="text" id="countrySearch" placeholder="Search countries...">
         </div>
 
         <form action="/groups/create/city" method="get" id="countryForm">
           <input type="hidden" name="country" id="selectedCountry" value="">
           <div class="destination-grid" id="countryGrid">
-            <div class="destination-card" data-value="france"><div class="card-img">&#128444;</div><span class="card-name">Country Name</span></div>
-            <div class="destination-card" data-value="italy"><div class="card-img">&#128444;</div><span class="card-name">Country Name</span></div>
-            <div class="destination-card" data-value="spain"><div class="card-img">&#128444;</div><span class="card-name">Country Name</span></div>
-            <div class="destination-card" data-value="germany"><div class="card-img">&#128444;</div><span class="card-name">Country Name</span></div>
-            <div class="destination-card" data-value="portugal"><div class="card-img">&#128444;</div><span class="card-name">Country Name</span></div>
-            <div class="destination-card" data-value="greece"><div class="card-img">&#128444;</div><span class="card-name">Country Name</span></div>
+            <% if (typeof countries !== 'undefined') { %>
+              <% countries.forEach(function(c) { %>
+                <div class="destination-card" data-value="<%= c.name %>">
+                  <div class="card-flag"><%= c.flag %></div>
+                  <span class="card-name"><%= c.name %></span>
+                </div>
+              <% }); %>
+            <% } %>
           </div>
           <div class="setup-actions" style="margin-top: 32px;">
-            <button type="submit" class="btn btn-primary">Next</button>
+            <button type="submit" class="btn btn-primary" id="nextBtn" disabled>Next</button>
           </div>
         </form>
       </div>
@@ -42,18 +44,32 @@
 </div>
 
 <script>
-  document.querySelectorAll('#countryGrid .destination-card').forEach(function(card){
-    card.addEventListener('click',function(){
-      document.querySelectorAll('#countryGrid .destination-card').forEach(function(c){c.classList.remove('selected');});
-      card.classList.toggle('selected');
-      document.getElementById('selectedCountry').value=card.dataset.value||'';
+  var cards = document.querySelectorAll('#countryGrid .destination-card');
+  var selectedInput = document.getElementById('selectedCountry');
+  var nextBtn = document.getElementById('nextBtn');
+
+  cards.forEach(function(card) {
+    card.addEventListener('click', function() {
+      cards.forEach(function(c) { c.classList.remove('selected'); });
+      card.classList.add('selected');
+      selectedInput.value = card.dataset.value || '';
+      nextBtn.disabled = false;
     });
   });
-  document.getElementById('countrySearch').addEventListener('input',function(e){
-    var q=e.target.value.toLowerCase();
-    document.querySelectorAll('#countryGrid .destination-card').forEach(function(card){
-      card.style.display=card.querySelector('.card-name').textContent.toLowerCase().includes(q)?'':'none';
+
+  document.getElementById('countrySearch').addEventListener('input', function(e) {
+    var q = e.target.value.toLowerCase();
+    cards.forEach(function(card) {
+      var name = card.querySelector('.card-name').textContent.toLowerCase();
+      card.style.display = name.includes(q) ? '' : 'none';
     });
+  });
+
+  document.getElementById('countryForm').addEventListener('submit', function(e) {
+    if (!selectedInput.value) {
+      e.preventDefault();
+      alert('Please select a country first.');
+    }
   });
 </script>
 </body>

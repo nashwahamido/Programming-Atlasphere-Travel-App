@@ -19,6 +19,8 @@
         <p>Drag the toggle to select the number of days</p>
 
         <form action="/groups/create/confirm" method="get">
+          <input type="hidden" name="country" value="<%= typeof country !== 'undefined' ? country : '' %>">
+          <input type="hidden" name="cities" value="<%= typeof cities !== 'undefined' ? cities : '' %>">
           <div class="slider-container">
             <input type="range" min="1" max="30" value="10" class="slider-track" id="slideRange" name="days">
             <p class="slider-value"><span id="daysValue">10</span> Days</p>
@@ -33,10 +35,10 @@
 </div>
 
 <script>
-  var slider=document.getElementById('slideRange');
-  var output=document.getElementById('daysValue');
-  output.textContent=slider.value;
-  slider.addEventListener('input',function(){output.textContent=this.value;});
+  var slider = document.getElementById('slideRange');
+  var output = document.getElementById('daysValue');
+  output.textContent = slider.value;
+  slider.addEventListener('input', function() { output.textContent = this.value; });
 </script>
 </body>
 </html>
