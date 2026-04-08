@@ -585,24 +585,32 @@ app.get("/profile", requireAuth, (req, res) => {
         visitedCityList = req.session.user.visitedCities;
       }
 
-      var allGroups = req.app.locals.groups || [];
-      var groupCount = allGroups.filter(function(g) {
-        return g.createdBy === userId || (g.members && g.members.some(function(m) { return m.id === userId; }));
-      }).length;
+      // Count groups and get planning flags from DB
+      connection.query(
+        "SELECT g.flag FROM tbl_groups g INNER JOIN tbl_group_members gm ON g.id = gm.groupId WHERE gm.userId = ?",
+        [userId],
+        function (grpErr, grpRows) {
+          var groupCount = 0;
+          var planningFlags = [];
 
-      allGroups.forEach(function(g) {
-        if ((g.createdBy === userId || (g.members && g.members.some(function(m) { return m.id === userId; }))) && g.flag) {
-          if (planningFlags.indexOf(g.flag) === -1) planningFlags.push(g.flag);
+          if (!grpErr && grpRows) {
+            groupCount = grpRows.length;
+            grpRows.forEach(function (g) {
+              if (g.flag && planningFlags.indexOf(g.flag) === -1) {
+                planningFlags.push(g.flag);
+              }
+            });
+          }
+
+          var user = req.session.user;
+          user.visitedCountries = visitedFlags;
+          user.visitedCities = visitedCityList;
+          user.planningCountries = planningFlags;
+          user.groups_created = groupCount;
+
+          res.render("profile", { user: user, image: image });
         }
-      });
-
-      var user = req.session.user;
-      user.visitedCountries = visitedFlags;
-      user.visitedCities = visitedCityList;
-      user.planningCountries = planningFlags;
-      user.groups_created = groupCount;
-
-      res.render("profile", { user: user, image: image });
+      );
     }
   );
 });
@@ -731,8 +739,6 @@ const { Server } = require("socket.io");
 const server = http.createServer(app);
 const io = new Server(server);
 
-var chatHistory = {};
-
 io.on("connection", function(socket) {
   console.log("Socket connected:", socket.id);
 
@@ -740,25 +746,49 @@ io.on("connection", function(socket) {
     var room = "group-" + data.groupId;
     socket.join(room);
     socket.userData = { userId: data.userId, userName: data.userName, groupId: data.groupId, userAvatar: data.userAvatar || '' };
-    socket.emit("chat-history", chatHistory[room] || []);
+
+    // Load last 100 messages from DB
+    connection.query(
+      "SELECT id, groupId, userId, userName, userAvatar, text, time, system FROM tbl_chat_messages WHERE groupId = ? ORDER BY createdAt ASC LIMIT 100",
+      [data.groupId],
+      function (err, rows) {
+        var history = [];
+        if (!err && rows) {
+          history = rows.map(function (r) {
+            return { id: r.id, userId: r.userId, userName: r.userName, userAvatar: r.userAvatar || '', user: r.userName, text: r.text, time: r.time, system: !!r.system };
+          });
+        }
+        socket.emit("chat-history", history);
+      }
+    );
+
     socket.to(room).emit("user-joined", { userName: data.userName });
     console.log(data.userName + " joined room " + room);
   });
 
   socket.on("send-message", function(data) {
     var room = "group-" + data.groupId;
+    var msgId = Date.now() + "-" + Math.random().toString(36).substr(2, 5);
+    var timeStr = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     var msg = {
-      id: Date.now() + "-" + Math.random().toString(36).substr(2, 5),
+      id: msgId,
       userId: data.userId,
       userName: data.userName,
       userAvatar: data.userAvatar || '',
       user: data.userName,
       text: data.text,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      time: timeStr
     };
-    if (!chatHistory[room]) chatHistory[room] = [];
-    chatHistory[room].push(msg);
-    if (chatHistory[room].length > 200) chatHistory[room] = chatHistory[room].slice(-200);
+
+    // Save to DB
+    connection.query(
+      "INSERT INTO tbl_chat_messages (id, groupId, userId, userName, userAvatar, text, time, system) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
+      [msgId, data.groupId, data.userId, data.userName, data.userAvatar || '', data.text, timeStr],
+      function (err) {
+        if (err) console.error("Message save error:", err.message);
+      }
+    );
+
     io.to(room).emit("new-message", msg);
   });
 

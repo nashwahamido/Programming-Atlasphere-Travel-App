@@ -3,37 +3,9 @@ var router = express.Router();
 var crypto = require("crypto");
 var countries = require("../data/countries");
 
-// ── In-memory groups storage (starts empty — no template groups) ────────
-function getGroups(req) {
-  if (!req.app.locals.groups) {
-    req.app.locals.groups = [];
-  }
-  return req.app.locals.groups;
+function getDb(req) {
+  return req.app.get("db");
 }
-
-function generateInviteCode() {
-  return crypto.randomBytes(6).toString("hex");
-}
-
-// ── API: return user's groups as JSON (for sidebar) ─────────────────────
-router.get("/api/my-groups", function (req, res) {
-  var groups = getGroups(req);
-  var user = req.session.user;
-
-  var userGroups = user
-    ? groups.filter(function (g) {
-        return g.members.some(function (m) { return m.id === user.id; }) || g.createdBy === user.id;
-      })
-    : [];
-
-  var result = userGroups.map(function (g) {
-    return { id: g.id, name: g.name, destination: g.destination, flag: g.flag || "", color: g.color || "#3B5F8A", photo: g.photo || "" };
-  });
-  console.log("API my-groups response:", JSON.stringify(result.map(function(g) { return { name: g.name, photo: g.photo }; })));
-  res.json(result);
-});
-
-// ── Group creation flow (MUST be before /:id) ───────────────────────────
 
 function requireGroupAuth(req, res, next) {
   if (!req.session.user) {
@@ -41,6 +13,55 @@ function requireGroupAuth(req, res, next) {
   }
   next();
 }
+
+function generateInviteCode() {
+  return crypto.randomBytes(6).toString("hex");
+}
+
+// ── Helper: load a group + its members from DB ──────────────────────────
+function loadGroup(db, groupId, callback) {
+  db.query("SELECT * FROM tbl_groups WHERE id = ?", [groupId], function (err, rows) {
+    if (err || rows.length === 0) return callback(err, null);
+    var group = rows[0];
+    group.cities = group.cities ? group.cities.split(",") : [];
+    db.query("SELECT userId, username, email FROM tbl_group_members WHERE groupId = ?", [groupId], function (err2, members) {
+      group.members = members || [];
+      callback(null, group);
+    });
+  });
+}
+
+// ── Helper: load all groups for a user ──────────────────────────────────
+function loadUserGroups(db, userId, callback) {
+  db.query(
+    "SELECT g.* FROM tbl_groups g INNER JOIN tbl_group_members gm ON g.id = gm.groupId WHERE gm.userId = ? ORDER BY g.createdAt DESC",
+    [userId],
+    function (err, rows) {
+      if (err) return callback(err, []);
+      var groups = rows.map(function (g) {
+        g.cities = g.cities ? g.cities.split(",") : [];
+        g.members = [];
+        return g;
+      });
+      callback(null, groups);
+    }
+  );
+}
+
+// ── API: return user's groups as JSON (for sidebar) ─────────────────────
+router.get("/api/my-groups", function (req, res) {
+  var user = req.session.user;
+  if (!user) return res.json([]);
+
+  var db = getDb(req);
+  loadUserGroups(db, user.id, function (err, groups) {
+    res.json(groups.map(function (g) {
+      return { id: g.id, name: g.name, destination: g.destination, flag: g.flag || "", color: g.color || "#3B5F8A", photo: g.photo || "" };
+    }));
+  });
+});
+
+// ── Group creation flow ─────────────────────────────────────────────────
 
 router.get("/create/country", requireGroupAuth, function (req, res) {
   res.render("groups/create-country", {
@@ -76,9 +97,9 @@ router.get("/create/days", requireGroupAuth, function (req, res) {
   });
 });
 
-// Create the group and show confirm page with invite options
+// Create the group and save to DB
 router.get("/create/confirm", requireGroupAuth, function (req, res) {
-  var groups = getGroups(req);
+  var db = getDb(req);
   var user = req.session.user;
 
   var countryName = req.query.country || "My Trip";
@@ -86,51 +107,66 @@ router.get("/create/confirm", requireGroupAuth, function (req, res) {
   var days = parseInt(req.query.days) || 7;
   var inviteCode = generateInviteCode();
 
-  // Look up the flag
   var country = countries.find(function (c) {
     return c.name.toLowerCase() === countryName.toLowerCase();
   });
   var flag = country ? country.flag : "";
 
-  // Assign alternating colors
   var colors = ["#3B5F8A", "#E8933A", "#2D8B6F", "#8B5A2B", "#6A5ACD"];
-  var colorIndex = groups.length % colors.length;
+  var groupId = Date.now();
+  var colorIndex = groupId % colors.length;
 
-  var newGroup = {
-    id: Date.now(),
+  var groupData = {
+    id: groupId,
     name: countryName,
     destination: countryName,
     flag: flag,
-    cities: cities.split(",").filter(Boolean),
+    cities: cities,
     inviteCode: inviteCode,
     days: days,
     color: colors[colorIndex],
-    members: user ? [{ id: user.id, username: user.username, email: user.email }] : [],
-    createdBy: user ? user.id : null
+    createdBy: user.id
   };
-  groups.push(newGroup);
 
-  req.session.currentGroupId = newGroup.id;
+  // Insert group into DB
+  db.query(
+    "INSERT INTO tbl_groups (id, name, destination, flag, cities, inviteCode, days, color, createdBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    [groupData.id, groupData.name, groupData.destination, groupData.flag, groupData.cities, groupData.inviteCode, groupData.days, groupData.color, groupData.createdBy],
+    function (err) {
+      if (err) {
+        console.error("Group insert error:", err.message);
+        return res.status(500).send("Failed to create group");
+      }
 
-  var inviteLink = req.protocol + "://" + req.get("host") + "/groups/join/" + inviteCode;
+      // Add creator as member
+      db.query(
+        "INSERT IGNORE INTO tbl_group_members (groupId, userId, username, email) VALUES (?, ?, ?, ?)",
+        [groupData.id, user.id, user.username, user.email],
+        function () {
+          var inviteLink = req.protocol + "://" + req.get("host") + "/groups/join/" + inviteCode;
 
-  res.render("groups/create-confirm", {
-    title: "Group Created",
-    user: user || null,
-    group: newGroup,
-    inviteLink: inviteLink,
-    inviteSuccess: null,
-    inviteError: null
-  });
+          groupData.members = [{ id: user.id, username: user.username, email: user.email }];
+
+          res.render("groups/create-confirm", {
+            title: "Group Created",
+            user: user,
+            group: groupData,
+            inviteLink: inviteLink,
+            inviteSuccess: null,
+            inviteError: null
+          });
+        }
+      );
+    }
+  );
 });
 
 // ── Upload group photo ──────────────────────────────────────────────────
 router.post("/upload-photo", requireGroupAuth, function (req, res) {
-  var groups = getGroups(req);
+  var db = getDb(req);
   var groupId = req.body.groupId;
-  var group = groups.find(function (g) { return g.id == groupId; });
 
-  if (!group || !req.files || !req.files.groupPhoto) {
+  if (!req.files || !req.files.groupPhoto) {
     return res.redirect("back");
   }
 
@@ -153,42 +189,40 @@ router.post("/upload-photo", requireGroupAuth, function (req, res) {
       console.error("Group photo upload error:", err);
       return res.redirect("/groups/" + groupId);
     }
-    group.photo = "/uploads/" + fileName;
-    console.log("Group photo saved:", group.photo);
-    res.redirect("/groups/" + groupId);
+    var dbPath = "/uploads/" + fileName;
+
+    db.query("UPDATE tbl_groups SET photo = ? WHERE id = ?", [dbPath, groupId], function (dbErr) {
+      if (dbErr) console.error("Group photo DB error:", dbErr.message);
+      else console.log("Group photo saved:", dbPath);
+      res.redirect("/groups/" + groupId);
+    });
   });
 });
 
 // ── Invite by email ─────────────────────────────────────────────────────
 router.post("/invite", requireGroupAuth, async function (req, res) {
-  var groups = getGroups(req);
+  var db = getDb(req);
   var groupId = req.body.groupId;
   var friendEmail = req.body.friendEmail;
   var user = req.session.user;
 
-  var group = groups.find(function (g) { return g.id == groupId; });
-  if (!group) {
-    return res.status(404).send("Group not found");
-  }
+  loadGroup(db, groupId, function (err, group) {
+    if (!group) return res.status(404).send("Group not found");
 
-  var inviteLink = req.protocol + "://" + req.get("host") + "/groups/join/" + group.inviteCode;
+    var inviteLink = req.protocol + "://" + req.get("host") + "/groups/join/" + group.inviteCode;
+    var transporter = req.app.locals.transporter;
 
-  var nodemailer = require("nodemailer");
-  var transporter = req.app.locals.transporter;
+    if (!transporter) {
+      return res.render("groups/create-confirm", {
+        title: "Group Created", user: user, group: group,
+        inviteLink: inviteLink,
+        inviteSuccess: "Invite link generated (email not configured): " + inviteLink,
+        inviteError: null
+      });
+    }
 
-  if (!transporter) {
-    console.log("No email transporter. Invite link: " + inviteLink);
-    return res.render("groups/create-confirm", {
-      title: "Group Created", user: user || null, group: group,
-      inviteLink: inviteLink,
-      inviteSuccess: "Invite link generated (email not configured): " + inviteLink,
-      inviteError: null
-    });
-  }
-
-  try {
     var senderName = user ? user.username : "Someone";
-    await transporter.sendMail({
+    transporter.sendMail({
       from: "Atlasphere <noreply@atlasphere.com>",
       to: friendEmail,
       subject: senderName + " invited you to join " + group.name + " on Atlasphere!",
@@ -197,126 +231,124 @@ router.post("/invite", requireGroupAuth, async function (req, res) {
             "<p style=\"font-size:16px;color:#555\">" + senderName + " wants you to join their trip group <strong>" + group.name + "</strong> on Atlasphere.</p>" +
             "<div style=\"text-align:center;margin:32px 0\">" +
             "<a href=\"" + inviteLink + "\" style=\"display:inline-block;padding:14px 40px;background:#E8933A;color:#fff;text-decoration:none;border-radius:30px;font-weight:700;font-size:16px\">Join Group</a>" +
-            "</div>" +
-            "<p style=\"color:#888;font-size:14px\">Or copy this link: " + inviteLink + "</p>" +
-            "</div>"
+            "</div></div>"
+    }).then(function () {
+      res.render("groups/create-confirm", {
+        title: "Group Created", user: user, group: group,
+        inviteLink: inviteLink,
+        inviteSuccess: "Invite sent to " + friendEmail + "!",
+        inviteError: null
+      });
+    }).catch(function (mailErr) {
+      res.render("groups/create-confirm", {
+        title: "Group Created", user: user, group: group,
+        inviteLink: inviteLink,
+        inviteSuccess: null,
+        inviteError: "Failed to send email. Share this link instead: " + inviteLink
+      });
     });
-
-    console.log("Invite email sent to: " + friendEmail);
-
-    res.render("groups/create-confirm", {
-      title: "Group Created", user: user || null, group: group,
-      inviteLink: inviteLink,
-      inviteSuccess: "Invite sent to " + friendEmail + "!",
-      inviteError: null
-    });
-  } catch (err) {
-    console.error("Invite email error:", err.message);
-    res.render("groups/create-confirm", {
-      title: "Group Created", user: user || null, group: group,
-      inviteLink: inviteLink,
-      inviteSuccess: null,
-      inviteError: "Failed to send email. Share this link instead: " + inviteLink
-    });
-  }
+  });
 });
 
 // ── Join via invite link ────────────────────────────────────────────────
 router.get("/join/:code", function (req, res) {
-  var groups = getGroups(req);
-  var group = groups.find(function (g) { return g.inviteCode === req.params.code; });
+  var db = getDb(req);
 
-  if (!group) {
-    return res.status(404).render("error", {
-      status: 404, message: "Invalid or expired invite link", user: req.session.user || null
-    });
-  }
+  db.query("SELECT * FROM tbl_groups WHERE inviteCode = ?", [req.params.code], function (err, rows) {
+    if (err || rows.length === 0) {
+      return res.status(404).render("error", {
+        status: 404, message: "Invalid or expired invite link", user: req.session.user || null
+      });
+    }
 
-  var user = req.session.user;
+    var group = rows[0];
+    var user = req.session.user;
 
-  if (!user) {
-    req.session.pendingInvite = req.params.code;
-    req.session.save(function () {
-      res.redirect("/auth/register");
-    });
-    return;
-  }
+    if (!user) {
+      req.session.pendingInvite = req.params.code;
+      req.session.save(function () { res.redirect("/auth/register"); });
+      return;
+    }
 
-  var alreadyMember = group.members.find(function (m) { return m.id === user.id; });
-  if (!alreadyMember) {
-    group.members.push({ id: user.id, username: user.username, email: user.email });
-    console.log(user.username + " joined group: " + group.name);
-  }
-
-  res.redirect("/groups/" + group.id);
+    db.query(
+      "INSERT IGNORE INTO tbl_group_members (groupId, userId, username, email) VALUES (?, ?, ?, ?)",
+      [group.id, user.id, user.username, user.email],
+      function () {
+        console.log(user.username + " joined group: " + group.name);
+        res.redirect("/groups/" + group.id);
+      }
+    );
+  });
 });
 
 // ── List all groups ─────────────────────────────────────────────────────
 router.get("/", function (req, res) {
-  var groups = getGroups(req);
   var user = req.session.user;
+  if (!user) return res.redirect("/auth/login");
 
-  var userGroups = user
-    ? groups.filter(function (g) {
-        return g.members.some(function (m) { return m.id === user.id; }) || g.createdBy === user.id;
-      })
-    : [];
+  var db = getDb(req);
+  loadUserGroups(db, user.id, function (err, userGroups) {
+    if (userGroups.length === 0) {
+      return res.redirect("/groups/create/country");
+    }
 
-  if (userGroups.length === 0) {
-    return res.redirect("/groups/create/country");
-  }
-
-  res.render("groups/groupPage", {
-    user: user || null,
-    group: userGroups[0],
-    groups: userGroups,
-    tripDays: userGroups[0].days || 7
+    res.render("groups/groupPage", {
+      user: user,
+      group: userGroups[0],
+      groups: userGroups,
+      tripDays: userGroups[0].days || 7
+    });
   });
 });
 
 // ── Individual group page (MUST be last) ────────────────────────────────
 router.get("/:id", function (req, res) {
-  var groups = getGroups(req);
   var user = req.session.user;
+  if (!user) return res.redirect("/auth/login");
+
+  var db = getDb(req);
   var groupId = req.params.id;
-  var group = groups.find(function (g) { return g.id == groupId; });
 
-  if (!group) {
-    return res.status(404).render("error", {
-      status: 404, message: "Group not found", user: user || null
+  loadGroup(db, groupId, function (err, group) {
+    if (!group) {
+      return res.status(404).render("error", {
+        status: 404, message: "Group not found", user: user
+      });
+    }
+
+    loadUserGroups(db, user.id, function (err2, userGroups) {
+      res.render("groups/groupPage", {
+        user: user,
+        group: group,
+        groups: userGroups,
+        tripDays: group.days || 7
+      });
     });
-  }
-
-  var userGroups = user
-    ? groups.filter(function (g) {
-        return g.members.some(function (m) { return m.id === user.id; }) || g.createdBy === user.id;
-      })
-    : [group];
-
-  res.render("groups/groupPage", {
-    user: user || null,
-    group: group,
-    groups: userGroups,
-    tripDays: group.days || 7
   });
 });
 
-
 // ── Delete group ────────────────────────────────────────────────────────
-router.post("/delete/:id", function (req, res) {
-  var groups = getGroups(req);
-  req.app.locals.groups = groups.filter(function (g) { return g.id != req.params.id; });
-  res.redirect("/settings");
+router.post("/delete/:id", requireGroupAuth, function (req, res) {
+  var db = getDb(req);
+  db.query("DELETE FROM tbl_group_members WHERE groupId = ?", [req.params.id], function () {
+    db.query("DELETE FROM tbl_chat_messages WHERE groupId = ?", [req.params.id], function () {
+      db.query("DELETE FROM tbl_groups WHERE id = ?", [req.params.id], function () {
+        res.redirect("/settings");
+      });
+    });
+  });
 });
 
 // ── Rename group ────────────────────────────────────────────────────────
-router.post("/rename/:id", function (req, res) {
-  var groups = getGroups(req);
-  var group = groups.find(function (g) { return g.id == req.params.id; });
-  if (group && req.body.newName) {
-    group.name = req.body.newName;
+router.post("/rename/:id", requireGroupAuth, function (req, res) {
+  var db = getDb(req);
+  if (req.body.newName) {
+    db.query("UPDATE tbl_groups SET name = ? WHERE id = ?", [req.body.newName, req.params.id], function () {
+      res.redirect("/settings");
+    });
+  } else {
+    res.redirect("/settings");
   }
-  res.redirect("/settings");
 });
 
 module.exports = router;
