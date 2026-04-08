@@ -62,57 +62,56 @@
 
       <!-- Modify visited locations -->
       <div id="visitedLocations" class="settings-panel">
-        <form action="/users/update-locations" method="post">
+        <form action="/users/update-locations" method="post" id="locationsForm">
+
           <h3>Change Visited Countries:</h3>
           <div class="search-bar">
             <span class="search-icon">🔍</span>
-            <input type="search" name="countrysearch" placeholder="Search">
-            <span class="clear-icon">⊗</span>
+            <input type="search" id="countrySearch" placeholder="Search countries..."
+              oninput="filterCountries(this.value)">
+            <span class="clear-icon" onclick="document.getElementById('countrySearch').value=''; filterCountries('');">⊗</span>
           </div>
-          <div class="location-grid">
-            <% const countryList = typeof countries !== 'undefined' && countries ? countries : [
-              { id: 'ie', name: 'Ireland', flag: '🇮🇪' },
-              { id: 'at', name: 'Austria', flag: '🇦🇹' },
-              { id: 'it', name: 'Italy', flag: '🇮🇹' },
-              { id: 'be', name: 'Belgium', flag: '🇧🇪' },
-              { id: 'fr', name: 'France', flag: '🇫🇷' },
-              { id: 'ch', name: 'Switzerland', flag: '🇨🇭' }
-            ]; %>
-            <% countryList.forEach(function(country) { %>
-              <label class="location-card">
-                <input type="checkbox" name="countries[]" value="<%= country.id %>"
-                  <%= user && user.visitedCountries && user.visitedCountries.includes(country.id) ? 'checked' : '' %>>
+          <div class="location-grid" id="countryGrid">
+            <% const allCountries = typeof allCountriesData !== 'undefined' ? allCountriesData : []; %>
+            <% allCountries.forEach(function(country) { %>
+              <% const isChecked = user && user.visitedCountries && user.visitedCountries.includes(country.code); %>
+              <label class="location-card <%= isChecked ? 'location-card--checked' : '' %>"
+                data-name="<%= country.name.toLowerCase() %>">
+                <input type="checkbox" name="countries[]" value="<%= country.code %>"
+                  <%= isChecked ? 'checked' : '' %>
+                  onchange="this.closest('.location-card').classList.toggle('location-card--checked', this.checked)">
                 <span class="location-flag"><%= country.flag %></span>
                 <span class="location-name"><%= country.name %></span>
               </label>
             <% }) %>
           </div>
 
+          <hr style="margin: 24px 0; border-color: var(--border, #e0e0e0);">
+
           <h3>Change Visited Cities:</h3>
           <div class="search-bar">
             <span class="search-icon">🔍</span>
-            <input type="search" name="citysearch" placeholder="Search">
-            <span class="clear-icon">⊗</span>
+            <input type="search" id="citySearch" placeholder="Search cities..."
+              oninput="filterCities(this.value)">
+            <span class="clear-icon" onclick="document.getElementById('citySearch').value=''; filterCities('');">⊗</span>
           </div>
-          <div class="location-grid">
-            <% const cityList = typeof cities !== 'undefined' && cities ? cities : [
-              { id: 'dub', name: 'Dublin' },
-              { id: 'vie', name: 'Vienna' },
-              { id: 'rom', name: 'Rome' },
-              { id: 'bru', name: 'Brussels' },
-              { id: 'par', name: 'Paris' },
-              { id: 'zur', name: 'Zurich' }
-            ]; %>
-            <% cityList.forEach(function(city) { %>
-              <label class="location-card">
-                <input type="checkbox" name="cities[]" value="<%= city.id %>"
-                  <%= user && user.visitedCities && user.visitedCities.includes(city.id) ? 'checked' : '' %>>
-                <span class="location-flag">🏙️</span>
-                <span class="location-name"><%= city.name %></span>
-              </label>
+          <div class="location-grid" id="cityGrid">
+            <% allCountries.forEach(function(country) { %>
+              <% country.cities.forEach(function(cityName) { %>
+                <% const isChecked = user && user.visitedCities && user.visitedCities.includes(cityName); %>
+                <label class="location-card <%= isChecked ? 'location-card--checked' : '' %>"
+                  data-name="<%= cityName.toLowerCase() %>">
+                  <input type="checkbox" name="cities[]" value="<%= cityName %>"
+                    <%= isChecked ? 'checked' : '' %>
+                    onchange="this.closest('.location-card').classList.toggle('location-card--checked', this.checked)">
+                  <span class="location-flag"><%= country.flag %></span>
+                  <span class="location-name"><%= cityName %></span>
+                </label>
+              <% }) %>
             <% }) %>
           </div>
-          <div class="form-actions">
+
+          <div class="form-actions" style="margin-top: 24px;">
             <button type="submit" class="btn-save">Save</button>
           </div>
         </form>
@@ -205,7 +204,6 @@
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     e.target.classList.add('active');
-    // Reset delete input when switching tabs
     var input = document.getElementById('deleteConfirmInput');
     if (input) { input.value = ''; checkDeleteInput(''); }
   }
@@ -224,6 +222,43 @@
       btn.style.cursor = 'not-allowed';
       input.style.borderColor = '#dce6f0';
     }
+  }
+
+  function initLocationGrids() {
+    // Hide all unchecked cards by default — only show checked ones and search results
+    document.querySelectorAll('#countryGrid .location-card').forEach(function(card) {
+      if (!card.querySelector('input').checked) {
+        card.style.display = 'none';
+      }
+    });
+    document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
+      if (!card.querySelector('input').checked) {
+        card.style.display = 'none';
+      }
+    });
+  }
+
+  function filterCountries(query) {
+    var q = query.toLowerCase();
+    document.querySelectorAll('#countryGrid .location-card').forEach(function(card) {
+      if (q.length < 2) {
+        // Show only checked ones when query is too short
+        card.style.display = card.querySelector('input').checked ? '' : 'none';
+      } else {
+        card.style.display = card.dataset.name.includes(q) ? '' : 'none';
+      }
+    });
+  }
+
+  function filterCities(query) {
+    var q = query.toLowerCase();
+    document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
+      if (q.length < 2) {
+        card.style.display = card.querySelector('input').checked ? '' : 'none';
+      } else {
+        card.style.display = card.dataset.name.includes(q) ? '' : 'none';
+      }
+    });
   }
 
   var selectedGroupId = null;
@@ -275,6 +310,9 @@
       row.style.display = row.dataset.name.includes(query.toLowerCase()) ? '' : 'none';
     });
   }
+
+  // Run on page load
+  initLocationGrids();
 </script>
 
 </body>

@@ -292,3 +292,13 @@
 [data-theme="dark"] .settings-page {
   color: #ffffff;
 }
+
+.location-card--checked {
+  border-color: #0B3856;
+  background-color: #f0f7ff;
+}
+
+[data-theme="dark"] .location-card--checked {
+  border-color: #209EBB;
+  background-color: rgba(32, 158, 187, 0.15);
+}

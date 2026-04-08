@@ -710,17 +710,25 @@ app.get("/settings", requireAuth, (req, res) => {
         console.error("Settings query error:", err.message);
         return res.redirect("/");
       }
+      
       const user = results[0] || req.session.user;
+console.log('visitedCountries from DB:', user.visitedCountries);
+      // Parse visited countries and cities from DB
+      const visitedCountryCodes = (user.visitedCountries || '').split(',').filter(Boolean);
+      const visitedCityNames = (user.visitedCities || '').split(',').filter(Boolean);
+      user.visitedCountries = visitedCountryCodes;
+      user.visitedCities = visitedCityNames;
       const groups = req.app.locals.groups || [];
       res.render("settings", {
         user: user,
         groups: groups,
-        countries: [],
-        cities: []
+        allCountriesData: countries
       });
     }
   );
 });
+
+
 
 // ── GROUPS / USERS ROUTES ────────────────────────────────────────────────
 app.use("/groups", require("./routes/groups"));
