@@ -257,3 +257,38 @@
   background-color: #0B3856;
   color: white;
 }
+
+[data-theme="dark"] .settings-page h1,
+[data-theme="dark"] .settings-panel h3,
+[data-theme="dark"] .settings-panel h4,
+[data-theme="dark"] .form-group label,
+[data-theme="dark"] .delete-msg {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-tab {
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+}
+
+[data-theme="dark"] .settings-tab.active {
+  background-color: #209EBB;
+  border-color: #209EBB;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-tab:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group select {
+  background-color: #2a3a4a;
+  color: #ffffff;
+  border-color: rgba(255,255,255,0.15);
+}
+
+[data-theme="dark"] .settings-page {
+  color: #ffffff;
+}

@@ -42,16 +42,16 @@
             <label for="phone">Phone</label>
             <div class="phone-row">
               <input type="text" id="phoneCode" name="phoneCode" placeholder="+353" class="phone-code">
-              <input type="tel" id="phone" name="phone" value="<%= user ? (user.phone || '') : '' %>">
+              <input type="tel" id="phone" name="phone" value="<%= user ? (user.phonenumber || '') : '' %>">
             </div>
           </div>
           <div class="form-group">
             <label for="gender">Gender</label>
             <select id="gender" name="gender">
               <option value="">Select</option>
-              <option value="m" <%= user && user.gender === 'm' ? 'selected' : '' %>>Male</option>
-              <option value="f" <%= user && user.gender === 'f' ? 'selected' : '' %>>Female</option>
-              <option value="d" <%= user && user.gender === 'd' ? 'selected' : '' %>>Diverse</option>
+              <option value="m" <%= user && user.FIDgender === 1 ? 'selected' : '' %>>Male</option>
+              <option value="f" <%= user && user.FIDgender === 2 ? 'selected' : '' %>>Female</option>
+              <option value="d" <%= user && user.FIDgender === 3 ? 'selected' : '' %>>Diverse</option>
             </select>
           </div>
           <div class="form-actions">
@@ -170,11 +170,26 @@
       <!-- Delete account -->
       <div id="deleteAccount" class="settings-panel">
         <p class="delete-msg">Do you wish to delete your Atlasphere account?</p>
-        <div class="delete-actions">
-          <form action="/users/delete" method="post" style="display:inline">
-            <button type="submit" class="btn-confirm">Confirm</button>
-          </form>
-          <button class="btn-cancel" onclick="showTab(event, 'manageInfo')">Cancel</button>
+        <p style="font-size:14px; color:#aaa; margin-bottom:24px; text-align:center;">
+          This action is permanent and cannot be undone. Type <strong>DELETE</strong> below to confirm.
+        </p>
+        <div style="max-width:320px; margin:0 auto;">
+          <input type="text" id="deleteConfirmInput" placeholder="Type DELETE to confirm"
+            oninput="checkDeleteInput(this.value)"
+            style="width:100%; padding:12px 16px; border-radius:8px; border:2px solid #dce6f0;
+                   font-size:15px; text-align:center; margin-bottom:16px; outline:none;
+                   background: var(--input-bg, #fff); color: var(--text, #0B3856);">
+          <div class="delete-actions" style="flex-direction:column; align-items:center; gap:10px;">
+            <form action="/users/delete" method="post" style="width:100%;">
+              <button type="submit" id="deleteConfirmBtn" class="btn-confirm"
+                disabled style="opacity:0.4; cursor:not-allowed; width:100%;">
+                Permanently Delete Account
+              </button>
+            </form>
+            <button class="btn-cancel" onclick="showTab(event, 'manageInfo')" style="width:100%;">
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
 
@@ -190,6 +205,25 @@
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     e.target.classList.add('active');
+    // Reset delete input when switching tabs
+    var input = document.getElementById('deleteConfirmInput');
+    if (input) { input.value = ''; checkDeleteInput(''); }
+  }
+
+  function checkDeleteInput(value) {
+    var btn = document.getElementById('deleteConfirmBtn');
+    var input = document.getElementById('deleteConfirmInput');
+    if (value === 'DELETE') {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+      input.style.borderColor = '#e74c3c';
+    } else {
+      btn.disabled = true;
+      btn.style.opacity = '0.4';
+      btn.style.cursor = 'not-allowed';
+      input.style.borderColor = '#dce6f0';
+    }
   }
 
   var selectedGroupId = null;

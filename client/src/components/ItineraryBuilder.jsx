@@ -72,10 +72,22 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
 
   const clickDay = (d) => {
     const end = Math.min(d + tripDays - 1, daysInMonth);
+    
+    // If there's already a date selected and activities planned, confirm before wiping
+    const hasActivities = Object.values(allBlocks).some(day => Object.keys(day).length > 0);
+    
+    if (rangeStart !== null && hasActivities) {
+      const confirmed = window.confirm(
+        'Changing your start date will clear all your planned activities. Are you sure?'
+      );
+      if (!confirmed) return;
+    }
+
     setRangeStart(d);
     setRangeEnd(end);
     setActiveDay(0);
-    setBlocks({});
+    setAllBlocks({});
+    localStorage.removeItem(storageKey + '-blocks');
   };
 
   const dayClass = (d) => {
