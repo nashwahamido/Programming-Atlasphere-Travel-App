@@ -102,7 +102,7 @@ body {
 
 .navbar-center {
   display: flex;
-  gap: 32px;
+  gap: 24px;
   align-items: center;
 }
 
@@ -838,7 +838,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 .setup-content { position: relative; z-index: 1; text-align: center; padding: 40px; }
 .setup-content h1 { font-size: 2.2rem; font-weight: 800; color: #fff; margin-bottom: 32px; }
 
-.upload-circle-lg { width: 160px; height: 160px; border-radius: 50%; border: 3px dashed rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; background: rgba(255,255,255,0.08); cursor: pointer; position: relative; overflow: hidden; transition: all 0.3s; }
+.upload-circle-lg { width: 160px; height: 160px; border-radius: 50%; border: 3px dashed rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; margin: 0 auto 32px; background: rgba(255,255,255,0.08); cursor: pointer; position: relative; overflow: hidden; transition: all 0.3s; }
 .upload-circle-lg:hover { border-color: #E8933A; background: rgba(232,147,58,0.1); }
 .upload-circle-lg input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .upload-circle-lg .upload-icon { font-size: 3rem; color: rgba(255,255,255,0.5); }
@@ -929,15 +929,16 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 .gc-go-btn { display: inline-block; padding: 12px 32px; border-radius: 30px; background: #E8933A; color: #fff; font-weight: 700; font-size: 15px; text-decoration: none; margin-top: 24px; transition: all 0.3s; }
 .gc-go-btn:hover { background: #D4822F; }
 
-.gc-right { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.gc-right { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 24px; }
 .gc-upload-circle { width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: pointer; box-shadow: 0 8px 32px rgba(0,0,0,0.2); transition: all 0.3s; }
 .gc-upload-circle:hover { box-shadow: 0 12px 40px rgba(0,0,0,0.3); transform: scale(1.02); }
 .gc-upload-circle input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .gc-upload-circle .gc-img-icon { width: 60px; height: 60px; opacity: 0.4; }
 .gc-upload-circle img.gc-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: none; }
 
-.gc-upload-btn { padding: 10px 24px; border-radius: 30px; border: 2px solid #E8933A; background: transparent; color: #E8933A; font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit; transition: all 0.3s; text-decoration: none; }
+.gc-upload-btn { padding: 10px 24px; border-radius: 30px; border: 2px solid #E8933A; background: transparent; color: #E8933A; font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit; transition: all 0.3s; text-decoration: none; display: inline-block; }
 .gc-upload-btn:hover { background: #E8933A; color: #fff; }
+.gc-right form { display: flex; flex-direction: column; align-items: center; gap: 28px; }
 
 .gc-skip-btn { color: rgba(255,255,255,0.6); font-size: 13px; text-decoration: none; }
 .gc-skip-btn:hover { color: #fff; }

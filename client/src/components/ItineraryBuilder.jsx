@@ -1,12 +1,5 @@
-/**
- * ItineraryBuilder.jsx
- * ─────────────────────────────────────────────────────────────────────────────
- *   LEFT:   Monthly calendar — click days to select range
- *   CENTER: Weekly schedule — hourly time slots, drag-drop targets
- *   RIGHT:  Activities panel — draggable items from recommendations
- */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import '../styles/itinerary-builder.css';
 
 const HOURS = ['08.00','09.00','10.00','11.00','12.00','13.00','14.00','15.00','16.00','17.00','18.00','19.00','20.00','21.00','22.00','23.00','00.00','01.00','02.00'];
@@ -24,15 +17,35 @@ const defaultActivities = [
 ];
 
 const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
-  // ── Calendar state ────────────────────────────────────────────────────────
   const today = new Date();
-  const [calYear, setCalYear] = useState(today.getFullYear());
-  const [calMonth, setCalMonth] = useState(today.getMonth());
-  const [rangeStart, setRangeStart] = useState(null);
-  const [rangeEnd, setRangeEnd] = useState(null);
+  const storageKey = 'itinerary-' + (tripId || 'default');
 
-  // ── Week state ────────────────────────────────────────────────────────────
-  const [activeDay, setActiveDay] = useState(0);
+  // ── Calendar state (persisted) ────────────────────────────────────────────
+  const [calYear, setCalYear] = useState(() => {
+    const saved = localStorage.getItem(storageKey + '-calYear');
+    return saved ? parseInt(saved) : today.getFullYear();
+  });
+
+  const [calMonth, setCalMonth] = useState(() => {
+    const saved = localStorage.getItem(storageKey + '-calMonth');
+    return saved ? parseInt(saved) : today.getMonth();
+  });
+
+  const [rangeStart, setRangeStart] = useState(() => {
+    const saved = localStorage.getItem(storageKey + '-rangeStart');
+    return saved ? parseInt(saved) : null;
+  });
+
+  const [rangeEnd, setRangeEnd] = useState(() => {
+    const saved = localStorage.getItem(storageKey + '-rangeEnd');
+    return saved ? parseInt(saved) : null;
+  });
+
+  // ── Week state (persisted) ────────────────────────────────────────────────
+  const [activeDay, setActiveDay] = useState(() => {
+    const saved = localStorage.getItem(storageKey + '-activeDay');
+    return saved ? parseInt(saved) : 0;
+  });
 
   // Build week days dynamically from selected range
   const weekDays = useMemo(() => {
@@ -49,8 +62,13 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
     });
   }, [rangeStart, tripDays, calYear, calMonth]);
 
-  // ── Schedule state ────────────────────────────────────────────────────────
-  const [blocks, setBlocks] = useState({});
+  // ── Schedule state (persisted) ────────────────────────────────────────────
+  const [allBlocks, setAllBlocks] = useState(() => {
+    const saved = localStorage.getItem(storageKey + '-blocks');
+    return saved ? JSON.parse(saved) : {};
+  });
+
+  const dayBlocks = allBlocks[activeDay] || {};
 
   // ── Panel state ───────────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
@@ -60,6 +78,24 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
   const [dragInfo, setDragInfo] = useState(null);
   const [overSlot, setOverSlot] = useState(null);
 
+  // ── Persist all state to localStorage ────────────────────────────────────
+  useEffect(() => {
+    if (rangeStart !== null) {
+      localStorage.setItem(storageKey + '-rangeStart', rangeStart);
+      localStorage.setItem(storageKey + '-rangeEnd', rangeEnd);
+      localStorage.setItem(storageKey + '-calYear', calYear);
+      localStorage.setItem(storageKey + '-calMonth', calMonth);
+    }
+  }, [rangeStart, rangeEnd, calYear, calMonth]);
+
+  useEffect(() => {
+    localStorage.setItem(storageKey + '-blocks', JSON.stringify(allBlocks));
+  }, [allBlocks]);
+
+  useEffect(() => {
+    localStorage.setItem(storageKey + '-activeDay', activeDay);
+  }, [activeDay]);
+
   // ── Calendar logic ────────────────────────────────────────────────────────
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const firstDay = (() => { const d = new Date(calYear, calMonth, 1).getDay(); return d === 0 ? 6 : d - 1; })();
@@ -67,15 +103,20 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
   const cells = firstDay + daysInMonth;
   const overflow = cells % 7 === 0 ? 0 : 7 - (cells % 7);
 
-  const goPrev = () => calMonth === 0 ? (setCalMonth(11), setCalYear(calYear - 1)) : setCalMonth(calMonth - 1);
-  const goNext = () => calMonth === 11 ? (setCalMonth(0), setCalYear(calYear + 1)) : setCalMonth(calMonth + 1);
+  const goPrev = () => {
+    if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); }
+    else setCalMonth(calMonth - 1);
+  };
+
+  const goNext = () => {
+    if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); }
+    else setCalMonth(calMonth + 1);
+  };
 
   const clickDay = (d) => {
     const end = Math.min(d + tripDays - 1, daysInMonth);
-    
-    // If there's already a date selected and activities planned, confirm before wiping
     const hasActivities = Object.values(allBlocks).some(day => Object.keys(day).length > 0);
-    
+
     if (rangeStart !== null && hasActivities) {
       const confirmed = window.confirm(
         'Changing your start date will clear all your planned activities. Are you sure?'
@@ -88,6 +129,7 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
     setActiveDay(0);
     setAllBlocks({});
     localStorage.removeItem(storageKey + '-blocks');
+    localStorage.removeItem(storageKey + '-activeDay');
   };
 
   const dayClass = (d) => {
@@ -103,10 +145,6 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
   const scheduleTitle = activeDayInfo
     ? `${MONTHS[activeDayInfo.month]} ${activeDayInfo.num} (Day ${activeDay + 1})`
     : 'Schedule';
-
-  // Blocks are stored per day index
-  const [allBlocks, setAllBlocks] = useState({});
-  const dayBlocks = allBlocks[activeDay] || {};
 
   // ── Drag from panel ───────────────────────────────────────────────────────
   const panelDragStart = (e, act) => {

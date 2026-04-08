@@ -711,13 +711,25 @@ app.get("/settings", requireAuth, (req, res) => {
         return res.redirect("/");
       }
       const user = results[0] || req.session.user;
-      const groups = req.app.locals.groups || [];
-      res.render("settings", {
-        user: user,
-        groups: groups,
-        countries: [],
-        cities: []
-      });
+      // Parse visited countries and cities from DB
+      const visitedCountryCodes = (user.visitedCountries || '').split(',').filter(Boolean);
+      const visitedCityNames = (user.visitedCities || '').split(',').filter(Boolean);
+      user.visitedCountries = visitedCountryCodes;
+      user.visitedCities = visitedCityNames;
+
+      // Load user's groups from DB
+      connection.query(
+        "SELECT g.* FROM tbl_groups g INNER JOIN tbl_group_members gm ON g.id = gm.groupId WHERE gm.userId = ?",
+        [userId],
+        function(grpErr, grpRows) {
+          var groups = grpRows || [];
+          res.render("settings", {
+            user: user,
+            groups: groups,
+            allCountriesData: countries
+          });
+        }
+      );
     }
   );
 });
