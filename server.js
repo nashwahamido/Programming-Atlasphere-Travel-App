@@ -710,6 +710,7 @@ app.get("/settings", requireAuth, (req, res) => {
         console.error("Settings query error:", err.message);
         return res.redirect("/");
       }
+      
       const user = results[0] || req.session.user;
       // Parse visited countries and cities from DB
       const visitedCountryCodes = (user.visitedCountries || '').split(',').filter(Boolean);
@@ -733,6 +734,8 @@ app.get("/settings", requireAuth, (req, res) => {
     }
   );
 });
+
+
 
 // ── GROUPS / USERS ROUTES ────────────────────────────────────────────────
 app.use("/groups", require("./routes/groups"));

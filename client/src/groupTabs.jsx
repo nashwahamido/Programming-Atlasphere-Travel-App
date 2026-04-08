@@ -49,7 +49,8 @@ if (mount) {
       React.createElement(TabSwitcher, { active: activeTab, onChange: setActiveTab }),
       React.createElement('div', { className: 'gp-content' },
 
-        activeTab === 'chat' && React.createElement(React.Fragment, null,
+        // Chat tab — always mounted, hidden when not active
+        React.createElement('div', { style: { display: activeTab === 'chat' ? 'contents' : 'none' } },
           React.createElement(Sidebar, {
             activeGroup: activeGroup,
             onSelect: function(g) { setActiveGroup(g); }
@@ -57,14 +58,20 @@ if (mount) {
           React.createElement(ChatBox, chatProps)
         ),
 
-        activeTab === 'discover' && React.createElement('div', { className: 'gp-tab-with-overlay' },
-          React.createElement(VotingSystem, null),
-          React.createElement(ChatOverlay, chatProps)
+        // Discover tab — always mounted, hidden when not active
+        React.createElement('div', { style: { display: activeTab === 'discover' ? 'contents' : 'none' } },
+          React.createElement('div', { className: 'gp-tab-with-overlay' },
+            React.createElement(VotingSystem, null),
+            React.createElement(ChatOverlay, chatProps)
+          )
         ),
 
-        activeTab === 'itinerary' && React.createElement('div', { className: 'gp-tab-with-overlay' },
-          React.createElement(ItineraryBuilder, { tripId: groupId, tripDays: tripDays }),
-          React.createElement(ChatOverlay, chatProps)
+        // Itinerary tab — always mounted, hidden when not active
+        React.createElement('div', { style: { display: activeTab === 'itinerary' ? 'contents' : 'none' } },
+          React.createElement(ItineraryBuilder, {
+            tripId: groupId,
+            tripDays: tripDays
+          })
         )
       )
     );
