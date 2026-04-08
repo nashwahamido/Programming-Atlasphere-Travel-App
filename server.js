@@ -187,7 +187,6 @@ app.post("/auth/login", (req, res) => {
         match = false;
       }
 
-      // Fallback for old plaintext test users already in your SQL dump
       if (!match && password === user.password) {
         match = true;
       }
@@ -211,7 +210,6 @@ app.post("/auth/login", (req, res) => {
           console.error("Session save error:", err);
           return res.status(500).send("Session error");
         }
-
         res.redirect("/profile");
       });
     }
@@ -248,9 +246,7 @@ app.post("/auth/register", async (req, res) => {
 
         const hashedPassword = await bcrypt.hash(psw, 10);
         const code = generateCode();
-
-        const genderId =
-          gender && !isNaN(Number(gender)) ? Number(gender) : null;
+        const genderId = gender && !isNaN(Number(gender)) ? Number(gender) : null;
 
         const insertSql = `
           INSERT INTO tbl_users
@@ -397,9 +393,7 @@ app.get("/auth/resend-code", async (req, res) => {
     "UPDATE tbl_users SET verificationCode = ? WHERE IDuser = ?",
     [Number(newCode), pending.userId],
     async (err) => {
-      if (err) {
-        console.error("Resend code DB update error:", err);
-      }
+      if (err) console.error("Resend code DB update error:", err);
 
       const sent = await sendVerificationEmail(pending.email, newCode);
       console.log(sent ? "Resend OK" : "Resend failed — code: " + newCode);
@@ -488,11 +482,9 @@ app.get("/setup/countries", requireAuth, (req, res) => {
 });
 
 app.get("/setup/cities", requireAuth, (req, res) => {
-  // Get selected country codes from query params
   var selectedCodes = req.query["countries[]"] || req.query.countries || [];
   if (typeof selectedCodes === "string") selectedCodes = selectedCodes.split(",").filter(Boolean);
 
-  // Look up cities for each selected country
   var cities = [];
   var selectedCountryNames = [];
   selectedCodes.forEach(function(code) {
@@ -505,7 +497,6 @@ app.get("/setup/cities", requireAuth, (req, res) => {
     }
   });
 
-  // If no countries selected, show all cities
   if (cities.length === 0) {
     countries.forEach(function(c) {
       c.cities.forEach(function(cityName) {
@@ -523,13 +514,11 @@ app.get("/setup/cities", requireAuth, (req, res) => {
   });
 });
 
-// Save visited countries + cities to session and DB
 app.post("/setup/save-visited", requireAuth, (req, res) => {
   var visitedCountryCodes = (req.body.countries || "").split(",").filter(Boolean);
   var visitedCities = req.body["cities[]"] || [];
   if (typeof visitedCities === "string") visitedCities = [visitedCities];
 
-  // Build flag strings for visited countries
   var visitedFlags = [];
   var visitedCountryNames = [];
   visitedCountryCodes.forEach(function(code) {
@@ -540,12 +529,10 @@ app.post("/setup/save-visited", requireAuth, (req, res) => {
     }
   });
 
-  // Save to session
   req.session.user.visitedCountries = visitedFlags;
   req.session.user.visitedCountryNames = visitedCountryNames;
   req.session.user.visitedCities = visitedCities;
 
-  // Save to DB
   connection.query(
     "UPDATE tbl_users SET visitedCountries = ?, visitedCities = ? WHERE IDuser = ?",
     [visitedCountryCodes.join(","), visitedCities.join(","), req.session.user.id],
@@ -557,7 +544,6 @@ app.post("/setup/save-visited", requireAuth, (req, res) => {
     }
   );
 });
-
 
 // ── PROFILE ──────────────────────────────────────────────────────────────
 app.get("/profile", requireAuth, (req, res) => {
@@ -579,18 +565,15 @@ app.get("/profile", requireAuth, (req, res) => {
       if (!err && results && results.length > 0) {
         image = results[0].profilePictureUrl || null;
 
-        // Parse visited countries into flags
         var visitedCodes = (results[0].visitedCountries || "").split(",").filter(Boolean);
         visitedCodes.forEach(function(code) {
           var country = countries.find(function(c) { return c.code.toLowerCase() === code.toLowerCase(); });
           if (country) visitedFlags.push(country.flag);
         });
 
-        // Parse visited cities
         visitedCityList = (results[0].visitedCities || "").split(",").filter(Boolean);
       }
 
-      // Also use session data as fallback
       if (!image && req.session.user.profilePictureUrl) {
         image = req.session.user.profilePictureUrl;
       }
@@ -601,13 +584,11 @@ app.get("/profile", requireAuth, (req, res) => {
         visitedCityList = req.session.user.visitedCities;
       }
 
-      // Count user's groups
       var allGroups = req.app.locals.groups || [];
       var groupCount = allGroups.filter(function(g) {
         return g.createdBy === userId || (g.members && g.members.some(function(m) { return m.id === userId; }));
       }).length;
 
-      // Build planning flags from user's groups
       allGroups.forEach(function(g) {
         if ((g.createdBy === userId || (g.members && g.members.some(function(m) { return m.id === userId; }))) && g.flag) {
           if (planningFlags.indexOf(g.flag) === -1) planningFlags.push(g.flag);
@@ -699,7 +680,25 @@ app.get("/upload", requireAuth, (req, res) => {
 
 // ── SETTINGS ─────────────────────────────────────────────────────────────
 app.get("/settings", requireAuth, (req, res) => {
-  res.render("settings", { user: req.session.user || null });
+  const userId = req.session.user.id;
+  connection.query(
+    "SELECT u.*, g.Value as genderValue FROM tbl_users u LEFT JOIN tbl_gender g ON u.FIDgender = g.IDgender WHERE u.IDuser = ?",
+    [userId],
+    function(err, results) {
+      if (err) {
+        console.error("Settings query error:", err.message);
+        return res.redirect("/");
+      }
+      const user = results[0] || req.session.user;
+      const groups = req.app.locals.groups || [];
+      res.render("settings", {
+        user: user,
+        groups: groups,
+        countries: [],
+        cities: []
+      });
+    }
+  );
 });
 
 // ── GROUPS / USERS ROUTES ────────────────────────────────────────────────
@@ -724,14 +723,13 @@ app.use((err, req, res, next) => {
   });
 });
 
-// ── SOCKET.IO + START SERVER ───────────────────────────────────────────────
+// ── SOCKET.IO + START SERVER ─────────────────────────────────────────────
 const http = require("http");
 const { Server } = require("socket.io");
 
 const server = http.createServer(app);
 const io = new Server(server);
 
-// In-memory chat history per group
 var chatHistory = {};
 
 io.on("connection", function(socket) {
