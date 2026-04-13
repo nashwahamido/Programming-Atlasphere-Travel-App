@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import '../styles/itinerary-builder.css';
 
@@ -7,14 +6,7 @@ const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-const defaultActivities = [
-  { id: 'a1', name: 'Prague', desc: 'Haha oh man', emoji: '🔥', time: '12m', color: '#3B5F8A' },
-  { id: 'a2', name: 'Rome', desc: 'woohoooo', time: '24m', color: '#E8933A' },
-  { id: 'a3', name: 'Dublin', desc: "Haha that's terrifying", emoji: '😂', time: '1h', color: '#3B5F8A' },
-  { id: 'a4', name: 'Colosseum', desc: 'Haha oh man', emoji: '🔥', time: '12m', color: '#3B5F8A' },
-  { id: 'a5', name: 'Pantheon', desc: 'woohoooo', time: '24m', color: '#E8933A' },
-  { id: 'a6', name: "Saint Peter's Basilica", desc: "Haha that's terrifying", emoji: '😄', time: '1h', color: '#3B5F8A' },
-];
+const defaultActivities = [];
 
 const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
   const today = new Date();
@@ -268,13 +260,19 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
       <div className="ib-panel">
         <div className="ib-panel__toggles">
           <button className={`ib-panel__tog${panelMode === 'recommend' ? ' ib-panel__tog--on' : ''}`}
-            onClick={() => setPanelMode('recommend')}>Recommend</button>
+            onClick={() => setPanelMode('recommend')}>Upvoted</button>
           <button className={`ib-panel__tog${panelMode === 'recent' ? ' ib-panel__tog--on' : ''}`}
-            onClick={() => setPanelMode('recent')}>Recent</button>
+            onClick={() => setPanelMode('recent')}>Saved</button>
         </div>
         <input className="ib-panel__search" type="text" placeholder="search activities"
           value={search} onChange={e => setSearch(e.target.value)} />
         <div className="ib-panel__list">
+          {filtered.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--ib-text-muted, #888)', fontSize: '13px' }}>
+              <p style={{ marginBottom: '8px' }}>No activities yet</p>
+              <p style={{ fontSize: '12px', opacity: 0.7 }}>Upvoted and saved activities from recommendations will appear here</p>
+            </div>
+          )}
           {filtered.map(a => (
             <div key={a.id} className="ib-act" draggable onDragStart={e => panelDragStart(e, a)}>
               <div className="ib-act__icon" style={{ backgroundColor: a.color }}></div>
