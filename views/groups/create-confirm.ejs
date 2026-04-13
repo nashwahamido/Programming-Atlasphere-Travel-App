@@ -29,7 +29,7 @@
           <button type="button" class="gc-share-btn" onclick="copyLink()">Share Link</button>
           <input type="hidden" id="inviteLinkHidden" value="<%= typeof inviteLink !== 'undefined' ? inviteLink : '' %>">
           <br>
-          <a href="/groups/<%= typeof group !== 'undefined' && group ? group.id : '1' %>" class="gc-go-btn">Skip to Group</a>
+          <a href="/groups/create/activities?groupId=<%= typeof group !== 'undefined' && group ? group.id : '' %>" class="gc-go-btn">Continue to Activities</a>
         </div>
         <div class="gc-right">
           <form action="/groups/upload-photo" method="post" enctype="multipart/form-data" id="groupPhotoForm">

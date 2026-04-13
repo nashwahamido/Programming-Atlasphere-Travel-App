@@ -6,14 +6,17 @@
   <title>Activities - Atlasphere</title>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/dist/activities.css">
 </head>
 <body>
   <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null }) %>
 
-  <div id="activities-root">
+  <div id="activities-root"
+       data-group-id="<%= typeof groupId !== 'undefined' ? groupId : '' %>">
     <p style="text-align:center;padding:40px;opacity:0.5;">Loading...</p>
   </div>
 
   <script type="module" src="/dist/activities.js"></script>
+  <script>var s=localStorage.getItem('atlasphere-theme');if(s)document.documentElement.setAttribute('data-theme',s);</script>
 </body>
 </html>

@@ -952,3 +952,17 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   .gc-right { margin-top: 20px; }
   .gc-upload-circle { width: 160px; height: 160px; }
 }
+
+.card-flag {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.card-flag img {
+  width: 100px;
+  height: 66px;
+  object-fit: cover;
+  border-radius: 8px;
+}

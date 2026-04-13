@@ -5,5 +5,6 @@ import Activities from "./src/components/activities";
 var mount = document.getElementById("activities-root");
 
 if (mount) {
-  createRoot(mount).render(<Activities />);
+  var groupId = mount.dataset.groupId || '';
+  createRoot(mount).render(<Activities groupId={groupId} />);
 }

@@ -739,7 +739,8 @@ app.get("/settings", requireAuth, (req, res) => {
 app.get("/groups/create/activities", requireAuth, (req, res) => {
   res.render("groups/activities", {
     title: "Activities",
-    user: req.session.user || null
+    user: req.session.user || null,
+    groupId: req.query.groupId || ''
   });
 });
 

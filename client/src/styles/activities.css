@@ -307,3 +307,19 @@
     font-size: 0.95rem;
   }
 }
+.skip-activities-btn {
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text, #fff);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px 24px;
+  cursor: pointer;
+  margin-left: 16px;
+  transition: background 0.2s ease;
+  font-family: inherit;
+}
+.skip-activities-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+}

@@ -114,7 +114,9 @@ function Carousel(props) {
   );
 }
 
-export default function Activities() {
+export default function Activities(props) {
+  var groupId = props.groupId || '';
+
   var activeState = useState(2);
   var active = activeState[0];
   var setActive = activeState[1];
@@ -181,16 +183,36 @@ export default function Activities() {
 
     setError("");
 
-    // Save preferences
+    // Save preferences to localStorage (used by recommendations API)
     localStorage.setItem(
       "activityPreferences",
       JSON.stringify(selectedActivities)
     );
 
+    // Also save per-group preferences
+    if (groupId) {
+      localStorage.setItem(
+        "activityPreferences-" + groupId,
+        JSON.stringify(selectedActivities)
+      );
+    }
+
     console.log("Saved preferences:", selectedActivities);
 
-    // Move to next stage (VotingSystem)
-    window.location.href = "/groups";
+    // Navigate to the group chat page
+    if (groupId) {
+      window.location.href = "/groups/" + groupId;
+    } else {
+      window.location.href = "/groups";
+    }
+  }
+
+  function handleSkip() {
+    if (groupId) {
+      window.location.href = "/groups/" + groupId;
+    } else {
+      window.location.href = "/groups";
+    }
   }
 
   return (
@@ -225,6 +247,12 @@ export default function Activities() {
             onClick={handleContinue}
           >
             Continue
+          </button>
+          <button
+            className="skip-activities-btn"
+            onClick={handleSkip}
+          >
+            Skip
           </button>
         </div>
 
