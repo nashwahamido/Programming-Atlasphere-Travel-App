@@ -20,8 +20,9 @@
       width: 100%;
     }
     .deleted-icon {
-      font-size: 64px;
       margin-bottom: 24px;
+      display: flex;
+      justify-content: center;
     }
     .deleted-title {
       font-size: 2rem;
@@ -54,7 +55,11 @@
 <body>
   <main class="deleted-page">
     <div class="deleted-card">
-      <div class="deleted-icon">👋</div>
+      <div class="deleted-icon">
+      <svg width="64" height="64" viewBox="0 0 35 35" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9.72279 33.5L9.72279 15.9M1.5 21.02L1.5 28.38C1.5 30.1722 1.49999 31.0683 1.85851 31.7528C2.17393 32.3549 2.677 32.8444 3.29602 33.1512C3.99956 33.5 4.92051 33.5 6.76258 33.5L24.3298 33.5C26.7333 33.5 27.9351 33.5 28.9057 33.0721C29.7612 32.695 30.4882 32.0881 31.0014 31.3228C31.5837 30.4546 31.7664 29.299 32.1319 26.9878L32.9921 21.5478C33.4742 18.4995 33.7152 16.9754 33.2502 15.7894C32.8422 14.7485 32.0746 13.8781 31.0792 13.3274C29.9451 12.7 28.3601 12.7 25.19 12.7L23.8661 12.7C22.945 12.7 22.4845 12.7 22.1327 12.5256C21.8233 12.3722 21.5717 12.1275 21.414 11.8264C21.2347 11.4842 21.2347 11.0362 21.2347 10.14L21.2347 5.44528C21.2347 3.2664 19.4193 1.5 17.1796 1.5C16.6454 1.5 16.1612 1.80608 15.9443 2.28096L10.4173 14.3797C10.166 14.9301 10.0404 15.2051 9.84169 15.4069C9.66606 15.5853 9.45029 15.7216 9.2115 15.8053C8.9413 15.9 8.63179 15.9 8.01294 15.9L6.76258 15.9C4.92051 15.9 3.99956 15.9 3.29602 16.2488C2.67701 16.5555 2.17394 17.0451 1.85851 17.6472C1.5 18.3317 1.5 19.2278 1.5 21.02Z" stroke="#0B3856" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+       </svg>
+    </div>
       <h1 class="deleted-title">Your account has been deleted</h1>
       <p class="deleted-msg">
         We're sorry to see you go. Your account and all associated data has been removed from Atlasphere.

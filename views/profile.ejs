@@ -5,6 +5,7 @@
     <title>Profile Atlasphere</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css"/>
 
     <style>
       .profile-avatar {
@@ -70,6 +71,16 @@
       .profile-upload-input {
         display: none;
       }
+
+      .fi {
+        width: 48px !important;
+        height: 36px !important;
+        background-size: cover !important;
+        border-radius: 4px;
+        margin: 2px;
+        display: inline-block;
+        vertical-align: middle;
+      }
     </style>
   </head>
   <body>
@@ -109,8 +120,11 @@
           <p>Visited:</p>
           <div class="flag-row">
             <% if (user && user.visitedCountries && user.visitedCountries.length > 0) { %>
-              <% user.visitedCountries.forEach(function(flag) { %>
-                <span class="flag"><%= flag %></span>
+              <% user.visitedCountries.forEach(function(country) { %>
+                <span
+                  class="fi fi-<%= (country.code || country).toLowerCase() %>"
+                  title="<%= country.name || country %>">
+                </span>
               <% }) %>
             <% } else { %>
               <span style="color: var(--text-secondary, #888); font-size: 14px;">None yet</span>
@@ -127,8 +141,11 @@
           <p>Planning to visit:</p>
           <div class="flag-row">
             <% if (user && user.planningCountries && user.planningCountries.length > 0) { %>
-              <% user.planningCountries.forEach(function(flag) { %>
-                <span class="flag"><%= flag %></span>
+              <% user.planningCountries.forEach(function(country) { %>
+                <span
+                  class="fi fi-<%= (country.code || country).toLowerCase() %>"
+                  title="<%= country.name || country %>">
+                </span>
               <% }) %>
             <% } else { %>
               <span style="color: var(--text-secondary, #888); font-size: 14px;">No trips yet</span>

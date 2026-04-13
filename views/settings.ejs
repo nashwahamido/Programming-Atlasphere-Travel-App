@@ -66,10 +66,9 @@
 
           <h3>Change Visited Countries:</h3>
           <div class="search-bar">
-            <span class="search-icon">🔍</span>
-            <input type="search" id="countrySearch" placeholder="Search countries..."
-              oninput="filterCountries(this.value)">
-            <span class="clear-icon" onclick="document.getElementById('countrySearch').value=''; filterCountries('');">⊗</span>
+            <input type="search" placeholder="Search groups..." oninput="filterGroups(this.value)"
+           style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #dce6f0;
+           font-size:14px; outline:none;">
           </div>
           <div class="location-grid" id="countryGrid">
             <% const allCountries = typeof allCountriesData !== 'undefined' ? allCountriesData : []; %>
@@ -80,7 +79,11 @@
                 <input type="checkbox" name="countries[]" value="<%= country.code %>"
                   <%= isChecked ? 'checked' : '' %>
                   onchange="this.closest('.location-card').classList.toggle('location-card--checked', this.checked)">
-                <span class="location-flag"><%= country.flag %></span>
+                <span class="location-flag">
+                <img src="https://flagcdn.com/w80/<%= country.code.toLowerCase() %>.png"
+                  alt="<%= country.name %>"
+                  onerror="this.style.display='none';">
+              </span>
                 <span class="location-name"><%= country.name %></span>
               </label>
             <% }) %>
@@ -90,21 +93,25 @@
 
           <h3>Change Visited Cities:</h3>
           <div class="search-bar">
-            <span class="search-icon">🔍</span>
-            <input type="search" id="citySearch" placeholder="Search cities..."
-              oninput="filterCities(this.value)">
-            <span class="clear-icon" onclick="document.getElementById('citySearch').value=''; filterCities('');">⊗</span>
+          <input type="search" placeholder="Search groups..." oninput="filterGroups(this.value)"
+          style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #dce6f0;
+           font-size:14px; outline:none;">
           </div>
           <div class="location-grid" id="cityGrid">
             <% allCountries.forEach(function(country) { %>
               <% country.cities.forEach(function(cityName) { %>
                 <% const isChecked = user && user.visitedCities && user.visitedCities.includes(cityName); %>
                 <label class="location-card <%= isChecked ? 'location-card--checked' : '' %>"
-                  data-name="<%= cityName.toLowerCase() %>">
+                    data-name="<%= cityName.toLowerCase() %>"
+                    data-country="<%= country.code %>">
                   <input type="checkbox" name="cities[]" value="<%= cityName %>"
                     <%= isChecked ? 'checked' : '' %>
-                    onchange="this.closest('.location-card').classList.toggle('location-card--checked', this.checked)">
-                  <span class="location-flag"><%= country.flag %></span>
+                    onchange="this.closest('.location-card').classList.toggle('location-card--checked', this.checked); filterCities(document.getElementById('citySearch').value);"
+                  <span class="location-flag">
+                  <img src="https://flagcdn.com/w80/<%= country.code.toLowerCase() %>.png"
+                    alt="<%= country.name %>"
+                    onerror="this.style.display='none';">
+                </span>
                   <span class="location-name"><%= cityName %></span>
                 </label>
               <% }) %>
@@ -120,9 +127,9 @@
       <!-- Manage your groups -->
       <div id="manageGroups" class="settings-panel">
         <div class="search-bar">
-          <span class="search-icon">🔍</span>
-          <input type="search" placeholder="Search" oninput="filterGroups(this.value)">
-          <span class="clear-icon">⊗</span>
+         <input type="search" placeholder="Search groups..." oninput="filterGroups(this.value)"
+          style="width:100%; padding:10px 14px; border-radius:10px; border:1px solid #dce6f0;
+           font-size:14px; outline:none;">
         </div>
         <div class="groups-container">
           <div class="groups-list" id="groupsList">
@@ -196,6 +203,20 @@
   </div>
 </div>
 
+<!-- Custom confirm modal -->
+<div id="confirmModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5);
+  z-index:1000; align-items:center; justify-content:center;">
+  <div style="background:white; border-radius:16px; padding:40px; max-width:400px; width:90%;
+    text-align:center; box-shadow:0 8px 32px rgba(0,0,0,0.2);">
+    <p id="confirmModalMsg" style="font-size:17px; font-weight:600; color:#0B3856; margin-bottom:12px;"></p>
+    <p id="confirmModalSub" style="font-size:14px; color:#aaa; margin-bottom:28px;"></p>
+    <div style="display:flex; gap:12px; justify-content:center;">
+      <button id="confirmModalYes" class="btn-confirm" style="min-width:120px;">Delete</button>
+      <button id="confirmModalNo" class="btn-cancel" style="min-width:120px;">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <%- include('partials/footer') %>
 
 <script>
@@ -225,18 +246,23 @@
   }
 
   function initLocationGrids() {
-    // Hide all unchecked cards by default — only show checked ones and search results
-    document.querySelectorAll('#countryGrid .location-card').forEach(function(card) {
-      if (!card.querySelector('input').checked) {
-        card.style.display = 'none';
-      }
-    });
-    document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
-      if (!card.querySelector('input').checked) {
-        card.style.display = 'none';
-      }
-    });
-  }
+  var checkedCountries = [];
+  document.querySelectorAll('#countryGrid input:checked').forEach(function(input) {
+    checkedCountries.push(input.value);
+  });
+
+  document.querySelectorAll('#countryGrid .location-card').forEach(function(card) {
+    if (!card.querySelector('input').checked) {
+      card.style.display = 'none';
+    }
+  });
+
+  document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
+    var isChecked = card.querySelector('input').checked;
+    var inCheckedCountry = checkedCountries.includes(card.dataset.country);
+    card.style.display = (isChecked || inCheckedCountry) ? '' : 'none';
+  });
+}
 
   function filterCountries(query) {
     var q = query.toLowerCase();
@@ -250,16 +276,29 @@
     });
   }
 
-  function filterCities(query) {
-    var q = query.toLowerCase();
-    document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
-      if (q.length < 2) {
-        card.style.display = card.querySelector('input').checked ? '' : 'none';
-      } else {
-        card.style.display = card.dataset.name.includes(q) ? '' : 'none';
-      }
-    });
-  }
+ function filterCities(query) {
+  var q = query.toLowerCase();
+  // Get all currently checked country codes
+  var checkedCountries = [];
+  document.querySelectorAll('#countryGrid input:checked').forEach(function(input) {
+    checkedCountries.push(input.value);
+  });
+
+  document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
+    var cardCountry = card.dataset.country;
+    var cardName = card.dataset.name;
+    var inCheckedCountry = checkedCountries.length === 0 || checkedCountries.includes(cardCountry);
+    var matchesQuery = q.length < 2 || cardName.includes(q);
+    var isChecked = card.querySelector('input').checked;
+
+    if (q.length < 2) {
+      // Show only cities from checked countries, and only if checked themselves
+      card.style.display = (inCheckedCountry && isChecked) ? '' : 'none';
+    } else {
+      card.style.display = (inCheckedCountry && matchesQuery) ? '' : 'none';
+    }
+  });
+}
 
   var selectedGroupId = null;
   var selectedGroupName = null;
@@ -279,16 +318,140 @@
     hideRenameForm();
   }
 
-  function deleteSelectedGroup() {
-    if (!selectedGroupId) {
-      document.getElementById('noGroupSelected').style.display = 'block';
-      return;
-    }
-    if (confirm('Are you sure you want to delete "' + selectedGroupName + '"?')) {
+ function showConfirm(message, subMessage, onConfirm) {
+  var modal = document.getElementById('confirmModal');
+  document.getElementById('confirmModalMsg').textContent = message;
+  document.getElementById('confirmModalSub').textContent = subMessage || '';
+  modal.style.display = 'flex';
+
+  var yesBtn = document.getElementById('confirmModalYes');
+  var noBtn = document.getElementById('confirmModalNo');
+
+  // Clone buttons to remove old event listeners
+  var newYes = yesBtn.cloneNode(true);
+  var newNo = noBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newYes, yesBtn);
+  noBtn.parentNode.replaceChild(newNo, noBtn);
+
+  newYes.addEventListener('click', function() {
+    modal.style.display = 'none';
+    onConfirm();
+  });
+  newNo.addEventListener('click', function() {
+    modal.style.display = 'none';
+  });
+
+  // Close on backdrop click
+  modal.onclick = function(e) {
+    if (e.target === modal) modal.style.display = 'none';
+  };
+}
+
+function showConfirm(message, subMessage, onConfirm) {
+  var modal = document.getElementById('confirmModal');
+  document.getElementById('confirmModalMsg').textContent = message;
+  document.getElementById('confirmModalSub').textContent = subMessage || '';
+  modal.style.display = 'flex';
+
+  var yesBtn = document.getElementById('confirmModalYes');
+  var noBtn = document.getElementById('confirmModalNo');
+
+  // Clone buttons to remove old event listeners
+  var newYes = yesBtn.cloneNode(true);
+  var newNo = noBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newYes, yesBtn);
+  noBtn.parentNode.replaceChild(newNo, noBtn);
+
+  newYes.addEventListener('click', function() {
+    modal.style.display = 'none';
+    onConfirm();
+  });
+  newNo.addEventListener('click', function() {
+    modal.style.display = 'none';
+  });
+
+  // Close on backdrop click
+  modal.onclick = function(e) {
+    if (e.target === modal) modal.style.display = 'none';
+  };
+}
+
+function showConfirm(message, subMessage, onConfirm) {
+  var modal = document.getElementById('confirmModal');
+  document.getElementById('confirmModalMsg').textContent = message;
+  document.getElementById('confirmModalSub').textContent = subMessage || '';
+  modal.style.display = 'flex';
+
+  var yesBtn = document.getElementById('confirmModalYes');
+  var noBtn = document.getElementById('confirmModalNo');
+
+  // Clone buttons to remove old event listeners
+  var newYes = yesBtn.cloneNode(true);
+  var newNo = noBtn.cloneNode(true);
+  yesBtn.parentNode.replaceChild(newYes, yesBtn);
+  noBtn.parentNode.replaceChild(newNo, noBtn);
+
+  newYes.addEventListener('click', function() {
+    modal.style.display = 'none';
+    onConfirm();
+  });
+  newNo.addEventListener('click', function() {
+    modal.style.display = 'none';
+  });
+
+  // Close on backdrop click
+  modal.onclick = function(e) {
+    if (e.target === modal) modal.style.display = 'none';
+  };
+}
+
+function deleteSelectedGroup() {
+  if (!selectedGroupId) {
+    document.getElementById('noGroupSelected').style.display = 'block';
+    return;
+  }
+  showConfirm(
+    'Delete "' + selectedGroupName + '"?',
+    'This will permanently remove the group.',
+    function() {
       fetch('/groups/delete/' + selectedGroupId, { method: 'POST' })
-        .then(function() { window.location.reload(); });
+        .then(function() {
+          document.querySelectorAll('.group-row').forEach(function(row) {
+            var btn = row.querySelector('.group-name-btn');
+            if (btn && btn.textContent.trim() === selectedGroupName) {
+              row.remove();
+            }
+          });
+          selectedGroupId = null;
+          selectedGroupName = null;
+          hideRenameForm();
+          document.getElementById('noGroupSelected').style.display = 'none';
+        });
+    }
+  );
+}
+
+
+// Restore active tab from URL hash on page load
+(function() {
+  var hash = window.location.hash.replace('#', '');
+  if (hash) {
+    var panel = document.getElementById(hash);
+    var tabs = document.querySelectorAll('.settings-tab');
+    var tabMap = {
+      'manageInfo': 0,
+      'visitedLocations': 1,
+      'manageGroups': 2,
+      'deleteAccount': 3
+    };
+    if (panel && tabMap[hash] !== undefined) {
+      document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+      panel.classList.add('active');
+      tabs[tabMap[hash]].classList.add('active');
     }
   }
+})();
 
   function showRenameForm() {
     if (!selectedGroupId) {

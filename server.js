@@ -534,13 +534,11 @@ app.post("/setup/save-visited", requireAuth, (req, res) => {
 
   var visitedFlags = [];
   var visitedCountryNames = [];
-  visitedCountryCodes.forEach(function(code) {
-    var country = countries.find(function(c) { return c.code.toLowerCase() === code.toLowerCase(); });
-    if (country) {
-      visitedFlags.push(country.flag);
-      visitedCountryNames.push(country.name);
-    }
-  });
+  var visitedCodes = (results[0].visitedCountries || "").split(",").filter(Boolean);
+visitedCodes.forEach(function(code) {
+  var country = countries.find(function(c) { return c.code.toLowerCase() === code.toLowerCase(); });
+  if (country) visitedFlags.push({ code: country.code, name: country.name });
+});
 
   req.session.user.visitedCountries = visitedFlags;
   req.session.user.visitedCountryNames = visitedCountryNames;
@@ -581,7 +579,7 @@ app.get("/profile", requireAuth, (req, res) => {
         var visitedCodes = (results[0].visitedCountries || "").split(",").filter(Boolean);
         visitedCodes.forEach(function(code) {
           var country = countries.find(function(c) { return c.code.toLowerCase() === code.toLowerCase(); });
-          if (country) visitedFlags.push(country.flag);
+          if (country) visitedFlags.push({ code: country.code, name: country.name });
         });
 
         visitedCityList = (results[0].visitedCities || "").split(",").filter(Boolean);
@@ -614,6 +612,8 @@ app.get("/profile", requireAuth, (req, res) => {
             });
           }
 
+          console.log('visitedFlags before render:', visitedFlags);
+          console.log('visitedCodes from DB:', visitedCodes);
           var user = req.session.user;
           user.visitedCountries = visitedFlags;
           user.visitedCities = visitedCityList;

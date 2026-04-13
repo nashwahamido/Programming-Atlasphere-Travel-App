@@ -27,8 +27,17 @@
           <div class="destination-grid" id="countryGrid">
             <% if (typeof countries !== 'undefined') { %>
               <% countries.forEach(function(c, i) { %>
-                <div class="destination-card<%= i >= 6 ? ' hidden-card' : '' %>" data-value="<%= c.name %>" data-index="<%= i %>">
-                  <div class="card-flag"><%= c.flag %></div>
+                <div class="destination-card<%= i >= 6 ? ' hidden-card' : '' %>"
+                  data-value="<%= c.name %>"
+                  data-code="<%= c.code.toLowerCase() %>"
+                  data-index="<%= i %>">
+                  <div class="card-flag">
+                    <img
+                      src="https://flagcdn.com/w80/<%= c.code.toLowerCase() %>.png"
+                      alt="<%= c.name %>"
+                      onerror="this.style.display='none'; this.nextSibling.style.display='block';">
+                    <span style="display:none; font-size:2rem;"><%= c.code %></span>
+                  </div>
                   <span class="card-name"><%= c.name %></span>
                 </div>
               <% }); %>
@@ -85,7 +94,7 @@
     updateVisibility();
   });
 
-  // Search — show all matches, hide Load More while searching
+  // Search
   searchInput.addEventListener('input', function(e) {
     var q = e.target.value.toLowerCase().trim();
     isSearching = q.length > 0;
@@ -97,7 +106,6 @@
       });
       loadMoreBtn.style.display = 'none';
     } else {
-      // Reset to paginated view
       visible = PAGE_SIZE;
       updateVisibility();
     }
