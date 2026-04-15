@@ -890,6 +890,51 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
 });
 
 
+// ── VOTE API ────────────────────────────────────────────────────────────
+
+app.post("/api/votes", requireAuth, (req, res) => {
+  var userId = req.session.user.id;
+  var { groupId, activityId, activityName, activityImage, activityDesc, activityTags, vote } = req.body;
+  console.log("Vote POST:", { groupId, activityId, activityName: activityName ? activityName.substring(0, 30) : '', vote, userId });
+  if (!groupId || !activityId || !vote) return res.status(400).json({ error: "Missing fields" });
+  var tagsStr = Array.isArray(activityTags) ? activityTags.join(",") : (activityTags || "");
+  connection.query(
+    "INSERT INTO tbl_activity_votes (groupId, userId, activityId, activityName, activityImage, activityDesc, activityTags, `vote`) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE `vote` = ?, activityName = ?, activityImage = ?, activityDesc = ?, activityTags = ?",
+    [groupId, userId, activityId, activityName || "", activityImage || "", activityDesc || "", tagsStr, vote, vote, activityName || "", activityImage || "", activityDesc || "", tagsStr],
+    function(err) {
+      if (err) { console.error("Vote save error:", err.message); return res.status(500).json({ error: "Failed" }); }
+      res.json({ success: true });
+    }
+  );
+});
+
+app.get("/api/votes", requireAuth, (req, res) => {
+  var userId = req.session.user.id;
+  var groupId = req.query.groupId;
+  if (!groupId) return res.json([]);
+  connection.query(
+    "SELECT activityId, activityName, activityImage, activityDesc, activityTags, `vote` FROM tbl_activity_votes WHERE groupId = ? AND userId = ?",
+    [groupId, userId],
+    function(err, rows) { res.json(!err && rows ? rows : []); }
+  );
+});
+
+app.get("/api/votes/saved", requireAuth, (req, res) => {
+  var userId = req.session.user.id;
+  var groupId = req.query.groupId;
+  var type = req.query.type;
+  console.log("Vote SAVED GET:", { groupId, type, userId });
+  if (!groupId) return res.json([]);
+  var sql = "SELECT activityId, activityName, activityImage, activityDesc, activityTags, `vote` FROM tbl_activity_votes WHERE groupId = ? AND userId = ?";
+  var params = [groupId, userId];
+  if (type === 'upvote' || type === 'bookmark') { sql += " AND `vote` = ?"; params.push(type); }
+  else { sql += " AND `vote` IN ('upvote', 'bookmark')"; }
+  connection.query(sql, params, function(err, rows) {
+    console.log("Vote saved result:", { err: err ? err.message : null, count: rows ? rows.length : 0 });
+    res.json(!err && rows ? rows : []);
+  });
+});
+
 // ── ERROR HANDLING ───────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).render("error", {
@@ -980,4 +1025,3 @@ server.listen(PORT, function() {
 });
 
 module.exports = app;
-

@@ -131,3 +131,40 @@
   margin: -8px 0 14px 0;
   text-align: center;
 }
+/* Calendar day with scheduled plans - orange dot */
+.ib-cal__day--has-plans {
+  position: relative;
+}
+.ib-cal__day--has-plans::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ib-accent, #E8933A);
+}
+.ib-cal__day--start.ib-cal__day--has-plans::after,
+.ib-cal__day--end.ib-cal__day--has-plans::after {
+  background: #fff;
+}
+
+/* Week day with scheduled plans - orange dot */
+.ib-week__day--has-plans {
+  position: relative;
+}
+.ib-week__day--has-plans::before {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ib-accent, #E8933A);
+}
+.ib-week__day--active.ib-week__day--has-plans::before {
+  background: #fff;
+}

@@ -70,8 +70,9 @@ if (mount) {
 React.createElement('div', { style: { display: activeTab === 'discover' ? 'contents' : 'none' } },
   React.createElement('div', { className: 'gp-tab-with-overlay' },
     React.createElement(VotingSystem, {
-      destination: groupDestination,
-      groupId: groupId
+      destination: activeGroup.destination || groupDestination,
+      groupId: activeGroup.id || groupId,
+      userId: userId
     }),
     React.createElement(ChatOverlay, Object.assign({
       key: 'overlay-discover-' + (activeGroup.id || groupId),
@@ -84,8 +85,10 @@ React.createElement('div', { style: { display: activeTab === 'discover' ? 'conte
     React.createElement('div', { style: { display: activeTab === 'itinerary' ? 'contents' : 'none' } },
   React.createElement('div', { className: 'gp-tab-with-overlay' },
     React.createElement(ItineraryBuilder, {
-      tripId: groupId,
-      tripDays: tripDays
+      tripId: activeGroup.id || groupId,
+      groupId: activeGroup.id || groupId,
+      tripDays: tripDays,
+      isActive: activeTab === 'itinerary'
     }),
     React.createElement(ChatOverlay, Object.assign({
       key: 'overlay-itinerary-' + (activeGroup.id || groupId),

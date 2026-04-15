@@ -8,9 +8,45 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 
 const defaultActivities = [];
 
-const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
+const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDays = 7, isActive = false }) => {
   const today = new Date();
   const storageKey = 'itinerary-' + (tripId || 'default');
+
+  // Activities loaded from vote API
+  const [upvotedActivities, setUpvotedActivities] = useState([]);
+  const [savedActivities, setSavedActivities] = useState([]);
+
+  // Re-fetch whenever tab becomes active or groupId changes
+  useEffect(() => {
+    var gid = groupId || tripId;
+    if (!gid || !isActive) return;
+
+    fetch('/api/votes/saved?groupId=' + gid + '&type=upvote')
+      .then(r => r.json())
+      .then(data => {
+        setUpvotedActivities((data || []).map((v, i) => ({
+          id: v.activityId || ('up-' + i),
+          name: v.activityName,
+          desc: (v.activityTags || '').split(',').filter(Boolean).join(', '),
+          color: '#3B5F8A',
+          image: v.activityImage
+        })));
+      })
+      .catch(() => {});
+
+    fetch('/api/votes/saved?groupId=' + gid + '&type=bookmark')
+      .then(r => r.json())
+      .then(data => {
+        setSavedActivities((data || []).map((v, i) => ({
+          id: v.activityId || ('bk-' + i),
+          name: v.activityName,
+          desc: (v.activityTags || '').split(',').filter(Boolean).join(', '),
+          color: '#E8933A',
+          image: v.activityImage
+        })));
+      })
+      .catch(() => {});
+  }, [groupId, tripId, isActive]);
 
   // ── Calendar state (persisted) ────────────────────────────────────────────
   const [calYear, setCalYear] = useState(() => {
@@ -124,12 +160,33 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
     localStorage.removeItem(storageKey + '-activeDay');
   };
 
+  // Check which day indices have scheduled activities
+  const daysWithBlocks = useMemo(() => {
+    var result = {};
+    for (var dayIdx in allBlocks) {
+      if (Object.keys(allBlocks[dayIdx]).length > 0) {
+        result[dayIdx] = true;
+      }
+    }
+    return result;
+  }, [allBlocks]);
+
+  // Map a calendar date to its day index (0-based from rangeStart)
+  const dateToDayIndex = (d) => {
+    if (rangeStart === null || d < rangeStart || d > rangeEnd) return -1;
+    return d - rangeStart;
+  };
+
   const dayClass = (d) => {
     if (rangeStart === null) return 'ib-cal__day';
-    if (d === rangeStart) return 'ib-cal__day ib-cal__day--start';
-    if (d === rangeEnd) return 'ib-cal__day ib-cal__day--end';
-    if (d > rangeStart && d < rangeEnd) return 'ib-cal__day ib-cal__day--range';
-    return 'ib-cal__day';
+    var cls = 'ib-cal__day';
+    if (d === rangeStart) cls += ' ib-cal__day--start';
+    else if (d === rangeEnd) cls += ' ib-cal__day--end';
+    else if (d > rangeStart && d < rangeEnd) cls += ' ib-cal__day--range';
+    // Add indicator if this day has activities
+    var idx = dateToDayIndex(d);
+    if (idx >= 0 && daysWithBlocks[idx]) cls += ' ib-cal__day--has-plans';
+    return cls;
   };
 
   // Current active day label for schedule title
@@ -178,9 +235,10 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
   });
 
   // ── Filter activities ─────────────────────────────────────────────────────
-  const filtered = defaultActivities.filter(a =>
+  const currentActivities = panelMode === 'recommend' ? upvotedActivities : savedActivities;
+  const filtered = currentActivities.filter(a =>
     a.name.toLowerCase().includes(search.toLowerCase()) ||
-    a.desc.toLowerCase().includes(search.toLowerCase())
+    (a.desc || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -222,7 +280,7 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
           <div className="ib-week">
             {weekDays.map((d, i) => (
               <div key={i}
-                className={`ib-week__day${activeDay === i ? ' ib-week__day--active' : ''}`}
+                className={`ib-week__day${activeDay === i ? ' ib-week__day--active' : ''}${daysWithBlocks[i] ? ' ib-week__day--has-plans' : ''}`}
                 onClick={() => setActiveDay(i)}>
                 <span className="ib-week__num">{d.num}</span>
                 <span className="ib-week__label">{d.label}</span>
@@ -273,14 +331,21 @@ const ItineraryBuilder = ({ tripId = null, onSave = null, tripDays = 7 }) => {
               <p style={{ fontSize: '12px', opacity: 0.7 }}>Upvoted and saved activities from recommendations will appear here</p>
             </div>
           )}
+          {filtered.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--ib-text-muted, #888)', fontSize: '13px' }}>
+              <p style={{ marginBottom: '8px' }}>No activities yet</p>
+              <p style={{ fontSize: '12px', opacity: 0.7 }}>Upvoted and saved activities from recommendations will appear here</p>
+            </div>
+          )}
           {filtered.map(a => (
             <div key={a.id} className="ib-act" draggable onDragStart={e => panelDragStart(e, a)}>
-              <div className="ib-act__icon" style={{ backgroundColor: a.color }}></div>
+              <div className="ib-act__icon" style={{ backgroundColor: a.color, overflow: 'hidden' }}>
+                {a.image && <img src={a.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' }} />}
+              </div>
               <div className="ib-act__info">
                 <div className="ib-act__name">{a.name}</div>
-                <div className="ib-act__desc">{a.desc} {a.emoji || ''}</div>
+                <div className="ib-act__desc">{a.desc || ''}</div>
               </div>
-              <span className="ib-act__time">{a.time}</span>
             </div>
           ))}
         </div>
