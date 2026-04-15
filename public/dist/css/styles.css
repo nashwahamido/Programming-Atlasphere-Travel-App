@@ -260,7 +260,7 @@ body {
 
 /* ===== PROFILE PAGE ===== */
 .profile-main {
-  max-width: 700px;
+  max-width: 900px;
   margin: 60px auto;
   text-align: center;
   padding: 0 20px;
@@ -316,12 +316,12 @@ body {
 }
 
 .stats-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 32px;
   margin-top: 8px;
   text-align: left;
+  width: 100%;
 }
 
 .stat p {
@@ -976,3 +976,20 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   object-fit: cover;
   border-radius: 8px;
 }
+
+.flag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.flag-row .fi {
+  width: 48px !important;
+  height: 36px !important;
+  background-size: cover !important;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+}
+

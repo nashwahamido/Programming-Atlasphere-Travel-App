@@ -63,12 +63,10 @@ var ChatBox = function(props) {
       }
     }
 
-    return function() {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        connectedRef.current = false;
-      }
-    };
+ return function() {
+  // Don't disconnect on unmount since we keep component mounted
+};
+
   }, [groupId]);
 
   useEffect(function() {

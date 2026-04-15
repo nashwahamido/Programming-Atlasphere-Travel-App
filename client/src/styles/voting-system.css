@@ -287,11 +287,354 @@
   height: 60px;
 }
 
-[data-theme="light"] .nav-icon-white {
-  filter: none;
+.voting-page {
+  min-height: calc(100vh - 120px);
+  background: var(--bg, #e4f1ff);
+  padding: 32px 24px 44px;
+  font-family: "Lexend", sans-serif;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-[data-theme="dark"] .nav-icon-white {
+.voting-section {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  text-align: center;
+}
+
+.voting-header {
+  margin-bottom: 26px;
+  text-align: left;
+}
+
+.voting-header h1 {
+  font-size: clamp(3rem, 6vw, 5rem);
+  line-height: 0.95;
+  font-weight: 700;
+  color: var(--text, #000);
+  margin-bottom: 8px;
+}
+
+.voting-header p {
+  font-size: 1rem;
+  color: var(--text-secondary, #111);
+}
+
+.voting-toggle {
+  width: fit-content;
+  margin: 0 auto 40px;
+  background: #2364aa;
+  border-radius: 999px;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-btn {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.toggle-btn.active {
+  background: #eef4fb;
+}
+
+.toggle-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.carousel-3d {
+  position: relative;
+  width: 28rem;
+  height: 32rem;
+  margin: 0 auto;
+  perspective: 1100px;
+  transform-style: preserve-3d;
+}
+
+.card-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  transition: all 0.35s ease-out;
+  transform:
+    rotateY(calc(var(--offset) * 38deg))
+    scale(calc(1 - var(--abs-offset) * 0.22))
+    translateZ(calc(var(--abs-offset) * -24rem))
+    translateX(
+      calc(
+        var(--direction) *
+        (-12rem - (var(--abs-offset) * 20rem))
+      )
+    );
+  filter: blur(calc(var(--abs-offset) * 0.4rem));
+}
+
+.vote-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 3rem;
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
+  background: #ccc;
+}
+
+.vote-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.vote-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.52) 40%,
+    rgba(0, 0, 0, 0.15) 70%,
+    rgba(0, 0, 0, 0.03) 100%
+  );
+}
+
+.share-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  width: 60px;
+  height: 60px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  background: rgba(170, 170, 170, 0.35);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.share-icon {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.vote-card-content {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tag-list {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.activity-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.9);
+  color: #111;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.activity-copy {
+  margin-top: auto;
+}
+
+.activity-copy h2 {
+  color: white;
+  font-size: 3rem;
+  line-height: 0.95;
+  font-weight: 700;
+  margin-bottom: 8px;
+  opacity: var(--active);
+  transition: opacity 0.3s ease-out;
+  text-align: left;
+}
+
+.activity-copy p {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.96rem;
+  line-height: 1.35;
+  text-align: left;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 4;     /* limits to 4 lines */
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+
+  opacity: var(--active);
+  transition: opacity 0.3s ease-out;
+}
+
+.vote-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+  opacity: var(--active);
+  transition: opacity 0.3s ease-out;
+}
+
+.vote-button {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(170, 170, 170, 0.35);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  backdrop-filter: blur(5px);
+}
+
+.vote-button.selected {
+  background: #2364aa;
+}
+
+.maybe-icon {
+  width: 25px;
+  height: 25px;
+  display: block;
+}
+
+.vote-icon {
+  width: 35px;
+  height: 35px;
+  display: block;
+  filter: brightness(0) invert(1);
+}
+
+.maybe-button {
+  width: 50px;
+  height: 50px;
+}
+
+.maybe-button img {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  width: 60px;
+  height: 60px;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.nav-btn.left {
+  transform: translateX(-120%) translateY(-50%);
+}
+
+.nav-btn.right {
+  right: 0;
+  transform: translateX(120%) translateY(-50%);
+}
+
+.nav-icon {
+  width: 60px;
+  height: 60px;
+  display: block;
+}
+
+.nav-icon-white {
+  width: 60px;
+  height: 60px;
+}
+
+.submit-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 44px;
+}
+
+.submit-votes-button {
+  border: none;
+  border-radius: 999px;
+  background: #ff9811;
+  color: #111;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px 24px;
+  cursor: pointer;
+}
+
+.submit-votes-button:hover {
+  background: #feb75b;
+}
+
+@media (max-width: 900px) {
+  .carousel-3d {
+    width: 21rem;
+    height: 29rem;
+  }
+
+  .activity-copy h2 {
+    font-size: 2.4rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .voting-page {
+    padding: 24px 16px 36px;
+  }
+
+  .voting-header h1 {
+    font-size: 2.8rem;
+  }
+
+  .carousel-3d {
+    width: 18rem;
+    height: 26rem;
+  }
+
+  .nav-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .nav-icon {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.nav-icon-white,
+.share-icon {
   filter: brightness(0) invert(1);
 }
 
@@ -351,3 +694,4 @@
     height: 22px;
   }
 }
+
