@@ -407,3 +407,10 @@
 [data-theme="dark"] #confirmModalMsg {
   color: #ffffff;
 }
+#manageGroups .groups-container {
+  max-width: 600px;
+}
+
+#manageGroups .groups-list {
+  max-width: 320px;
+}
