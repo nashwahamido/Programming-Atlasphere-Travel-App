@@ -935,6 +935,49 @@ app.get("/api/votes/saved", requireAuth, (req, res) => {
   });
 });
 
+// ── ITINERARY BLOCKS API ─────────────────────────────────────────────────
+
+// Save all blocks for a group (full replace)
+app.post("/api/itinerary/blocks", requireAuth, (req, res) => {
+  var userId = req.session.user.id;
+  var { groupId, blocks } = req.body;
+  console.log("Itinerary save:", { groupId, userId, blockCount: blocks ? blocks.length : 0 });
+  if (!groupId) return res.status(400).json({ error: "Missing groupId" });
+
+  // Delete existing blocks for this group, then insert new ones
+  connection.query("DELETE FROM tbl_itinerary_blocks WHERE groupId = ?", [groupId], function(err) {
+    if (err) { console.error("Itinerary delete error:", err.message); return res.status(500).json({ error: "Failed" }); }
+
+    if (!blocks || blocks.length === 0) return res.json({ success: true });
+
+    var values = blocks.map(function(b) {
+      return [groupId, b.dayIndex, b.timeSlot, b.activityName, b.activityColor || '#E8933A', userId];
+    });
+
+    connection.query(
+      "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, updatedBy) VALUES ?",
+      [values],
+      function(insertErr) {
+        if (insertErr) { console.error("Itinerary insert error:", insertErr.message); return res.status(500).json({ error: "Failed" }); }
+        res.json({ success: true });
+      }
+    );
+  });
+});
+
+// Load blocks for a group
+app.get("/api/itinerary/blocks", requireAuth, (req, res) => {
+  var groupId = req.query.groupId;
+  if (!groupId) return res.json([]);
+  connection.query(
+    "SELECT dayIndex, timeSlot, activityName, activityColor FROM tbl_itinerary_blocks WHERE groupId = ? ORDER BY dayIndex, timeSlot",
+    [groupId],
+    function(err, rows) {
+      res.json(!err && rows ? rows : []);
+    }
+  );
+});
+
 // ── ERROR HANDLING ───────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).render("error", {

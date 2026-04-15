@@ -90,11 +90,8 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     });
   }, [rangeStart, tripDays, calYear, calMonth]);
 
-  // ── Schedule state (persisted) ────────────────────────────────────────────
-  const [allBlocks, setAllBlocks] = useState(() => {
-    const saved = localStorage.getItem(storageKey + '-blocks');
-    return saved ? JSON.parse(saved) : {};
-  });
+  // ── Schedule state (loaded from DB) ──────────────────────────────────────
+  const [allBlocks, setAllBlocks] = useState({});
 
   const dayBlocks = allBlocks[activeDay] || {};
 
@@ -106,7 +103,58 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const [dragInfo, setDragInfo] = useState(null);
   const [overSlot, setOverSlot] = useState(null);
 
-  // ── Persist all state to localStorage ────────────────────────────────────
+  // ── Load blocks from DB on mount / tab activation ─────────────────────────
+  useEffect(() => {
+    var gid = groupId || tripId;
+    if (!gid || !isActive) return;
+
+    fetch('/api/itinerary/blocks?groupId=' + gid)
+      .then(r => r.json())
+      .then(data => {
+        if (!Array.isArray(data)) return;
+        var loaded = {};
+        data.forEach(function(b) {
+          if (!loaded[b.dayIndex]) loaded[b.dayIndex] = {};
+          loaded[b.dayIndex][b.timeSlot] = { name: b.activityName, color: b.activityColor || '#E8933A' };
+        });
+        setAllBlocks(loaded);
+      })
+      .catch(() => {});
+  }, [groupId, tripId, isActive]);
+
+  // ── Save blocks to DB whenever they change ────────────────────────────────
+  const saveTimeoutRef = React.useRef(null);
+  useEffect(() => {
+    var gid = groupId || tripId;
+    if (!gid) return;
+
+    // Also save to localStorage as backup
+    localStorage.setItem(storageKey + '-blocks', JSON.stringify(allBlocks));
+
+    // Debounce DB save by 500ms
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      var flat = [];
+      for (var dayIdx in allBlocks) {
+        for (var slot in allBlocks[dayIdx]) {
+          var block = allBlocks[dayIdx][slot];
+          flat.push({
+            dayIndex: parseInt(dayIdx),
+            timeSlot: slot,
+            activityName: block.name || block,
+            activityColor: block.color || '#E8933A'
+          });
+        }
+      }
+      fetch('/api/itinerary/blocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId: gid, blocks: flat })
+      }).catch(() => {});
+    }, 500);
+  }, [allBlocks, groupId, tripId]);
+
+  // ── Persist calendar state to localStorage ────────────────────────────────
   useEffect(() => {
     if (rangeStart !== null) {
       localStorage.setItem(storageKey + '-rangeStart', rangeStart);
@@ -115,10 +163,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       localStorage.setItem(storageKey + '-calMonth', calMonth);
     }
   }, [rangeStart, rangeEnd, calYear, calMonth]);
-
-  useEffect(() => {
-    localStorage.setItem(storageKey + '-blocks', JSON.stringify(allBlocks));
-  }, [allBlocks]);
 
   useEffect(() => {
     localStorage.setItem(storageKey + '-activeDay', activeDay);
@@ -197,16 +241,16 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
 
   // ── Drag from panel ───────────────────────────────────────────────────────
   const panelDragStart = (e, act) => {
-    setDragInfo({ type: 'panel', name: act.name, id: act.id });
+    setDragInfo({ type: 'panel', name: act.name, id: act.id, color: act.color || '#E8933A' });
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', act.id);
   };
 
   // ── Drag from schedule ────────────────────────────────────────────────────
   const blockDragStart = (e, timeKey, block) => {
-    setDragInfo({ type: 'block', id: block.id, text: block.text, from: timeKey });
+    setDragInfo({ type: 'block', id: block.id, name: block.name || block.text, from: timeKey });
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', block.id);
+    e.dataTransfer.setData('text/plain', block.id || '');
   };
 
   // ── Drop on slot ──────────────────────────────────────────────────────────
@@ -218,10 +262,10 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     setAllBlocks(prev => {
       const dayData = { ...(prev[activeDay] || {}) };
       if (dragInfo.type === 'panel') {
-        dayData[timeKey] = { id: 'sb-' + Date.now(), text: dragInfo.name };
+        dayData[timeKey] = { id: 'sb-' + Date.now(), name: dragInfo.name, color: dragInfo.color || '#E8933A' };
       } else if (dragInfo.type === 'block') {
         if (dragInfo.from) delete dayData[dragInfo.from];
-        dayData[timeKey] = { id: dragInfo.id, text: dragInfo.text };
+        dayData[timeKey] = { id: dragInfo.id, name: dragInfo.name, color: dragInfo.color || '#E8933A' };
       }
       return { ...prev, [activeDay]: dayData };
     });
@@ -304,7 +348,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
                 onDrop={e => slotDrop(e, h)}>
                 {dayBlocks[h] && (
                   <div className="ib-block" draggable onDragStart={e => blockDragStart(e, h, dayBlocks[h])}>
-                    <span className="ib-block__text">{dayBlocks[h].text}</span>
+                    <span className="ib-block__text">{dayBlocks[h].name || dayBlocks[h].text}</span>
                     <button className="ib-block__x" onClick={() => removeBlock(h)}>&times;</button>
                   </div>
                 )}
