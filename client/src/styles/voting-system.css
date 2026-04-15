@@ -74,6 +74,7 @@
   margin: 0 auto;
   perspective: 1100px;
   transform-style: preserve-3d;
+  overflow: visible;
 }
 
 .card-container {
@@ -695,3 +696,19 @@
   }
 }
 
+.voting-page {
+  align-items: flex-start;
+}
+
+.voting-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.voting-header {
+  width: 100%;
+  max-width: 1400px;
+  padding: 0 24px;
+}

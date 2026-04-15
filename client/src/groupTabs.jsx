@@ -67,17 +67,17 @@ if (mount) {
         ),
 
         // Discover tab — always mounted, hidden when not active
-      React.createElement('div', { style: { display: activeTab === 'discover' ? 'contents' : 'none' } },
-  React.createElement('div', { className: 'gp-tab-with-overlay' },
+React.createElement('div', { style: { display: activeTab === 'discover' ? 'contents' : 'none' } },
+  React.createElement('div', { style: { flex: 1, display: 'flex', overflow: 'hidden' } },
     React.createElement(VotingSystem, {
       destination: groupDestination,
       groupId: groupId
-    }),
-    React.createElement(ChatOverlay, Object.assign({
-      key: 'overlay-discover-' + (activeGroup.id || groupId),
-      notificationsMuted: activeTab === 'chat'
-    }, chatProps))
-  )
+    })
+  ),
+  React.createElement(ChatOverlay, Object.assign({
+    key: 'overlay-discover-' + (activeGroup.id || groupId),
+    notificationsMuted: activeTab === 'chat'
+  }, chatProps))
 ),
 
         // Itinerary tab — always mounted, hidden when not active
