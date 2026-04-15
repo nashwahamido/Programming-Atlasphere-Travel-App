@@ -67,7 +67,7 @@ if (mount) {
         ),
 
         // Discover tab — always mounted, hidden when not active
-      React.createElement('div', { style: { display: activeTab === 'discover' ? 'contents' : 'none' } },
+React.createElement('div', { style: { display: activeTab === 'discover' ? 'contents' : 'none' } },
   React.createElement('div', { className: 'gp-tab-with-overlay' },
     React.createElement(VotingSystem, {
       destination: groupDestination,

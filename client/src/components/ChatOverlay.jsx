@@ -84,13 +84,10 @@ var ChatOverlay = function(props) {
       }
     }
 
-    return function() {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-      }
-      connectedRef.current = false;
-    };
+return function() {
+  // Don't disconnect — component stays mounted
+};
+  
   }, [groupId, userId, userName, userAvatar, notificationsMuted]);
 
   function handleToggle() {
@@ -153,11 +150,11 @@ var ChatOverlay = function(props) {
         className: 'co__toggle' + (isOpen ? ' co__toggle--open' : ''),
         onClick: handleToggle
       },
-      React.createElement(
-        'span',
-        { className: 'co__toggle-label' },
-        (props.groupName || 'Chat') + ' Chat'
-      ),
+        React.createElement('img', {
+        src: '/icons/Message Icon Bold.svg',
+        alt: 'Chat',
+        style: { width: 24, height: 24, filter: 'brightness(0) invert(1)' }
+      }),
       unreadCount > 0 &&
         React.createElement(
           'span',

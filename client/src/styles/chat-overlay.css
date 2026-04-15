@@ -1,26 +1,121 @@
+/* ── Chat Overlay Toggle Button ── */
+.co {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
 .co__toggle {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.co__toggle-label {
-  display: inline-block;
-}
-
-.co__toggle-badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 28px;
-  height: 28px;
-  padding: 0 10px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #0B3856;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  transition: all 0.2s;
+  position: relative;
+}
+
+.co__toggle:hover {
+  background: #209EBB;
+  transform: scale(1.05);
+}
+
+.co__toggle--open {
+  background: #209EBB;
+}
+
+.co__toggle-label {
+  display: none;
+}
+
+.co__toggle-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
   border-radius: 999px;
   background: #e8933a;
   color: #fff;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+
+/* ── Chat Panel ── */
+.co__panel {
+  width: 320px;
+  height: 420px;
+  background: var(--navbar-bg, #fff);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  border: 1px solid var(--border, rgba(0,0,0,0.08));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.co__panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,0.08));
+  background: var(--navbar-bg, #fff);
+}
+
+.co__panel-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.co__panel-title span:first-child {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text, #0B3856);
+}
+
+.co__panel-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #888);
+}
+
+.co__status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  display: inline-block;
+}
+
+.co__close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--text-secondary, #888);
+  padding: 4px;
   line-height: 1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.co__close:hover {
+  color: var(--text, #0B3856);
 }
