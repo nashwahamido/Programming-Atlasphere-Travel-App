@@ -55,7 +55,7 @@
 .ib-cal__day--end { background: var(--ib-accent); color: #fff; font-weight: 700; }
 .ib-cal__day--range { background: var(--ib-range-bg); color: var(--ib-range-text); border-radius: 8px; }
 
-.ib-schedule { min-height: 500px; }
+.ib-schedule { min-height: 500px; overflow-y: auto; max-height: calc(100vh - 160px); }
 .ib-week { display: flex; justify-content: center; margin-bottom: 16px; }
 .ib-week__day { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 14px; cursor: pointer; border-radius: 12px; transition: all 0.2s; }
 .ib-week__day:hover { background: var(--ib-input-bg); }
@@ -89,7 +89,7 @@
 .ib-panel__search { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--ib-input-border); background: var(--ib-input-bg); color: var(--ib-text); font-size: 13px; font-family: inherit; margin-bottom: 14px; }
 .ib-panel__search:focus { outline: none; border-color: var(--ib-blue-light); box-shadow: 0 0 0 3px rgba(74,124,191,0.15); }
 .ib-panel__search::placeholder { color: var(--ib-text-muted); }
-.ib-panel__list { display: flex; flex-direction: column; gap: 6px; }
+.ib-panel__list { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 400px; }
 
 .ib-act { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; cursor: grab; transition: all 0.2s; border: 1px solid transparent; }
 .ib-act:active { cursor: grabbing; }

@@ -970,7 +970,9 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 .copied-toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #22c55e; color: #fff; padding: 10px 24px; border-radius: 20px; font-size: 14px; font-weight: 600; display: none; z-index: 999; }
 
 
-/* GROUP CONFIRM PAGE — Figma layout (title+invite left, upload right) */
+/* ═══════════════════════════════════════════════════════════════
+   GROUP CONFIRM PAGE — Figma layout (title+invite left, upload right)
+   ═══════════════════════════════════════════════════════════════ */
 .gc-content { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 40px; max-width: 1100px; margin: 0 auto; padding: 60px 48px; min-height: 100%; }
 
 .gc-left { flex: 1; max-width: 500px; }
@@ -1062,3 +1064,15 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 [data-theme="light"] .notif-dropdown { background: #fff; border-color: rgba(0,0,0,0.08); box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
 [data-theme="light"] .notif-item--unread { background: rgba(232, 147, 58, 0.08); }
 [data-theme="light"] .notif-item:hover { background: rgba(0,0,0,0.03); }
+
+/* ── Custom Scrollbars ──────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.15) transparent; }
+[data-theme="light"] * { scrollbar-color: rgba(0, 0, 0, 0.15) transparent; }
