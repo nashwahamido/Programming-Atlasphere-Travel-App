@@ -488,6 +488,51 @@ app.post("/setup/upload", requireAuth, (req, res) => {
   });
 });
 
+// Upload from profile page (redirects back to /profile)
+app.post("/profile/upload", requireAuth, (req, res) => {
+  if (!req.files || !req.files.profilePicture) {
+    return res.redirect("/profile");
+  }
+
+  var file = req.files.profilePicture;
+  var uploadDir = path.join(__dirname, "assets/uploads");
+
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  var timestamp = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 15);
+  var safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+  var fileName = timestamp + "_" + safeName;
+  var filePath = path.join(uploadDir, fileName);
+
+  file.mv(filePath, function (err) {
+    if (err) {
+      console.error("File upload error:", err);
+      return res.redirect("/profile");
+    }
+
+    var dbPath = "/uploads/" + fileName;
+
+    connection.query(
+      "UPDATE tbl_users SET profilePictureUrl = ?, profilePictureAlt = ? WHERE IDuser = ?",
+      [dbPath, "Profile picture", req.session.user.id],
+      function (dbErr) {
+        if (dbErr) {
+          console.error("DB update error:", dbErr);
+        } else {
+          req.session.user.profilePictureUrl = dbPath;
+          console.log("Profile picture updated:", dbPath);
+        }
+
+        req.session.save(function () {
+          res.redirect("/profile");
+        });
+      }
+    );
+  });
+});
+
 app.get("/setup/countries", requireAuth, (req, res) => {
   res.render("groups/profile/countries", {
     title: "Countries Visited",

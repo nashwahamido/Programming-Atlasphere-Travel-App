@@ -32,6 +32,12 @@ if (mount) {
     var activeTab = tabState[0];
     var setActiveTab = tabState[1];
 
+    // Expose tab switcher so share cards in chat can navigate to discover
+    React.useEffect(function() {
+      window.atlasphereSwitchTab = setActiveTab;
+      return function() { delete window.atlasphereSwitchTab; };
+    }, []);
+
     var groupState = React.useState({
   id: groupId,
   name: groupName || 'Rome',
@@ -72,7 +78,9 @@ React.createElement('div', { style: { display: activeTab === 'discover' ? 'conte
     React.createElement(VotingSystem, {
       destination: activeGroup.destination || groupDestination,
       groupId: activeGroup.id || groupId,
-      userId: userId
+      userId: userId,
+      userName: userName,
+      userAvatar: userAvatar
     }),
     React.createElement(ChatOverlay, Object.assign({
       key: 'overlay-discover-' + (activeGroup.id || groupId),

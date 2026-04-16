@@ -35,3 +35,12 @@
 .cb__input:focus { border-color: #3B5F8A; }
 .cb__input::placeholder { color: var(--text-secondary, #999); }
 .cb__send-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 4px; display: flex; align-items: center; }
+/* Shared activity card in chat */
+.cb__bubble--share { padding: 0 !important; overflow: hidden; max-width: 340px; }
+.cb__share-card { cursor: pointer; display: flex; flex-direction: column; transition: transform 0.15s; }
+.cb__share-card:hover { transform: translateY(-2px); }
+.cb__share-card-img { width: 100%; height: 140px; object-fit: cover; display: block; }
+.cb__share-card-body { padding: 10px 14px 12px; }
+.cb__share-card-label { font-size: 11px; font-weight: 600; opacity: 0.85; margin-bottom: 4px; letter-spacing: 0.3px; }
+.cb__share-card-title { font-size: 15px; font-weight: 700; margin-bottom: 4px; line-height: 1.2; }
+.cb__share-card-desc { font-size: 12px; opacity: 0.9; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }

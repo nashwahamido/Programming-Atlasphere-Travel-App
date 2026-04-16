@@ -126,11 +126,42 @@ var ChatBox = function(props) {
         }
         var isSelf = String(m.userId) === String(userId);
         var avatarUrl = isSelf ? userAvatar : (m.userAvatar || '');
+
+        // Detect shared activity format: [[SHARE:imageUrl|name|description]]
+        var shareMatch = m.text && m.text.match(/^\[\[SHARE:([^|]*)\|([^|]+)\|([\s\S]*)\]\]$/);
+        var bubbleContent;
+        if (shareMatch) {
+          var shareImg = shareMatch[1];
+          var shareName = shareMatch[2];
+          var shareDesc = shareMatch[3];
+          bubbleContent = React.createElement('div', {
+            className: 'cb__share-card',
+            onClick: function() {
+              // Switch to discover tab if callable handler exists
+              if (typeof window.atlasphereSwitchTab === 'function') {
+                window.atlasphereSwitchTab('discover');
+              }
+            },
+            title: 'Click to view in recommendations'
+          },
+            shareImg ? React.createElement('img', { src: shareImg, alt: shareName, className: 'cb__share-card-img' }) : null,
+            React.createElement('div', { className: 'cb__share-card-body' },
+              React.createElement('div', { className: 'cb__share-card-label' }, '📍 Shared a place'),
+              React.createElement('div', { className: 'cb__share-card-title' }, shareName),
+              shareDesc ? React.createElement('div', { className: 'cb__share-card-desc' }, shareDesc) : null
+            )
+          );
+        } else {
+          bubbleContent = m.text;
+        }
+
         return React.createElement('div', { key: m.id, className: 'cb__row' + (isSelf ? ' cb__row--self' : '') },
           !isSelf && renderAvatar(avatarUrl, '#E8933A', ''),
           React.createElement('div', { className: 'cb__bubble-group' + (isSelf ? ' cb__bubble-group--self' : '') },
             React.createElement('span', { className: 'cb__sender' + (isSelf ? ' cb__sender--self' : '') }, isSelf ? userName : (m.userName || m.user)),
-            React.createElement('div', { className: 'cb__bubble' + (isSelf ? ' cb__bubble--self' : '') }, m.text)
+            React.createElement('div', {
+              className: 'cb__bubble' + (isSelf ? ' cb__bubble--self' : '') + (shareMatch ? ' cb__bubble--share' : '')
+            }, bubbleContent)
           ),
           isSelf && renderAvatar(userAvatar, '#3B5F8A', 'cb__avatar--self')
         );

@@ -12,13 +12,13 @@ var icons = {
   maybe: "/icons/maybe-icon.svg",
 };
 
-function ActivityCard({ activity, vote, onVote }) {
+function ActivityCard({ activity, vote, onVote, onShare }) {
   return (
     <div className="vote-card">
       <img src={activity.image} alt={activity.name} className="vote-card-image" />
       <div className="vote-card-overlay" />
 
-      <button type="button" className="share-btn" aria-label={"Share " + activity.name}>
+      <button type="button" className="share-btn" onClick={function() { if (onShare) onShare(activity); }} aria-label={"Share " + activity.name} title="Share to group chat">
         <img src={icons.send} alt="" className="share-icon" />
       </button>
 
@@ -147,6 +147,8 @@ export default function VotingSystem(props) {
   var destination = props.destination || "Rome";
   var groupId = props.groupId || "";
   var userId = props.userId || "";
+  var userName = props.userName || "";
+  var userAvatar = props.userAvatar || "";
 
   var activeState = useState(0);
   var active = activeState[0];
@@ -269,6 +271,51 @@ export default function VotingSystem(props) {
       .catch(function () { setIsVoting(false); });
   };
 
+  // Share activity to group chat via socket
+  var handleShare = function (activity) {
+    if (!groupId) return;
+    if (!window.io) {
+      console.warn('Socket.io not loaded, cannot share');
+      return;
+    }
+    try {
+      // Reuse existing socket connection if possible
+      var socket = window._atlasphereSocket;
+      if (!socket || !socket.connected) {
+        socket = window.io();
+        window._atlasphereSocket = socket;
+        socket.emit('join-group', {
+          groupId: groupId,
+          userId: userId,
+          userName: userName || 'Someone',
+          userAvatar: userAvatar || ''
+        });
+      }
+
+      var sendMsg = function () {
+        var desc = activity.description ? activity.description.substring(0, 120) : '';
+        var payload = '[[SHARE:' + (activity.image || '') + '|' + activity.name + '|' + desc + ']]';
+        socket.emit('send-message', {
+          groupId: groupId,
+          userId: userId,
+          userName: userName || 'Someone',
+          userAvatar: userAvatar || '',
+          text: payload
+        });
+        setFeedback({ text: 'Shared to chat: ' + activity.name, type: 'upvote' });
+        setTimeout(function () { setFeedback(null); }, 2000);
+      };
+
+      if (socket.connected) {
+        sendMsg();
+      } else {
+        socket.once('connect', sendMsg);
+      }
+    } catch (e) {
+      console.error('Share error:', e);
+    }
+  };
+
   if (loading) {
     return (
       <main className="voting-page">
@@ -343,6 +390,7 @@ export default function VotingSystem(props) {
                 onVote={function (choice) {
                   handleVote(activity, choice);
                 }}
+                onShare={function (a) { handleShare(a); }}
               />
             );
           })}
