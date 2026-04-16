@@ -49,31 +49,30 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   }, [groupId, tripId, isActive]);
 
   // ── Calendar state (persisted) ────────────────────────────────────────────
-  const [calYear, setCalYear] = useState(() => {
-    const saved = localStorage.getItem(storageKey + '-calYear');
-    return saved ? parseInt(saved) : today.getFullYear();
-  });
+  const [calYear, setCalYear] = useState(today.getFullYear());
+  const [calMonth, setCalMonth] = useState(today.getMonth());
+  const [rangeStart, setRangeStart] = useState(null);
+  const [rangeEnd, setRangeEnd] = useState(null);
 
-  const [calMonth, setCalMonth] = useState(() => {
-    const saved = localStorage.getItem(storageKey + '-calMonth');
-    return saved ? parseInt(saved) : today.getMonth();
-  });
+  // ── Week state ────────────────────────────────────────────────────────────
+  const [activeDay, setActiveDay] = useState(0);
 
-  const [rangeStart, setRangeStart] = useState(() => {
-    const saved = localStorage.getItem(storageKey + '-rangeStart');
-    return saved ? parseInt(saved) : null;
-  });
-
-  const [rangeEnd, setRangeEnd] = useState(() => {
-    const saved = localStorage.getItem(storageKey + '-rangeEnd');
-    return saved ? parseInt(saved) : null;
-  });
-
-  // ── Week state (persisted) ────────────────────────────────────────────────
-  const [activeDay, setActiveDay] = useState(() => {
-    const saved = localStorage.getItem(storageKey + '-activeDay');
-    return saved ? parseInt(saved) : 0;
-  });
+  // ── Load shared dates from DB ─────────────────────────────────────────────
+  useEffect(() => {
+    var gid = groupId || tripId;
+    if (!gid || !isActive) return;
+    fetch('/api/itinerary/dates?groupId=' + gid)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.rangeStart !== null) {
+          setRangeStart(data.rangeStart);
+          setRangeEnd(data.rangeEnd);
+          setCalYear(data.calYear);
+          setCalMonth(data.calMonth);
+        }
+      })
+      .catch(() => {});
+  }, [groupId, tripId, isActive]);
 
   // Build week days dynamically from selected range
   const weekDays = useMemo(() => {
@@ -104,6 +103,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const [overSlot, setOverSlot] = useState(null);
 
   // ── Load blocks from DB on mount / tab activation ─────────────────────────
+  const [hasLoadedBlocks, setHasLoadedBlocks] = useState(false);
   useEffect(() => {
     var gid = groupId || tripId;
     if (!gid || !isActive) return;
@@ -111,62 +111,34 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     fetch('/api/itinerary/blocks?groupId=' + gid)
       .then(r => r.json())
       .then(data => {
-        if (!Array.isArray(data)) return;
+        if (!Array.isArray(data)) { setHasLoadedBlocks(true); return; }
         var loaded = {};
         data.forEach(function(b) {
           if (!loaded[b.dayIndex]) loaded[b.dayIndex] = {};
           loaded[b.dayIndex][b.timeSlot] = { name: b.activityName, color: b.activityColor || '#E8933A' };
         });
         setAllBlocks(loaded);
+        setHasLoadedBlocks(true);
       })
-      .catch(() => {});
+      .catch(() => { setHasLoadedBlocks(true); });
   }, [groupId, tripId, isActive]);
 
-  // ── Save blocks to DB whenever they change ────────────────────────────────
-  const saveTimeoutRef = React.useRef(null);
+  // ── Backup to localStorage (DB saves happen on drop/remove) ───────────────
+  useEffect(() => {
+    if (!hasLoadedBlocks) return;
+    localStorage.setItem(storageKey + '-blocks', JSON.stringify(allBlocks));
+  }, [allBlocks, hasLoadedBlocks, storageKey]);
+
+  // ── Save shared dates to DB ────────────────────────────────────────────────
   useEffect(() => {
     var gid = groupId || tripId;
-    if (!gid) return;
-
-    // Also save to localStorage as backup
-    localStorage.setItem(storageKey + '-blocks', JSON.stringify(allBlocks));
-
-    // Debounce DB save by 500ms
-    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => {
-      var flat = [];
-      for (var dayIdx in allBlocks) {
-        for (var slot in allBlocks[dayIdx]) {
-          var block = allBlocks[dayIdx][slot];
-          flat.push({
-            dayIndex: parseInt(dayIdx),
-            timeSlot: slot,
-            activityName: block.name || block,
-            activityColor: block.color || '#E8933A'
-          });
-        }
-      }
-      fetch('/api/itinerary/blocks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: gid, blocks: flat })
-      }).catch(() => {});
-    }, 500);
-  }, [allBlocks, groupId, tripId]);
-
-  // ── Persist calendar state to localStorage ────────────────────────────────
-  useEffect(() => {
-    if (rangeStart !== null) {
-      localStorage.setItem(storageKey + '-rangeStart', rangeStart);
-      localStorage.setItem(storageKey + '-rangeEnd', rangeEnd);
-      localStorage.setItem(storageKey + '-calYear', calYear);
-      localStorage.setItem(storageKey + '-calMonth', calMonth);
-    }
-  }, [rangeStart, rangeEnd, calYear, calMonth]);
-
-  useEffect(() => {
-    localStorage.setItem(storageKey + '-activeDay', activeDay);
-  }, [activeDay]);
+    if (!gid || rangeStart === null) return;
+    fetch('/api/itinerary/dates', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId: gid, rangeStart, rangeEnd, calYear, calMonth })
+    }).catch(() => {});
+  }, [rangeStart, rangeEnd, calYear, calMonth, groupId, tripId]);
 
   // ── Calendar logic ────────────────────────────────────────────────────────
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
@@ -259,24 +231,63 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     setOverSlot(null);
     if (!dragInfo) return;
 
+    var gid = groupId || tripId;
+    var newName = dragInfo.name;
+    var newColor = dragInfo.color || '#E8933A';
+    var fromSlot = dragInfo.type === 'block' ? dragInfo.from : null;
+
     setAllBlocks(prev => {
       const dayData = { ...(prev[activeDay] || {}) };
       if (dragInfo.type === 'panel') {
-        dayData[timeKey] = { id: 'sb-' + Date.now(), name: dragInfo.name, color: dragInfo.color || '#E8933A' };
+        dayData[timeKey] = { id: 'sb-' + Date.now(), name: newName, color: newColor };
       } else if (dragInfo.type === 'block') {
         if (dragInfo.from) delete dayData[dragInfo.from];
-        dayData[timeKey] = { id: dragInfo.id, name: dragInfo.name, color: dragInfo.color || '#E8933A' };
+        dayData[timeKey] = { id: dragInfo.id, name: newName, color: newColor };
       }
       return { ...prev, [activeDay]: dayData };
     });
-    setDragInfo(null);
-  }, [dragInfo, activeDay]);
 
-  const removeBlock = (k) => setAllBlocks(prev => {
-    const dayData = { ...(prev[activeDay] || {}) };
-    delete dayData[k];
-    return { ...prev, [activeDay]: dayData };
-  });
+    // Save to DB
+    if (gid) {
+      // If moving within schedule, delete old slot first
+      if (fromSlot) {
+        fetch('/api/itinerary/block', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ groupId: gid, dayIndex: activeDay, timeSlot: fromSlot })
+        }).catch(() => {});
+      }
+      fetch('/api/itinerary/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          groupId: gid,
+          dayIndex: activeDay,
+          timeSlot: timeKey,
+          activityName: newName,
+          activityColor: newColor
+        })
+      }).catch(() => {});
+    }
+
+    setDragInfo(null);
+  }, [dragInfo, activeDay, groupId, tripId]);
+
+  const removeBlock = (k) => {
+    setAllBlocks(prev => {
+      const dayData = { ...(prev[activeDay] || {}) };
+      delete dayData[k];
+      return { ...prev, [activeDay]: dayData };
+    });
+    var gid = groupId || tripId;
+    if (gid) {
+      fetch('/api/itinerary/block', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ groupId: gid, dayIndex: activeDay, timeSlot: k })
+      }).catch(() => {});
+    }
+  };
 
   // ── Filter activities ─────────────────────────────────────────────────────
   const currentActivities = panelMode === 'recommend' ? upvotedActivities : savedActivities;

@@ -909,24 +909,22 @@ app.post("/api/votes", requireAuth, (req, res) => {
 });
 
 app.get("/api/votes", requireAuth, (req, res) => {
-  var userId = req.session.user.id;
   var groupId = req.query.groupId;
   if (!groupId) return res.json([]);
   connection.query(
-    "SELECT activityId, activityName, activityImage, activityDesc, activityTags, `vote` FROM tbl_activity_votes WHERE groupId = ? AND userId = ?",
-    [groupId, userId],
+    "SELECT DISTINCT activityId, activityName, activityImage, activityDesc, activityTags, `vote` FROM tbl_activity_votes WHERE groupId = ?",
+    [groupId],
     function(err, rows) { res.json(!err && rows ? rows : []); }
   );
 });
 
 app.get("/api/votes/saved", requireAuth, (req, res) => {
-  var userId = req.session.user.id;
   var groupId = req.query.groupId;
   var type = req.query.type;
-  console.log("Vote SAVED GET:", { groupId, type, userId });
+  console.log("Vote SAVED GET:", { groupId, type });
   if (!groupId) return res.json([]);
-  var sql = "SELECT activityId, activityName, activityImage, activityDesc, activityTags, `vote` FROM tbl_activity_votes WHERE groupId = ? AND userId = ?";
-  var params = [groupId, userId];
+  var sql = "SELECT DISTINCT activityId, activityName, activityImage, activityDesc, activityTags, `vote` FROM tbl_activity_votes WHERE groupId = ?";
+  var params = [groupId];
   if (type === 'upvote' || type === 'bookmark') { sql += " AND `vote` = ?"; params.push(type); }
   else { sql += " AND `vote` IN ('upvote', 'bookmark')"; }
   connection.query(sql, params, function(err, rows) {
@@ -937,7 +935,36 @@ app.get("/api/votes/saved", requireAuth, (req, res) => {
 
 // ── ITINERARY BLOCKS API ─────────────────────────────────────────────────
 
-// Save all blocks for a group (full replace)
+// Save a single block (upsert)
+app.post("/api/itinerary/block", requireAuth, (req, res) => {
+  var userId = req.session.user.id;
+  var { groupId, dayIndex, timeSlot, activityName, activityColor } = req.body;
+  if (!groupId || dayIndex === undefined || !timeSlot || !activityName) return res.status(400).json({ error: "Missing fields" });
+  connection.query(
+    "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, updatedBy) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE activityName = ?, activityColor = ?, updatedBy = ?",
+    [groupId, dayIndex, timeSlot, activityName, activityColor || '#E8933A', userId, activityName, activityColor || '#E8933A', userId],
+    function(err) {
+      if (err) { console.error("Block save error:", err.message); return res.status(500).json({ error: "Failed" }); }
+      res.json({ success: true });
+    }
+  );
+});
+
+// Delete a single block
+app.delete("/api/itinerary/block", requireAuth, (req, res) => {
+  var { groupId, dayIndex, timeSlot } = req.body;
+  if (!groupId || dayIndex === undefined || !timeSlot) return res.status(400).json({ error: "Missing fields" });
+  connection.query(
+    "DELETE FROM tbl_itinerary_blocks WHERE groupId = ? AND dayIndex = ? AND timeSlot = ?",
+    [groupId, dayIndex, timeSlot],
+    function(err) {
+      if (err) { console.error("Block delete error:", err.message); return res.status(500).json({ error: "Failed" }); }
+      res.json({ success: true });
+    }
+  );
+});
+
+// Save all blocks for a group (full replace) - kept for compatibility
 app.post("/api/itinerary/blocks", requireAuth, (req, res) => {
   var userId = req.session.user.id;
   var { groupId, blocks } = req.body;
@@ -974,6 +1001,34 @@ app.get("/api/itinerary/blocks", requireAuth, (req, res) => {
     [groupId],
     function(err, rows) {
       res.json(!err && rows ? rows : []);
+    }
+  );
+});
+
+// Save shared date range for a group
+app.post("/api/itinerary/dates", requireAuth, (req, res) => {
+  var { groupId, rangeStart, rangeEnd, calYear, calMonth } = req.body;
+  if (!groupId) return res.status(400).json({ error: "Missing groupId" });
+  connection.query(
+    "INSERT INTO tbl_itinerary_dates (groupId, rangeStart, rangeEnd, calYear, calMonth) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE rangeStart = ?, rangeEnd = ?, calYear = ?, calMonth = ?",
+    [groupId, rangeStart, rangeEnd, calYear, calMonth, rangeStart, rangeEnd, calYear, calMonth],
+    function(err) {
+      if (err) { console.error("Date save error:", err.message); return res.status(500).json({ error: "Failed" }); }
+      res.json({ success: true });
+    }
+  );
+});
+
+// Load shared date range for a group
+app.get("/api/itinerary/dates", requireAuth, (req, res) => {
+  var groupId = req.query.groupId;
+  if (!groupId) return res.json(null);
+  connection.query(
+    "SELECT rangeStart, rangeEnd, calYear, calMonth FROM tbl_itinerary_dates WHERE groupId = ?",
+    [groupId],
+    function(err, rows) {
+      if (!err && rows && rows.length > 0) return res.json(rows[0]);
+      res.json(null);
     }
   );
 });
