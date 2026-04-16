@@ -21,12 +21,12 @@
         <% if (typeof success !== 'undefined' && success) { %><div class="msg-success"><%= success %></div><% } %>
         <form action="/auth/verify" method="post">
           <div class="code-inputs">
-            <input type="text" maxlength="1" name="code1" autocomplete="off" autofocus required>
-            <input type="text" maxlength="1" name="code2" autocomplete="off" required>
-            <input type="text" maxlength="1" name="code3" autocomplete="off" required>
-            <input type="text" maxlength="1" name="code4" autocomplete="off" required>
-            <input type="text" maxlength="1" name="code5" autocomplete="off" required>
-            <input type="text" maxlength="1" name="code6" autocomplete="off" required>
+            <input type="text" maxlength="1" name="code1" autocomplete="off" id="code1" autofocus required>
+            <input type="text" maxlength="1" name="code2" autocomplete="off" id="code2" required>
+            <input type="text" maxlength="1" name="code3" autocomplete="off" id="code3" required>
+            <input type="text" maxlength="1" name="code4" autocomplete="off" id="code4" required>
+            <input type="text" maxlength="1" name="code5" autocomplete="off" id="code5" required>
+            <input type="text" maxlength="1" name="code6" autocomplete="off" id="code6" required>
           </div>
           <button type="submit" class="auth-submit">Verify</button>
         </form>

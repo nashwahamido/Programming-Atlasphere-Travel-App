@@ -152,7 +152,15 @@ app.get("/auth/login", (req, res) => {
   res.render("login", { title: "Sign In", error: null, user: null });
 });
 
-app.post("/auth/login", (req, res) => {
+app.post("/auth/login", validationLoginRules, (req, res) => {
+  const errors = validationResult(req);
+  
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array()
+    });
+  }
+
   const username = req.body.loginuser || req.body.loginemail;
   const password = req.body.loginpsw;
 
@@ -237,15 +245,19 @@ app.get("/auth/register", (req, res) => {
   res.render("register", { title: "Register", user: null });
 });
 
-app.post("/auth/register", async (req, res) => {
+app.post("/auth/register", validationRegisterRules, async (req, res) => {
+  const errors = validationResult(req);
+  
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      errors: errors.array()
+    });
+  }
+  
   console.log("New registration:", req.body);
 
   try {
     const { username, useremail, userphone, gender, psw } = req.body;
-
-    if (!username || !useremail || !psw) {
-      return res.status(400).send("Missing required fields");
-    }
 
     connection.query(
       "SELECT IDuser FROM tbl_users WHERE email = ? LIMIT 1",
@@ -323,6 +335,8 @@ app.post("/auth/register", async (req, res) => {
 
 // ── VERIFY ───────────────────────────────────────────────────────────────
 app.get("/auth/verify", (req, res) => {
+  
+
   if (!req.session.pendingVerification) {
     return res.redirect("/auth/register");
   }
@@ -336,7 +350,19 @@ app.get("/auth/verify", (req, res) => {
   });
 });
 
-app.post("/auth/verify", (req, res) => {
+app.post("/auth/verify", validationVerifyRules, (req, res) => {
+  const errors = validationResult(req);
+  
+  if (!errors.isEmpty()) {
+    return res.render("register-step2", {
+      title: "Verify",
+      user: null,
+      email: req.session.pendingVerification?.email || null,
+      error: "Please enter all 6 numbers correctly.",
+      success: null,
+    });
+  }
+
   const pending = req.session.pendingVerification;
 
   if (!pending) {
@@ -1289,3 +1315,60 @@ server.listen(PORT, function() {
 });
 
 module.exports = app;
+
+
+// --------------------- validation and sanitisation ---------------------------
+
+const { check, validationResult } = require("express-validator");
+
+// validation rules for registration
+// we create a validation variable that contains all rules we want to apply to the data from a specific post request parameter:
+let validationRegisterRules = [
+check("username")
+  .exists({ checkFalsy: true }).withMessage("Username is required")
+  .isString().withMessage("Username must be a string")
+  .trim()
+  .isLength({ min: 3, max: 20 }).withMessage("Username must be 3–20 characters")
+  .escape(),
+
+check("useremail")
+  .exists({ checkFalsy: true }).withMessage("Email is required")
+  .isEmail().withMessage("Invalid email format")
+  .normalizeEmail(),
+
+check("userphone")
+  .isMobilePhone().withMessage("Invalid phone number"),
+
+check("gender")
+  .optional(),
+
+check("psw")
+  .exists({ checkFalsy: true }).withMessage("Password is required")
+  .isLength({ min: 6, max: 12}).withMessage("Password must be at least 6 characters or a maximum of 12")
+];
+
+
+// validation rules for verifying the registration code
+// we create a validation variable that contains all rules we want to apply to the data from a specific post request parameter:
+let validationVerifyRules = [
+check(["code1", "code2", "code3", "code4", "code5", "code6"])
+  .exists({ checkFalsy: true }).withMessage("All code fields are required")
+  .isInt().withMessage("Each code must be a number")
+  .isLength({ min: 1, max: 1 }).withMessage("Each code must be a single number")
+  .trim(),
+]
+
+// validation rules for login
+// we create a validation variable that contains all rules we want to apply to the data from a specific post request parameter:
+let validationLoginRules = [
+check("loginemail")
+  .exists({ checkFalsy: true }).withMessage("Email is required")
+  .isEmail().withMessage("Invalid email format")
+  .normalizeEmail(),
+
+check("loginpsw")
+  .exists({ checkFalsy: true }).withMessage("Password is required")
+  .isLength({ min: 6, max: 12}).withMessage("Password must be at least 6 characters or a maximum of 12")
+];
+
+
