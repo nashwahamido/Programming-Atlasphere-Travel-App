@@ -12,11 +12,9 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const today = new Date();
   const storageKey = 'itinerary-' + (tripId || 'default');
 
-  // Activities loaded from vote API
   const [upvotedActivities, setUpvotedActivities] = useState([]);
   const [savedActivities, setSavedActivities] = useState([]);
 
-  // Re-fetch whenever tab becomes active or groupId changes
   useEffect(() => {
     var gid = groupId || tripId;
     if (!gid || !isActive) return;
@@ -48,16 +46,13 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       .catch(() => {});
   }, [groupId, tripId, isActive]);
 
-  // ── Calendar state (persisted) ────────────────────────────────────────────
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
   const [pickingEnd, setPickingEnd] = useState(false);
-  // ── Week state ────────────────────────────────────────────────────────────
   const [activeDay, setActiveDay] = useState(0);
 
-  // ── Load shared dates from DB ─────────────────────────────────────────────
   useEffect(() => {
     var gid = groupId || tripId;
     if (!gid || !isActive) return;
@@ -74,12 +69,11 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       .catch(() => {});
   }, [groupId, tripId, isActive]);
 
-  // Build week days dynamically from selected range
   const actualDays = (rangeStart !== null && rangeEnd !== null) ? rangeEnd - rangeStart + 1 : tripDays;
+
   const weekDays = useMemo(() => {
-      if (!rangeStart) return [];
-      return Array.from({ length: actualDays }, (_, i) => {
-        
+    if (!rangeStart) return [];
+    return Array.from({ length: actualDays }, (_, i) => {
       const date = new Date(calYear, calMonth, rangeStart + i);
       return {
         index: i,
@@ -89,27 +83,20 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         label: DAY_NAMES[date.getDay()]
       };
     });
-  }, [rangeStart, tripDays, calYear, calMonth]);
+  }, [rangeStart, rangeEnd, actualDays, calYear, calMonth]);
 
-  // ── Schedule state (loaded from DB) ──────────────────────────────────────
   const [allBlocks, setAllBlocks] = useState({});
-
   const dayBlocks = allBlocks[activeDay] || {};
 
-  // ── Panel state ───────────────────────────────────────────────────────────
   const [search, setSearch] = useState('');
   const [panelMode, setPanelMode] = useState('recommend');
-
-  // ── Drag state ────────────────────────────────────────────────────────────
   const [dragInfo, setDragInfo] = useState(null);
   const [overSlot, setOverSlot] = useState(null);
-
-  // ── Load blocks from DB on mount / tab activation ─────────────────────────
   const [hasLoadedBlocks, setHasLoadedBlocks] = useState(false);
+
   useEffect(() => {
     var gid = groupId || tripId;
     if (!gid || !isActive) return;
-
     fetch('/api/itinerary/blocks?groupId=' + gid)
       .then(r => r.json())
       .then(data => {
@@ -125,13 +112,11 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       .catch(() => { setHasLoadedBlocks(true); });
   }, [groupId, tripId, isActive]);
 
-  // ── Backup to localStorage (DB saves happen on drop/remove) ───────────────
   useEffect(() => {
     if (!hasLoadedBlocks) return;
     localStorage.setItem(storageKey + '-blocks', JSON.stringify(allBlocks));
   }, [allBlocks, hasLoadedBlocks, storageKey]);
 
-  // ── Save shared dates to DB ────────────────────────────────────────────────
   useEffect(() => {
     var gid = groupId || tripId;
     if (!gid || rangeStart === null) return;
@@ -142,7 +127,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     }).catch(() => {});
   }, [rangeStart, rangeEnd, calYear, calMonth, groupId, tripId]);
 
-  // ── Calendar logic ────────────────────────────────────────────────────────
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const firstDay = (() => { const d = new Date(calYear, calMonth, 1).getDay(); return d === 0 ? 6 : d - 1; })();
   const prevDays = new Date(calYear, calMonth, 0).getDate();
@@ -160,10 +144,8 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   };
 
   const clickDay = (d) => {
-    // If we have a start and are picking the end date
     if (pickingEnd && rangeStart !== null) {
       if (d <= rangeStart) {
-        // Clicked before start — reset to new start
         setPickingEnd(false);
         const end = Math.min(d + tripDays - 1, daysInMonth);
         setRangeStart(d);
@@ -177,7 +159,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       if (hasActivities) {
         const confirmed = window.confirm('Changing the end date will clear planned activities outside the new range. Continue?');
         if (!confirmed) { setPickingEnd(false); return; }
-        // Clear blocks beyond new range
         const newLength = d - rangeStart + 1;
         setAllBlocks(prev => {
           var trimmed = {};
@@ -192,7 +173,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       return;
     }
 
-    // Normal click — set new start date
     const hasActivities = Object.values(allBlocks).some(day => Object.keys(day).length > 0);
     if (rangeStart !== null && hasActivities) {
       const confirmed = window.confirm('Changing your start date will clear all your planned activities. Are you sure?');
@@ -207,65 +187,48 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     localStorage.removeItem(storageKey + '-activeDay');
   };
 
-    setRangeStart(d);
-    setRangeEnd(end);
-    setActiveDay(0);
-    setAllBlocks({});
-    localStorage.removeItem(storageKey + '-blocks');
-    localStorage.removeItem(storageKey + '-activeDay');
-  };
-
-  // Check which day indices have scheduled activities
   const daysWithBlocks = useMemo(() => {
     var result = {};
     for (var dayIdx in allBlocks) {
-      if (Object.keys(allBlocks[dayIdx]).length > 0) {
-        result[dayIdx] = true;
-      }
+      if (Object.keys(allBlocks[dayIdx]).length > 0) result[dayIdx] = true;
     }
     return result;
   }, [allBlocks]);
 
-  // Map a calendar date to its day index (0-based from rangeStart)
   const dateToDayIndex = (d) => {
     if (rangeStart === null || d < rangeStart || d > rangeEnd) return -1;
     return d - rangeStart;
   };
 
   const dayClass = (d) => {
-      if (rangeStart === null) return 'ib-cal__day';
-      var cls = 'ib-cal__day';
-      if (d === rangeStart) cls += ' ib-cal__day--start';
-      else if (d === rangeEnd) cls += ' ib-cal__day--end';
-      else if (d > rangeStart && d < rangeEnd) cls += ' ib-cal__day--range';
+    if (rangeStart === null) return 'ib-cal__day';
+    var cls = 'ib-cal__day';
+    if (d === rangeStart) cls += ' ib-cal__day--start';
+    else if (d === rangeEnd) cls += ' ib-cal__day--end';
+    else if (d > rangeStart && d < rangeEnd) cls += ' ib-cal__day--range';
     if (pickingEnd && d > rangeStart) cls += ' ib-cal__day--pickable';
-    // Add indicator if this day has activities
     var idx = dateToDayIndex(d);
     if (idx >= 0 && daysWithBlocks[idx]) cls += ' ib-cal__day--has-plans';
     return cls;
   };
 
-  // Current active day label for schedule title
   const activeDayInfo = weekDays[activeDay];
   const scheduleTitle = activeDayInfo
     ? `${MONTHS[activeDayInfo.month]} ${activeDayInfo.num} (Day ${activeDay + 1})`
     : 'Schedule';
 
-  // ── Drag from panel ───────────────────────────────────────────────────────
   const panelDragStart = (e, act) => {
     setDragInfo({ type: 'panel', name: act.name, id: act.id, color: act.color || '#E8933A' });
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', act.id);
   };
 
-  // ── Drag from schedule ────────────────────────────────────────────────────
   const blockDragStart = (e, timeKey, block) => {
     setDragInfo({ type: 'block', id: block.id, name: block.name || block.text, from: timeKey });
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', block.id || '');
   };
 
-  // ── Drop on slot ──────────────────────────────────────────────────────────
   const slotDrop = useCallback((e, timeKey) => {
     e.preventDefault();
     setOverSlot(null);
@@ -287,9 +250,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       return { ...prev, [activeDay]: dayData };
     });
 
-    // Save to DB
     if (gid) {
-      // If moving within schedule, delete old slot first
       if (fromSlot) {
         fetch('/api/itinerary/block', {
           method: 'DELETE',
@@ -300,13 +261,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       fetch('/api/itinerary/block', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          groupId: gid,
-          dayIndex: activeDay,
-          timeSlot: timeKey,
-          activityName: newName,
-          activityColor: newColor
-        })
+        body: JSON.stringify({ groupId: gid, dayIndex: activeDay, timeSlot: timeKey, activityName: newName, activityColor: newColor })
       }).catch(() => {});
     }
 
@@ -329,7 +284,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     }
   };
 
-  // ── Filter activities ─────────────────────────────────────────────────────
   const currentActivities = panelMode === 'recommend' ? upvotedActivities : savedActivities;
   const filtered = currentActivities.filter(a =>
     a.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -349,42 +303,42 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
           </div>
         </div>
 
-      {rangeStart ? (
-    <div>
-      <p className="ib-cal__hint">
-        Trip: {MONTHS[calMonth]} {rangeStart} – {rangeEnd} ({rangeEnd - rangeStart + 1} days)
-      </p>
-      {pickingEnd ? (
-        <p className="ib-cal__hint" style={{ color: 'var(--ib-accent)', marginTop: 4 }}>
-          Click a new end date ↓
-          <button onClick={() => setPickingEnd(false)}
-            style={{ marginLeft: 8, fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ib-text-muted)' }}>
-            Cancel
-          </button>
-        </p>
-      ) : (
-        <button className="ib-cal__hint-btn" onClick={() => setPickingEnd(true)}>
-          Adjust end date
-        </button>
-      )}
-    </div>
-  ) : (
-    <p className="ib-cal__hint">Click a start date to highlight your {tripDays}-day trip</p>
-  )}
-
-          <div className="ib-cal__grid">
-            {DAY_LABELS.map(d => <div key={d} className="ib-cal__head">{d}</div>)}
-            {Array.from({ length: firstDay }, (_, i) => (
-              <div key={'p' + i} className="ib-cal__day ib-cal__day--other">{prevDays - firstDay + 1 + i}</div>
-            ))}
-            {Array.from({ length: daysInMonth }, (_, i) => (
-              <div key={i + 1} className={dayClass(i + 1)} onClick={() => clickDay(i + 1)}>{i + 1}</div>
-            ))}
-            {Array.from({ length: overflow }, (_, i) => (
-              <div key={'n' + i} className="ib-cal__day ib-cal__day--other">{i + 1}</div>
-            ))}
+        {rangeStart ? (
+          <div>
+            <p className="ib-cal__hint">
+              Trip: {MONTHS[calMonth]} {rangeStart} – {rangeEnd} ({rangeEnd - rangeStart + 1} days)
+            </p>
+            {pickingEnd ? (
+              <p className="ib-cal__hint" style={{ color: 'var(--ib-accent)', marginTop: 4 }}>
+                Click a new end date ↓
+                <button onClick={() => setPickingEnd(false)}
+                  style={{ marginLeft: 8, fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ib-text-muted)' }}>
+                  Cancel
+                </button>
+              </p>
+            ) : (
+              <button className="ib-cal__hint-btn" onClick={() => setPickingEnd(true)}>
+                Adjust end date
+              </button>
+            )}
           </div>
+        ) : (
+          <p className="ib-cal__hint">Click a start date to highlight your {tripDays}-day trip</p>
+        )}
+
+        <div className="ib-cal__grid">
+          {DAY_LABELS.map(d => <div key={d} className="ib-cal__head">{d}</div>)}
+          {Array.from({ length: firstDay }, (_, i) => (
+            <div key={'p' + i} className="ib-cal__day ib-cal__day--other">{prevDays - firstDay + 1 + i}</div>
+          ))}
+          {Array.from({ length: daysInMonth }, (_, i) => (
+            <div key={i + 1} className={dayClass(i + 1)} onClick={() => clickDay(i + 1)}>{i + 1}</div>
+          ))}
+          {Array.from({ length: overflow }, (_, i) => (
+            <div key={'n' + i} className="ib-cal__day ib-cal__day--other">{i + 1}</div>
+          ))}
         </div>
+      </div>
 
       {/* ═══ CENTER: Schedule ═══ */}
       <div className="ib-schedule">
@@ -458,6 +412,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       </div>
     </div>
   );
-
+};
 
 export default ItineraryBuilder;
