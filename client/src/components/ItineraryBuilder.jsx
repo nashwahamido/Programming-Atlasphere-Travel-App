@@ -233,11 +233,12 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   };
 
   const dayClass = (d) => {
-    if (rangeStart === null) return 'ib-cal__day';
-    var cls = 'ib-cal__day';
-    if (d === rangeStart) cls += ' ib-cal__day--start';
-    else if (d === rangeEnd) cls += ' ib-cal__day--end';
-    else if (d > rangeStart && d < rangeEnd) cls += ' ib-cal__day--range';
+      if (rangeStart === null) return 'ib-cal__day';
+      var cls = 'ib-cal__day';
+      if (d === rangeStart) cls += ' ib-cal__day--start';
+      else if (d === rangeEnd) cls += ' ib-cal__day--end';
+      else if (d > rangeStart && d < rangeEnd) cls += ' ib-cal__day--range';
+    if (pickingEnd && d > rangeStart) cls += ' ib-cal__day--pickable';
     // Add indicator if this day has activities
     var idx = dateToDayIndex(d);
     if (idx >= 0 && daysWithBlocks[idx]) cls += ' ib-cal__day--has-plans';
@@ -457,6 +458,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       </div>
     </div>
   );
-};
+
 
 export default ItineraryBuilder;

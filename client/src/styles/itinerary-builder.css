@@ -168,3 +168,28 @@
 .ib-week__day--active.ib-week__day--has-plans::before {
   background: #fff;
 }
+
+.ib-cal__hint-btn {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ib-accent);
+  background: none;
+  border: 1px solid var(--ib-accent);
+  border-radius: 20px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.ib-cal__hint-btn:hover {
+  background: var(--ib-accent);
+  color: #fff;
+}
+
+.ib-cal__day--pickable:hover {
+  background: rgba(232, 147, 58, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+}
