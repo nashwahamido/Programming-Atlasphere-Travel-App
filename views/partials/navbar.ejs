@@ -121,7 +121,14 @@
       e.stopPropagation();
       var open = dropdown.style.display !== 'none';
       dropdown.style.display = open ? 'none' : 'block';
-      if (!open) loadNotifications();
+      if (!open) {
+        loadNotifications();
+        // Mark all as read when opening
+        fetch('/api/notifications/read', { method: 'POST' }).then(function() {
+          badge.style.display = 'none';
+          badge.textContent = '0';
+        });
+      }
     });
 
     clearBtn.addEventListener('click', function(e) {
