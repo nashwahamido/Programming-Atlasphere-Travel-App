@@ -10,6 +10,43 @@ const fileUpload = require("express-fileupload");
 const fs = require("fs");
 const { check, validationResult } = require("express-validator");
 
+// ── Validation Rules ────────────────────────────────────────────────────
+const validationRegisterRules = [
+  check("username")
+    .exists({ checkFalsy: true }).withMessage("Username is required")
+    .isString().withMessage("Username must be a string")
+    .trim()
+    .isLength({ min: 3, max: 20 }).withMessage("Username must be 3–20 characters")
+    .escape(),
+  check("useremail")
+    .exists({ checkFalsy: true }).withMessage("Email is required")
+    .isEmail().withMessage("Invalid email format")
+    .normalizeEmail(),
+  check("userphone")
+    .isMobilePhone().withMessage("Invalid phone number"),
+  check("gender")
+    .optional(),
+  check("psw")
+    .exists({ checkFalsy: true }).withMessage("Password is required")
+    .isLength({ min: 6, max: 12 }).withMessage("Password must be at least 6 characters or a maximum of 12")
+];
+
+const validationVerifyRules = [
+  check(["code1", "code2", "code3", "code4", "code5", "code6"])
+    .exists({ checkFalsy: true }).withMessage("All code fields are required")
+    .isInt().withMessage("Each code must be a number")
+    .isLength({ min: 1, max: 1 }).withMessage("Each code must be a single number")
+    .trim(),
+];
+
+const validationLoginRules = [
+  check("loginemail")
+    .exists({ checkFalsy: true }).withMessage("Email is required")
+    .isEmail().withMessage("Invalid email format"),
+  check("loginpsw")
+    .exists({ checkFalsy: true }).withMessage("Password is required")
+];
+
 const app = express();
 
 // ── VIEW ENGINE SETUP ────────────────────────────────────────────────────
@@ -95,72 +132,6 @@ async function setupEmail() {
 }
 setupEmail();
 
-
-// --------------------- validation and sanitisation ---------------------------
-
-// validation rules for registration
-// we create a validation variable that contains all rules we want to apply to the data from a specific post request parameter:
-let validationRegisterRules = [
-check("username")
-  .exists({ checkFalsy: true }).withMessage("Username is required")
-  .isString().withMessage("Username must be a string")
-  .trim()
-  .isLength({ min: 3, max: 20 }).withMessage("Username must be 3–20 characters")
-  .escape(),
-
-check("useremail")
-  .exists({ checkFalsy: true }).withMessage("Email is required")
-  .isEmail().withMessage("Invalid email format")
-  .normalizeEmail(),
-
-check("userphone")
-  .isMobilePhone().withMessage("Invalid phone number"),
-
-check("gender")
-  .optional(),
-
-check("psw")
-  .exists({ checkFalsy: true }).withMessage("Password is required")
-  .isLength({ min: 6, max: 12}).withMessage("Password must be at least 6 characters or a maximum of 12")
-];
-
-
-// validation rules for verifying the registration code
-// we create a validation variable that contains all rules we want to apply to the data from a specific post request parameter:
-let validationVerifyRules = [
-check(["code1", "code2", "code3", "code4", "code5", "code6"])
-  .exists({ checkFalsy: true }).withMessage("All code fields are required")
-  .isInt().withMessage("Each code must be a number")
-  .isLength({ min: 1, max: 1 }).withMessage("Each code must be a single number")
-  .trim(),
-]
-
-// validation rules for login
-// we create a validation variable that contains all rules we want to apply to the data from a specific post request parameter:
-let validationLoginRules = [
-check("loginemail")
-  .exists({ checkFalsy: true }).withMessage("Email is required")
-  .isEmail().withMessage("Invalid email format")
-  .normalizeEmail(),
-
-check("loginpsw")
-  .exists({ checkFalsy: true }).withMessage("Password is required")
-  .isLength({ min: 6, max: 12}).withMessage("Password must be at least 6 characters or a maximum of 12")
-];
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ── HELPERS ──────────────────────────────────────────────────────────────
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -223,13 +194,17 @@ app.post("/auth/login", validationLoginRules, (req, res) => {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      errors: errors.array()
+    return res.render("login", {
+      title: "Sign In",
+      error: errors.array().map(e => e.msg).join(", "),
+      user: null,
     });
   }
 
   const username = req.body.loginuser || req.body.loginemail;
   const password = req.body.loginpsw;
+
+  console.log("Login attempt:", { username, passwordLength: password ? password.length : 0, body: Object.keys(req.body) });
 
   if (!username || !password) {
     return res.render("login", {
@@ -249,6 +224,7 @@ app.post("/auth/login", validationLoginRules, (req, res) => {
       }
 
       if (results.length === 0) {
+        console.log("Login: No user found for:", username);
         return res.render("login", {
           title: "Sign In",
           error: "Invalid username or password. Try again.",
@@ -258,6 +234,7 @@ app.post("/auth/login", validationLoginRules, (req, res) => {
 
       const user = results[0];
       let match = false;
+      console.log("Login: Found user:", user.username, "email:", user.email, "has password hash:", !!user.password);
 
       try {
         match = await bcrypt.compare(password, user.password);
@@ -268,6 +245,8 @@ app.post("/auth/login", validationLoginRules, (req, res) => {
       if (!match && password === user.password) {
         match = true;
       }
+
+      console.log("Login: bcrypt match:", match);
 
       if (!match) {
         return res.render("login", {
@@ -316,8 +295,10 @@ app.post("/auth/register", validationRegisterRules, async (req, res) => {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      errors: errors.array()
+    return res.render("register", {
+      title: "Register",
+      error: errors.array().map(e => e.msg).join(", "),
+      user: null,
     });
   }
   
@@ -1382,5 +1363,3 @@ server.listen(PORT, function() {
 });
 
 module.exports = app;
-
-
