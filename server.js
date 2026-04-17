@@ -8,6 +8,7 @@ const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const fileUpload = require("express-fileupload");
 const fs = require("fs");
+const crypto = require("crypto");
 const { check, validationResult } = require("express-validator");
 
 // ── Validation Rules ────────────────────────────────────────────────────
@@ -284,6 +285,104 @@ app.post("/auth/login", validationLoginRules, (req, res) => {
       });
     }
   );
+});
+
+// ── FORGOT PASSWORD ──────────────────────────────────────────────────────
+app.get("/auth/forgot-password", (req, res) => {
+  res.render("forgot-password", { title: "Forgot Password", error: null, success: null, user: null });
+});
+
+app.post("/auth/forgot-password", (req, res) => {
+  var email = req.body.email;
+  if (!email) {
+    return res.render("forgot-password", { title: "Forgot Password", error: "Please enter your email.", success: null, user: null });
+  }
+
+  connection.query("SELECT IDuser, username, email FROM tbl_users WHERE email = ? LIMIT 1", [email], function(err, rows) {
+    if (err || !rows || rows.length === 0) {
+      // Don't reveal if email exists or not
+      return res.render("forgot-password", { title: "Forgot Password", error: null, success: "If an account exists with that email, a reset link has been sent.", user: null });
+    }
+
+    var user = rows[0];
+    var token = crypto.randomBytes(32).toString("hex");
+    var expiry = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace("T", " "); // 1 hour
+
+    connection.query("UPDATE tbl_users SET resetToken = ?, resetExpiry = ? WHERE IDuser = ?", [token, expiry, user.IDuser], function(updateErr) {
+      if (updateErr) {
+        console.error("Reset token save error:", updateErr.message, "| expiry:", expiry, "| userId:", user.IDuser);
+        return res.render("forgot-password", { title: "Forgot Password", error: "Something went wrong. Try again.", success: null, user: null });
+      }
+      console.log("Reset token saved for user:", user.username, "| token:", token.substring(0, 8) + "...");
+
+      var resetLink = req.protocol + "://" + req.get("host") + "/auth/reset-password?token=" + token;
+      var transporter = app.locals.transporter;
+
+      if (!transporter) {
+        console.log("Reset link (no email configured):", resetLink);
+        return res.render("forgot-password", { title: "Forgot Password", error: null, success: "Reset link: " + resetLink, user: null });
+      }
+
+      transporter.sendMail({
+        from: "Atlasphere <noreply@atlasphere.com>",
+        to: user.email,
+        subject: "Reset your Atlasphere password",
+        html: "<div style=\"font-family:Arial;max-width:480px;margin:0 auto;padding:32px\">" +
+              "<h1 style=\"color:#0B3856\">Reset Your Password</h1>" +
+              "<p style=\"font-size:16px;color:#555\">Hi " + user.username + ", click the button below to reset your password. This link expires in 1 hour.</p>" +
+              "<div style=\"text-align:center;margin:32px 0\">" +
+              "<a href=\"" + resetLink + "\" style=\"display:inline-block;padding:14px 40px;background:#E8933A;color:#fff;text-decoration:none;border-radius:30px;font-weight:700;font-size:16px\">Reset Password</a>" +
+              "</div><p style=\"font-size:13px;color:#999\">If you didn't request this, ignore this email.</p></div>"
+      }).then(function() {
+        res.render("forgot-password", { title: "Forgot Password", error: null, success: "If an account exists with that email, a reset link has been sent.", user: null });
+      }).catch(function(mailErr) {
+        console.error("Reset email error:", mailErr);
+        console.log("Reset link (email failed):", resetLink);
+        res.render("forgot-password", { title: "Forgot Password", error: null, success: "If an account exists with that email, a reset link has been sent.", user: null });
+      });
+    });
+  });
+});
+
+app.get("/auth/reset-password", (req, res) => {
+  var token = req.query.token;
+  if (!token) return res.redirect("/auth/forgot-password");
+
+  connection.query("SELECT IDuser FROM tbl_users WHERE resetToken = ? AND resetExpiry > NOW() LIMIT 1", [token], function(err, rows) {
+    if (err || !rows || rows.length === 0) {
+      return res.render("forgot-password", { title: "Forgot Password", error: "Reset link is invalid or expired. Please request a new one.", success: null, user: null });
+    }
+    res.render("reset-password", { title: "Reset Password", token: token, error: null, success: null, user: null });
+  });
+});
+
+app.post("/auth/reset-password", async (req, res) => {
+  var { token, password, confirmPassword } = req.body;
+
+  if (!token || !password) {
+    return res.render("reset-password", { title: "Reset Password", token: token || '', error: "Please fill in all fields.", success: null, user: null });
+  }
+  if (password !== confirmPassword) {
+    return res.render("reset-password", { title: "Reset Password", token: token, error: "Passwords do not match.", success: null, user: null });
+  }
+  if (password.length < 6) {
+    return res.render("reset-password", { title: "Reset Password", token: token, error: "Password must be at least 6 characters.", success: null, user: null });
+  }
+
+  connection.query("SELECT IDuser FROM tbl_users WHERE resetToken = ? AND resetExpiry > NOW() LIMIT 1", [token], async function(err, rows) {
+    if (err || !rows || rows.length === 0) {
+      return res.render("forgot-password", { title: "Forgot Password", error: "Reset link is invalid or expired. Please request a new one.", success: null, user: null });
+    }
+
+    var hashedPassword = await bcrypt.hash(password, 10);
+    connection.query("UPDATE tbl_users SET password = ?, resetToken = NULL, resetExpiry = NULL WHERE IDuser = ?", [hashedPassword, rows[0].IDuser], function(updateErr) {
+      if (updateErr) {
+        console.error("Password reset error:", updateErr.message);
+        return res.render("reset-password", { title: "Reset Password", token: token, error: "Something went wrong. Try again.", success: null, user: null });
+      }
+      res.render("login", { title: "Sign In", error: null, success: "Password reset successfully! You can now sign in.", user: null });
+    });
+  });
 });
 
 // ── REGISTER ─────────────────────────────────────────────────────────────
