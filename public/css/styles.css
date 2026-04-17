@@ -1043,5 +1043,6 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
   height: 32px;
   width: auto;
   display: block;
-  filter: brightness(0) saturate(100%) invert(22%) sepia(20%) saturate(600%) hue-rotate(170deg) brightness(90%);
+  color: #3B5068;
+  filter: invert(27%) sepia(13%) saturate(800%) hue-rotate(175deg);
 }
