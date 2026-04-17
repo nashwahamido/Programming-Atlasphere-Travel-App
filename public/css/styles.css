@@ -1002,3 +1002,10 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 [data-theme="dark"] .navbar-logo {
   filter: brightness(0) invert(1);
 }
+
+.navbar-logo {
+  height: 32px;
+  width: auto;
+  display: block;
+  filter: brightness(0) saturate(100%) invert(22%) sepia(20%) saturate(600%) hue-rotate(170deg) brightness(90%);
+}
