@@ -15,7 +15,7 @@ router.post('/update', (req, res) => {
     function(err) {
       if (err) {
         console.error('Update error:', err.message);
-        return res.redirect('/settings');
+        return res.redirect('/settings#visitedLocations');
       }
       req.session.user.username = name;
       req.session.user.email = email;
@@ -83,7 +83,7 @@ router.post('/update-locations', (req, res) => {
         req.session.user.visitedCities = citiesStr.split(',').filter(Boolean);
       }
       req.session.save(function() {
-        res.redirect('/settings');
+        res.redirect('/settings#visitedLocations');
       });
     }
   );
