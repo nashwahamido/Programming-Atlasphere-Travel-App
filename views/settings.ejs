@@ -381,7 +381,7 @@ function filterCities(query) {
 
   initLocationGrids();
 
-  function saveLocations() {
+ function saveLocations() {
   var form = document.getElementById('locationsForm');
   var data = new URLSearchParams(new FormData(form));
   fetch('/users/update-locations', {
@@ -389,10 +389,12 @@ function filterCities(query) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: data.toString()
   }).then(function() {
+    document.getElementById('countrySearch').value = '';
+    document.getElementById('citySearch').value = '';
+    initLocationGrids();
     showTab({ target: document.querySelectorAll('.settings-tab')[1] }, 'visitedLocations');
   });
-}
-  
+} 
 </script>
 
 </body>
