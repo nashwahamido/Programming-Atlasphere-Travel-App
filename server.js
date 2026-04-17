@@ -1190,7 +1190,7 @@ app.get("/api/notifications", requireAuth, (req, res) => {
       });
       var unreadByGroup = {};
       notifications.forEach(function(n) {
-        if (!n.isRead) {
+        if (!n.isRead && n.type !== 'invite') {
           if (!unreadByGroup[n.groupId]) unreadByGroup[n.groupId] = { count: 0, groupName: n.groupName, groupId: n.groupId };
           unreadByGroup[n.groupId].count++;
         }
@@ -1198,11 +1198,14 @@ app.get("/api/notifications", requireAuth, (req, res) => {
       var summarizedGroups = {};
       var results = [];
       notifications.forEach(function(n) {
-        if (!n.isRead && unreadByGroup[n.groupId] && unreadByGroup[n.groupId].count >= 4 && !summarizedGroups[n.groupId]) {
+        // Always show invite notifications individually
+        if (n.type === 'invite') {
+          results.push(n);
+        } else if (!n.isRead && unreadByGroup[n.groupId] && unreadByGroup[n.groupId].count >= 4 && !summarizedGroups[n.groupId]) {
           summarizedGroups[n.groupId] = true;
           results.push({ id: n.id, groupId: n.groupId, groupName: n.groupName, message: n.groupName + ' has ' + unreadByGroup[n.groupId].count + ' new votes', type: 'vote-summary', isRead: 0, createdAt: n.createdAt });
         } else if (!n.isRead && unreadByGroup[n.groupId] && unreadByGroup[n.groupId].count >= 4) {
-          // Skip individual ones for summarized groups
+          // Skip individual vote ones for summarized groups
         } else {
           results.push(n);
         }

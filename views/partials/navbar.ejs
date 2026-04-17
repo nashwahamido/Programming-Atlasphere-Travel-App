@@ -96,7 +96,7 @@
         data.slice(0, 20).forEach(function(n) {
           var item = document.createElement('div');
           item.className = 'notif-item' + (n.isRead ? '' : ' notif-item--unread');
-          var icon = n.type === 'vote-summary' ? '📊' : '👍';
+          var icon = n.type === 'vote-summary' ? '📊' : n.type === 'invite' ? '✉️' : '👍';
           item.innerHTML = '<span class="notif-item__icon">' + icon + '</span>' +
             '<div class="notif-item__body">' +
               '<div class="notif-item__msg">' + n.message + '</div>' +
