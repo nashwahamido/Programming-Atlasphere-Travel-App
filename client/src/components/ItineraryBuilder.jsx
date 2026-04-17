@@ -53,7 +53,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
-
+  const [pickingEnd, setPickingEnd] = useState(false);
   // ── Week state ────────────────────────────────────────────────────────────
   const [activeDay, setActiveDay] = useState(0);
 
@@ -158,15 +158,52 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   };
 
   const clickDay = (d) => {
-    const end = Math.min(d + tripDays - 1, daysInMonth);
-    const hasActivities = Object.values(allBlocks).some(day => Object.keys(day).length > 0);
+    // If we have a start and are picking the end date
+    if (pickingEnd && rangeStart !== null) {
+      if (d <= rangeStart) {
+        // Clicked before start — reset to new start
+        setPickingEnd(false);
+        const end = Math.min(d + tripDays - 1, daysInMonth);
+        setRangeStart(d);
+        setRangeEnd(end);
+        setActiveDay(0);
+        setAllBlocks({});
+        localStorage.removeItem(storageKey + '-blocks');
+        return;
+      }
+      const hasActivities = Object.values(allBlocks).some(day => Object.keys(day).length > 0);
+      if (hasActivities) {
+        const confirmed = window.confirm('Changing the end date will clear planned activities outside the new range. Continue?');
+        if (!confirmed) { setPickingEnd(false); return; }
+        // Clear blocks beyond new range
+        const newLength = d - rangeStart + 1;
+        setAllBlocks(prev => {
+          var trimmed = {};
+          Object.keys(prev).forEach(idx => {
+            if (parseInt(idx) < newLength) trimmed[idx] = prev[idx];
+          });
+          return trimmed;
+        });
+      }
+      setRangeEnd(d);
+      setPickingEnd(false);
+      return;
+    }
 
+    // Normal click — set new start date
+    const hasActivities = Object.values(allBlocks).some(day => Object.keys(day).length > 0);
     if (rangeStart !== null && hasActivities) {
-      const confirmed = window.confirm(
-        'Changing your start date will clear all your planned activities. Are you sure?'
-      );
+      const confirmed = window.confirm('Changing your start date will clear all your planned activities. Are you sure?');
       if (!confirmed) return;
     }
+    const end = Math.min(d + tripDays - 1, daysInMonth);
+    setRangeStart(d);
+    setRangeEnd(end);
+    setActiveDay(0);
+    setAllBlocks({});
+    localStorage.removeItem(storageKey + '-blocks');
+    localStorage.removeItem(storageKey + '-activeDay');
+  };
 
     setRangeStart(d);
     setRangeEnd(end);
@@ -308,26 +345,43 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
             <button className="ib-cal__arrow" onClick={goNext}>&rsaquo;</button>
           </div>
         </div>
-        {rangeStart ? (
-          <p className="ib-cal__hint">
-            Trip: {MONTHS[calMonth]} {rangeStart} – {rangeEnd} ({tripDays} days)
-          </p>
-        ) : (
-          <p className="ib-cal__hint">Click a start date to highlight your {tripDays}-day trip</p>
-        )}
-        <div className="ib-cal__grid">
-          {DAY_LABELS.map(d => <div key={d} className="ib-cal__head">{d}</div>)}
-          {Array.from({ length: firstDay }, (_, i) => (
-            <div key={'p' + i} className="ib-cal__day ib-cal__day--other">{prevDays - firstDay + 1 + i}</div>
-          ))}
-          {Array.from({ length: daysInMonth }, (_, i) => (
-            <div key={i + 1} className={dayClass(i + 1)} onClick={() => clickDay(i + 1)}>{i + 1}</div>
-          ))}
-          {Array.from({ length: overflow }, (_, i) => (
-            <div key={'n' + i} className="ib-cal__day ib-cal__day--other">{i + 1}</div>
-          ))}
+
+      {rangeStart ? (
+    <div>
+      <p className="ib-cal__hint">
+        Trip: {MONTHS[calMonth]} {rangeStart} – {rangeEnd} ({rangeEnd - rangeStart + 1} days)
+      </p>
+      {pickingEnd ? (
+        <p className="ib-cal__hint" style={{ color: 'var(--ib-accent)', marginTop: 4 }}>
+          Click a new end date ↓
+          <button onClick={() => setPickingEnd(false)}
+            style={{ marginLeft: 8, fontSize: 11, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ib-text-muted)' }}>
+            Cancel
+          </button>
+        </p>
+      ) : (
+        <button className="ib-cal__hint-btn" onClick={() => setPickingEnd(true)}>
+          Adjust end date
+        </button>
+      )}
+    </div>
+  ) : (
+    <p className="ib-cal__hint">Click a start date to highlight your {tripDays}-day trip</p>
+  )}
+
+          <div className="ib-cal__grid">
+            {DAY_LABELS.map(d => <div key={d} className="ib-cal__head">{d}</div>)}
+            {Array.from({ length: firstDay }, (_, i) => (
+              <div key={'p' + i} className="ib-cal__day ib-cal__day--other">{prevDays - firstDay + 1 + i}</div>
+            ))}
+            {Array.from({ length: daysInMonth }, (_, i) => (
+              <div key={i + 1} className={dayClass(i + 1)} onClick={() => clickDay(i + 1)}>{i + 1}</div>
+            ))}
+            {Array.from({ length: overflow }, (_, i) => (
+              <div key={'n' + i} className="ib-cal__day ib-cal__day--other">{i + 1}</div>
+            ))}
+          </div>
         </div>
-      </div>
 
       {/* ═══ CENTER: Schedule ═══ */}
       <div className="ib-schedule">
