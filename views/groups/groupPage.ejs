@@ -13,8 +13,8 @@
     .gp-app { display: flex; flex-direction: column; height: calc(100vh - 60px); overflow: hidden; }
     .gp-content { flex: 1; display: flex; overflow: hidden; }
     .gp-tab-with-overlay { overflow-y: auto; flex: 1; }
-    /* Only the discover tab should scroll at the page level */
-    .gp-tab-with-overlay .ib-layout { overflow: hidden; }
+    /* Itinerary layout fills the container; internal columns handle their own scroll */
+    .gp-tab-with-overlay .ib-layout { overflow: visible; min-height: 100%; padding: 16px; box-sizing: border-box; }
     /* Hide the main scrollbar on gp-tab-with-overlay, use styled one */
     .gp-tab-with-overlay::-webkit-scrollbar { width: 6px; }
     .gp-tab-with-overlay::-webkit-scrollbar-track { background: transparent; }

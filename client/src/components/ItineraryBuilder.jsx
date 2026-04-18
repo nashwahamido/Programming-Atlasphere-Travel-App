@@ -1,12 +1,10 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import '../styles/itinerary-builder.css';
 
 const HOURS = ['08.00','09.00','10.00','11.00','12.00','13.00','14.00','15.00','16.00','17.00','18.00','19.00','20.00','21.00','22.00','23.00','00.00','01.00','02.00'];
 const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-const defaultActivities = [];
 
 const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDays = 7, isActive = false }) => {
   const today = new Date();
@@ -48,8 +46,14 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
 
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
-  const [rangeStart, setRangeStart] = useState(null);
-  const [rangeEnd, setRangeEnd] = useState(null);
+
+  // Store range as { year, month, day } objects so month context is never lost
+  const [rangeStart, setRangeStart] = useState(null); // day-of-month number
+  const [rangeEnd, setRangeEnd] = useState(null);     // day-of-month number
+  // The year+month that rangeStart/rangeEnd belong to (always the same month)
+  const [rangeYear, setRangeYear] = useState(null);
+  const [rangeMonth, setRangeMonth] = useState(null);
+
   const [pickingEnd, setPickingEnd] = useState(false);
   const [activeDay, setActiveDay] = useState(0);
 
@@ -64,6 +68,8 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
           setRangeEnd(data.rangeEnd);
           setCalYear(data.calYear);
           setCalMonth(data.calMonth);
+          setRangeYear(data.calYear);
+          setRangeMonth(data.calMonth);
         }
       })
       .catch(() => {});
@@ -71,10 +77,11 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
 
   const actualDays = (rangeStart !== null && rangeEnd !== null) ? rangeEnd - rangeStart + 1 : tripDays;
 
+  // weekDays uses rangeYear/rangeMonth (the month the range was set in), not calYear/calMonth
   const weekDays = useMemo(() => {
-    if (!rangeStart) return [];
+    if (rangeStart === null || rangeYear === null) return [];
     return Array.from({ length: actualDays }, (_, i) => {
-      const date = new Date(calYear, calMonth, rangeStart + i);
+      const date = new Date(rangeYear, rangeMonth, rangeStart + i);
       return {
         index: i,
         num: date.getDate(),
@@ -83,7 +90,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         label: DAY_NAMES[date.getDay()]
       };
     });
-  }, [rangeStart, rangeEnd, actualDays, calYear, calMonth]);
+  }, [rangeStart, rangeEnd, actualDays, rangeYear, rangeMonth]);
 
   const [allBlocks, setAllBlocks] = useState({});
   const dayBlocks = allBlocks[activeDay] || {};
@@ -123,9 +130,9 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     fetch('/api/itinerary/dates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groupId: gid, rangeStart, rangeEnd, calYear, calMonth })
+      body: JSON.stringify({ groupId: gid, rangeStart, rangeEnd, calYear: rangeYear, calMonth: rangeMonth })
     }).catch(() => {});
-  }, [rangeStart, rangeEnd, calYear, calMonth, groupId, tripId]);
+  }, [rangeStart, rangeEnd, rangeYear, rangeMonth, groupId, tripId]);
 
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const firstDay = (() => { const d = new Date(calYear, calMonth, 1).getDay(); return d === 0 ? 6 : d - 1; })();
@@ -143,15 +150,21 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     else setCalMonth(calMonth + 1);
   };
 
-  const clickDay = (d) => {
+  const clickDay = async (d) => {
+    // ── Picking a new end date ──────────────────────────────────────────────
     if (pickingEnd && rangeStart !== null) {
-      if (d <= rangeStart) {
+      if (d <= rangeStart && calYear === rangeYear && calMonth === rangeMonth) {
+        // Clicked before start — treat as new start, keep all blocks
         setPickingEnd(false);
+        const end = Math.min(d + tripDays - 1, daysInMonth);
         setRangeStart(d);
-        setRangeEnd(rangeEnd);
+        setRangeEnd(end);
+        setRangeYear(calYear);
+        setRangeMonth(calMonth);
         setActiveDay(0);
         return;
       }
+      // Extending or shrinking end — keep blocks that still fit
       const newLength = d - rangeStart + 1;
       setAllBlocks(prev => {
         var trimmed = {};
@@ -165,10 +178,14 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       return;
     }
 
+    // ── Picking a new start date ────────────────────────────────────────────
     const end = Math.min(d + tripDays - 1, daysInMonth);
     setRangeStart(d);
     setRangeEnd(end);
+    setRangeYear(calYear);
+    setRangeMonth(calMonth);
     setActiveDay(0);
+    // Keep all existing blocks — they stay mapped to day indices
   };
 
   const daysWithBlocks = useMemo(() => {
@@ -179,13 +196,18 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     return result;
   }, [allBlocks]);
 
+  // Only highlight range days when viewing the exact same month the range was set in
   const dateToDayIndex = (d) => {
-    if (rangeStart === null || d < rangeStart || d > rangeEnd) return -1;
+    if (rangeStart === null || rangeYear === null) return -1;
+    if (calYear !== rangeYear || calMonth !== rangeMonth) return -1;
+    if (d < rangeStart || d > rangeEnd) return -1;
     return d - rangeStart;
   };
 
   const dayClass = (d) => {
-    if (rangeStart === null) return 'ib-cal__day';
+    if (rangeStart === null || rangeYear === null) return 'ib-cal__day';
+    // Only apply range styling when we're looking at the month the range belongs to
+    if (calYear !== rangeYear || calMonth !== rangeMonth) return 'ib-cal__day';
     var cls = 'ib-cal__day';
     if (d === rangeStart) cls += ' ib-cal__day--start';
     else if (d === rangeEnd) cls += ' ib-cal__day--end';
@@ -268,6 +290,21 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     }
   };
 
+  // ── Week strip scroll-to-active ─────────────────────────────────────────────
+  const weekStripRef = useRef(null);
+  const activeDayRef = useRef(null);
+
+  useEffect(() => {
+    const strip = weekStripRef.current;
+    const pill = activeDayRef.current;
+    if (!strip || !pill) return;
+    // Scroll the strip (not the page) so the active pill is centred
+    const pillLeft = pill.offsetLeft;
+    const pillWidth = pill.offsetWidth;
+    const stripWidth = strip.offsetWidth;
+    strip.scrollLeft = pillLeft - stripWidth / 2 + pillWidth / 2;
+  }, [activeDay, weekDays.length]);
+
   const currentActivities = panelMode === 'recommend' ? upvotedActivities : savedActivities;
   const filtered = currentActivities.filter(a =>
     a.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -290,7 +327,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         {rangeStart ? (
           <div>
             <p className="ib-cal__hint">
-              Trip: {MONTHS[calMonth]} {rangeStart} – {rangeEnd} ({rangeEnd - rangeStart + 1} days)
+              Trip: {MONTHS[rangeMonth]} {rangeStart} – {rangeEnd} ({rangeEnd - rangeStart + 1} days)
             </p>
             {pickingEnd ? (
               <p className="ib-cal__hint" style={{ color: 'var(--ib-accent)', marginTop: 4 }}>
@@ -327,9 +364,10 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       {/* ═══ CENTER: Schedule ═══ */}
       <div className="ib-schedule">
         {weekDays.length > 0 ? (
-          <div className="ib-week">
+          <div className="ib-week" ref={weekStripRef}>
             {weekDays.map((d, i) => (
               <div key={i}
+                ref={activeDay === i ? activeDayRef : null}
                 className={`ib-week__day${activeDay === i ? ' ib-week__day--active' : ''}${daysWithBlocks[i] ? ' ib-week__day--has-plans' : ''}`}
                 onClick={() => setActiveDay(i)}>
                 <span className="ib-week__num">{d.num}</span>

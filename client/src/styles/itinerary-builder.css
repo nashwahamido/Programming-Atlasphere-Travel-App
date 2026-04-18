@@ -56,7 +56,7 @@
 .ib-cal__day--range { background: var(--ib-range-bg); color: var(--ib-range-text); border-radius: 8px; }
 
 .ib-schedule { min-height: 500px; overflow-y: auto; max-height: calc(100vh - 160px); }
-.ib-week { display: flex; justify-content: center; margin-bottom: 16px; }
+.ib-week { display: flex; margin-bottom: 16px; }
 .ib-week__day { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 14px; cursor: pointer; border-radius: 12px; transition: all 0.2s; }
 .ib-week__day:hover { background: var(--ib-input-bg); }
 .ib-week__num { font-size: 17px; font-weight: 700; color: var(--ib-text); }
