@@ -8,7 +8,6 @@ const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const fileUpload = require("express-fileupload");
 const fs = require("fs");
-const crypto = require("crypto");
 const { check, validationResult } = require("express-validator");
 
 // ── Validation Rules ────────────────────────────────────────────────────
@@ -287,104 +286,6 @@ app.post("/auth/login", validationLoginRules, (req, res) => {
   );
 });
 
-// ── FORGOT PASSWORD ──────────────────────────────────────────────────────
-app.get("/auth/forgot-password", (req, res) => {
-  res.render("forgot-password", { title: "Forgot Password", error: null, success: null, user: null });
-});
-
-app.post("/auth/forgot-password", (req, res) => {
-  var email = req.body.email;
-  if (!email) {
-    return res.render("forgot-password", { title: "Forgot Password", error: "Please enter your email.", success: null, user: null });
-  }
-
-  connection.query("SELECT IDuser, username, email FROM tbl_users WHERE email = ? LIMIT 1", [email], function(err, rows) {
-    if (err || !rows || rows.length === 0) {
-      // Don't reveal if email exists or not
-      return res.render("forgot-password", { title: "Forgot Password", error: null, success: "If an account exists with that email, a reset link has been sent.", user: null });
-    }
-
-    var user = rows[0];
-    var token = crypto.randomBytes(32).toString("hex");
-    var expiry = new Date(Date.now() + 3600000).toISOString().slice(0, 19).replace("T", " "); // 1 hour
-
-    connection.query("UPDATE tbl_users SET resetToken = ?, resetExpiry = ? WHERE IDuser = ?", [token, expiry, user.IDuser], function(updateErr) {
-      if (updateErr) {
-        console.error("Reset token save error:", updateErr.message, "| expiry:", expiry, "| userId:", user.IDuser);
-        return res.render("forgot-password", { title: "Forgot Password", error: "Something went wrong. Try again.", success: null, user: null });
-      }
-      console.log("Reset token saved for user:", user.username, "| token:", token.substring(0, 8) + "...");
-
-      var resetLink = req.protocol + "://" + req.get("host") + "/auth/reset-password?token=" + token;
-      var transporter = app.locals.transporter;
-
-      if (!transporter) {
-        console.log("Reset link (no email configured):", resetLink);
-        return res.render("forgot-password", { title: "Forgot Password", error: null, success: "Reset link: " + resetLink, user: null });
-      }
-
-      transporter.sendMail({
-        from: "Atlasphere <noreply@atlasphere.com>",
-        to: user.email,
-        subject: "Reset your Atlasphere password",
-        html: "<div style=\"font-family:Arial;max-width:480px;margin:0 auto;padding:32px\">" +
-              "<h1 style=\"color:#0B3856\">Reset Your Password</h1>" +
-              "<p style=\"font-size:16px;color:#555\">Hi " + user.username + ", click the button below to reset your password. This link expires in 1 hour.</p>" +
-              "<div style=\"text-align:center;margin:32px 0\">" +
-              "<a href=\"" + resetLink + "\" style=\"display:inline-block;padding:14px 40px;background:#E8933A;color:#fff;text-decoration:none;border-radius:30px;font-weight:700;font-size:16px\">Reset Password</a>" +
-              "</div><p style=\"font-size:13px;color:#999\">If you didn't request this, ignore this email.</p></div>"
-      }).then(function() {
-        res.render("forgot-password", { title: "Forgot Password", error: null, success: "If an account exists with that email, a reset link has been sent.", user: null });
-      }).catch(function(mailErr) {
-        console.error("Reset email error:", mailErr);
-        console.log("Reset link (email failed):", resetLink);
-        res.render("forgot-password", { title: "Forgot Password", error: null, success: "If an account exists with that email, a reset link has been sent.", user: null });
-      });
-    });
-  });
-});
-
-app.get("/auth/reset-password", (req, res) => {
-  var token = req.query.token;
-  if (!token) return res.redirect("/auth/forgot-password");
-
-  connection.query("SELECT IDuser FROM tbl_users WHERE resetToken = ? AND resetExpiry > NOW() LIMIT 1", [token], function(err, rows) {
-    if (err || !rows || rows.length === 0) {
-      return res.render("forgot-password", { title: "Forgot Password", error: "Reset link is invalid or expired. Please request a new one.", success: null, user: null });
-    }
-    res.render("reset-password", { title: "Reset Password", token: token, error: null, success: null, user: null });
-  });
-});
-
-app.post("/auth/reset-password", async (req, res) => {
-  var { token, password, confirmPassword } = req.body;
-
-  if (!token || !password) {
-    return res.render("reset-password", { title: "Reset Password", token: token || '', error: "Please fill in all fields.", success: null, user: null });
-  }
-  if (password !== confirmPassword) {
-    return res.render("reset-password", { title: "Reset Password", token: token, error: "Passwords do not match.", success: null, user: null });
-  }
-  if (password.length < 6) {
-    return res.render("reset-password", { title: "Reset Password", token: token, error: "Password must be at least 6 characters.", success: null, user: null });
-  }
-
-  connection.query("SELECT IDuser FROM tbl_users WHERE resetToken = ? AND resetExpiry > NOW() LIMIT 1", [token], async function(err, rows) {
-    if (err || !rows || rows.length === 0) {
-      return res.render("forgot-password", { title: "Forgot Password", error: "Reset link is invalid or expired. Please request a new one.", success: null, user: null });
-    }
-
-    var hashedPassword = await bcrypt.hash(password, 10);
-    connection.query("UPDATE tbl_users SET password = ?, resetToken = NULL, resetExpiry = NULL WHERE IDuser = ?", [hashedPassword, rows[0].IDuser], function(updateErr) {
-      if (updateErr) {
-        console.error("Password reset error:", updateErr.message);
-        return res.render("reset-password", { title: "Reset Password", token: token, error: "Something went wrong. Try again.", success: null, user: null });
-      }
-      res.render("login", { title: "Sign In", error: null, success: "Password reset successfully! You can now sign in.", user: null });
-    });
-  });
-});
-
 // ── REGISTER ─────────────────────────────────────────────────────────────
 app.get("/auth/register", (req, res) => {
   res.render("register", { title: "Register", user: null });
@@ -404,8 +305,7 @@ app.post("/auth/register", validationRegisterRules, async (req, res) => {
   console.log("New registration:", req.body);
 
   try {
-    const { username, useremail, userphone, gender, psw, phoneCode } = req.body;
-    const fullPhone = (phoneCode || '+353') + (userphone || '').replace(/^0+/, '');
+    const { username, useremail, userphone, gender, psw } = req.body;
 
     connection.query(
       "SELECT IDuser FROM tbl_users WHERE email = ? LIMIT 1",
@@ -433,7 +333,7 @@ app.post("/auth/register", validationRegisterRules, async (req, res) => {
         const insertValues = [
           username,
           useremail,
-          fullPhone,
+          userphone || "",
           hashedPassword,
           genderId,
           Number(code),
@@ -1179,11 +1079,12 @@ app.get("/api/votes/saved", requireAuth, (req, res) => {
 // Save a single block (upsert)
 app.post("/api/itinerary/block", requireAuth, (req, res) => {
   var userId = req.session.user.id;
-  var { groupId, dayIndex, timeSlot, activityName, activityColor } = req.body;
+  var { groupId, dayIndex, timeSlot, activityName, activityColor, duration } = req.body;
   if (!groupId || dayIndex === undefined || !timeSlot || !activityName) return res.status(400).json({ error: "Missing fields" });
+  var dur = duration || 1;
   connection.query(
-    "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, updatedBy) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE activityName = ?, activityColor = ?, updatedBy = ?",
-    [groupId, dayIndex, timeSlot, activityName, activityColor || '#E8933A', userId, activityName, activityColor || '#E8933A', userId],
+    "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, duration, updatedBy) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE activityName = ?, activityColor = ?, duration = ?, updatedBy = ?",
+    [groupId, dayIndex, timeSlot, activityName, activityColor || '#E8933A', dur, userId, activityName, activityColor || '#E8933A', dur, userId],
     function(err) {
       if (err) { console.error("Block save error:", err.message); return res.status(500).json({ error: "Failed" }); }
       res.json({ success: true });
@@ -1219,11 +1120,11 @@ app.post("/api/itinerary/blocks", requireAuth, (req, res) => {
     if (!blocks || blocks.length === 0) return res.json({ success: true });
 
     var values = blocks.map(function(b) {
-      return [groupId, b.dayIndex, b.timeSlot, b.activityName, b.activityColor || '#E8933A', userId];
+      return [groupId, b.dayIndex, b.timeSlot, b.activityName, b.activityColor || '#E8933A', b.duration || 1, userId];
     });
 
     connection.query(
-      "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, updatedBy) VALUES ?",
+      "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, duration, updatedBy) VALUES ?",
       [values],
       function(insertErr) {
         if (insertErr) { console.error("Itinerary insert error:", insertErr.message); return res.status(500).json({ error: "Failed" }); }
@@ -1238,7 +1139,7 @@ app.get("/api/itinerary/blocks", requireAuth, (req, res) => {
   var groupId = req.query.groupId;
   if (!groupId) return res.json([]);
   connection.query(
-    "SELECT dayIndex, timeSlot, activityName, activityColor FROM tbl_itinerary_blocks WHERE groupId = ? ORDER BY dayIndex, timeSlot",
+    "SELECT dayIndex, timeSlot, activityName, activityColor, COALESCE(duration, 1) AS duration FROM tbl_itinerary_blocks WHERE groupId = ? ORDER BY dayIndex, timeSlot",
     [groupId],
     function(err, rows) {
       res.json(!err && rows ? rows : []);
@@ -1290,7 +1191,7 @@ app.get("/api/notifications", requireAuth, (req, res) => {
       });
       var unreadByGroup = {};
       notifications.forEach(function(n) {
-        if (!n.isRead && n.type !== 'invite') {
+        if (!n.isRead) {
           if (!unreadByGroup[n.groupId]) unreadByGroup[n.groupId] = { count: 0, groupName: n.groupName, groupId: n.groupId };
           unreadByGroup[n.groupId].count++;
         }
@@ -1298,14 +1199,11 @@ app.get("/api/notifications", requireAuth, (req, res) => {
       var summarizedGroups = {};
       var results = [];
       notifications.forEach(function(n) {
-        // Always show invite notifications individually
-        if (n.type === 'invite') {
-          results.push(n);
-        } else if (!n.isRead && unreadByGroup[n.groupId] && unreadByGroup[n.groupId].count >= 4 && !summarizedGroups[n.groupId]) {
+        if (!n.isRead && unreadByGroup[n.groupId] && unreadByGroup[n.groupId].count >= 4 && !summarizedGroups[n.groupId]) {
           summarizedGroups[n.groupId] = true;
           results.push({ id: n.id, groupId: n.groupId, groupName: n.groupName, message: n.groupName + ' has ' + unreadByGroup[n.groupId].count + ' new votes', type: 'vote-summary', isRead: 0, createdAt: n.createdAt });
         } else if (!n.isRead && unreadByGroup[n.groupId] && unreadByGroup[n.groupId].count >= 4) {
-          // Skip individual vote ones for summarized groups
+          // Skip individual ones for summarized groups
         } else {
           results.push(n);
         }
@@ -1463,6 +1361,16 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, function() {
   console.log("Server running on http://localhost:" + PORT);
   console.log("Socket.io enabled for real-time chat");
+
+  // Auto-migrate: add duration column if it doesn't exist yet
+  connection.query(
+    "ALTER TABLE tbl_itinerary_blocks ADD COLUMN duration FLOAT NOT NULL DEFAULT 1",
+    function(err) {
+      if (err && err.code === 'ER_DUP_FIELDNAME') { /* column already exists, fine */ }
+      else if (err) { console.error("Migration note:", err.message); }
+      else { console.log("Added duration column to tbl_itinerary_blocks"); }
+    }
+  );
 });
 
 module.exports = app;
