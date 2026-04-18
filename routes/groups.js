@@ -210,17 +210,66 @@ router.post("/upload-photo", requireGroupAuth, function (req, res) {
 router.post("/invite", requireGroupAuth, async function (req, res) {
   var db = getDb(req);
   var groupId = req.body.groupId;
-  var friendEmail = req.body.friendEmail;
+  var friendEmail = req.body.friendEmail || '';
+  var friendUsername = req.body.friendUsername || '';
   var user = req.session.user;
 
   loadGroup(db, groupId, function (err, group) {
     if (!group) return res.status(404).send("Group not found");
 
     var inviteLink = req.protocol + "://" + req.get("host") + "/groups/join/" + group.inviteCode;
-    var transporter = req.app.locals.transporter;
 
-    console.log(transporter);
-    console.log(inviteLink);
+    // Username invite: look up user and add directly
+    if (friendUsername) {
+      db.query("SELECT IDuser, username, email FROM tbl_users WHERE username = ?", [friendUsername], function(uErr, uRows) {
+        if (uErr || !uRows || uRows.length === 0) {
+          return res.render("groups/create-confirm", {
+            title: "Group Created", user: user, group: group,
+            inviteLink: inviteLink,
+            inviteSuccess: null,
+            inviteError: 'User "' + friendUsername + '" not found'
+          });
+        }
+        var friend = uRows[0];
+        db.query(
+          "INSERT IGNORE INTO tbl_group_members (groupId, userId, username, email) VALUES (?, ?, ?, ?)",
+          [group.id, friend.IDuser, friend.username, friend.email],
+          function() {
+            // Send notification to the invited user
+            var inviterName = user ? user.username : 'Someone';
+            var notifMsg = inviterName + ' added you to "' + group.name + '"';
+            db.query(
+              "INSERT INTO tbl_notifications (userId, groupId, groupName, message, type) VALUES (?, ?, ?, ?, ?)",
+              [friend.IDuser, group.id, group.name, notifMsg, 'invite'],
+              function(nErr) {
+                if (nErr) console.error("Invite notification error:", nErr.message);
+                else console.log("Invite notification sent to", friend.username, "for group", group.name);
+              }
+            );
+
+            return res.render("groups/create-confirm", {
+              title: "Group Created", user: user, group: group,
+              inviteLink: inviteLink,
+              inviteSuccess: friend.username + ' has been added to ' + group.name + '!',
+              inviteError: null
+            });
+          }
+        );
+      });
+      return;
+    }
+
+    // Email invite flow
+    if (!friendEmail) {
+      return res.render("groups/create-confirm", {
+        title: "Group Created", user: user, group: group,
+        inviteLink: inviteLink,
+        inviteSuccess: null,
+        inviteError: "Please enter an email or username"
+      });
+    }
+
+    var transporter = req.app.locals.transporter;
 
     if (!transporter) {
       return res.render("groups/create-confirm", {

@@ -1079,11 +1079,12 @@ app.get("/api/votes/saved", requireAuth, (req, res) => {
 // Save a single block (upsert)
 app.post("/api/itinerary/block", requireAuth, (req, res) => {
   var userId = req.session.user.id;
-  var { groupId, dayIndex, timeSlot, activityName, activityColor } = req.body;
+  var { groupId, dayIndex, timeSlot, activityName, activityColor, duration } = req.body;
   if (!groupId || dayIndex === undefined || !timeSlot || !activityName) return res.status(400).json({ error: "Missing fields" });
+  var dur = duration || 1;
   connection.query(
-    "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, updatedBy) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE activityName = ?, activityColor = ?, updatedBy = ?",
-    [groupId, dayIndex, timeSlot, activityName, activityColor || '#E8933A', userId, activityName, activityColor || '#E8933A', userId],
+    "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, duration, updatedBy) VALUES (?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE activityName = ?, activityColor = ?, duration = ?, updatedBy = ?",
+    [groupId, dayIndex, timeSlot, activityName, activityColor || '#E8933A', dur, userId, activityName, activityColor || '#E8933A', dur, userId],
     function(err) {
       if (err) { console.error("Block save error:", err.message); return res.status(500).json({ error: "Failed" }); }
       res.json({ success: true });
@@ -1119,11 +1120,11 @@ app.post("/api/itinerary/blocks", requireAuth, (req, res) => {
     if (!blocks || blocks.length === 0) return res.json({ success: true });
 
     var values = blocks.map(function(b) {
-      return [groupId, b.dayIndex, b.timeSlot, b.activityName, b.activityColor || '#E8933A', userId];
+      return [groupId, b.dayIndex, b.timeSlot, b.activityName, b.activityColor || '#E8933A', b.duration || 1, userId];
     });
 
     connection.query(
-      "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, updatedBy) VALUES ?",
+      "INSERT INTO tbl_itinerary_blocks (groupId, dayIndex, timeSlot, activityName, activityColor, duration, updatedBy) VALUES ?",
       [values],
       function(insertErr) {
         if (insertErr) { console.error("Itinerary insert error:", insertErr.message); return res.status(500).json({ error: "Failed" }); }
@@ -1138,7 +1139,7 @@ app.get("/api/itinerary/blocks", requireAuth, (req, res) => {
   var groupId = req.query.groupId;
   if (!groupId) return res.json([]);
   connection.query(
-    "SELECT dayIndex, timeSlot, activityName, activityColor FROM tbl_itinerary_blocks WHERE groupId = ? ORDER BY dayIndex, timeSlot",
+    "SELECT dayIndex, timeSlot, activityName, activityColor, COALESCE(duration, 1) AS duration FROM tbl_itinerary_blocks WHERE groupId = ? ORDER BY dayIndex, timeSlot",
     [groupId],
     function(err, rows) {
       res.json(!err && rows ? rows : []);
@@ -1360,6 +1361,16 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, function() {
   console.log("Server running on http://localhost:" + PORT);
   console.log("Socket.io enabled for real-time chat");
+
+  // Auto-migrate: add duration column if it doesn't exist yet
+  connection.query(
+    "ALTER TABLE tbl_itinerary_blocks ADD COLUMN duration FLOAT NOT NULL DEFAULT 1",
+    function(err) {
+      if (err && err.code === 'ER_DUP_FIELDNAME') { /* column already exists, fine */ }
+      else if (err) { console.error("Migration note:", err.message); }
+      else { console.log("Added duration column to tbl_itinerary_blocks"); }
+    }
+  );
 });
 
 module.exports = app;

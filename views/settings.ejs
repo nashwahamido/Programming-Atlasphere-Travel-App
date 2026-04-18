@@ -41,8 +41,22 @@
           <div class="form-group">
             <label for="phone">Phone</label>
             <div class="phone-row">
-              <input type="text" id="phoneCode" name="phoneCode" placeholder="+353" class="phone-code">
-              <input type="tel" id="phone" name="phone" value="<%= user ? (user.phonenumber || '') : '' %>">
+              <% var storedPhone = user ? (user.phonenumber || '') : '';
+                 var codes = ['+355','+387','+380','+385','+381','+353','+44','+1','+49','+33','+34','+39','+31','+32','+41','+43','+45','+46','+47','+48','+351','+358','+36','+30','+90','+91','+86','+81','+82','+61','+64','+55','+52','+27','+234','+254','+20','+971','+966','+7','+40'];
+                 var flags = {'+355':'🇦🇱','+387':'🇧🇦','+380':'🇺🇦','+385':'🇭🇷','+381':'🇷🇸','+353':'🇮🇪','+44':'🇬🇧','+1':'🇺🇸','+49':'🇩🇪','+33':'🇫🇷','+34':'🇪🇸','+39':'🇮🇹','+31':'🇳🇱','+32':'🇧🇪','+41':'🇨🇭','+43':'🇦🇹','+45':'🇩🇰','+46':'🇸🇪','+47':'🇳🇴','+48':'🇵🇱','+351':'🇵🇹','+358':'🇫🇮','+36':'🇭🇺','+30':'🇬🇷','+90':'🇹🇷','+91':'🇮🇳','+86':'🇨🇳','+81':'🇯🇵','+82':'🇰🇷','+61':'🇦🇺','+64':'🇳🇿','+55':'🇧🇷','+52':'🇲🇽','+27':'🇿🇦','+234':'🇳🇬','+254':'🇰🇪','+20':'🇪🇬','+971':'🇦🇪','+966':'🇸🇦','+7':'🇷🇺','+40':'🇷🇴'};
+                 var detectedCode = '+353';
+                 var phoneNum = storedPhone;
+                 codes.sort(function(a,b){ return b.length - a.length; });
+                 for (var i = 0; i < codes.length; i++) {
+                   if (storedPhone.startsWith(codes[i])) { detectedCode = codes[i]; phoneNum = storedPhone.slice(codes[i].length); break; }
+                 }
+              %>
+              <select name="phoneCode" class="phone-code" id="settingsPhoneCode">
+                <% ['+353','+44','+1','+49','+33','+34','+39','+31','+32','+41','+43','+45','+46','+47','+48','+351','+358','+36','+30','+90','+91','+86','+81','+82','+61','+64','+55','+52','+27','+234','+254','+20','+971','+966','+7','+380','+40','+385','+381','+355','+387'].forEach(function(c) { %>
+                  <option value="<%= c %>" <%= c === detectedCode ? 'selected' : '' %>><%= flags[c] || '' %> <%= c %></option>
+                <% }); %>
+              </select>
+              <input type="tel" id="phone" name="phone" value="<%= phoneNum %>">
             </div>
           </div>
           <div class="form-group">

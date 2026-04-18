@@ -5,13 +5,14 @@ const router = express.Router();
 router.post('/update', (req, res) => {
   if (!req.session.user) return res.redirect('/auth/login');
   const connection = req.app.get('db');
-  const { name, email, phone, gender } = req.body;
+  const { name, email, phone, phoneCode, gender } = req.body;
   const genderMap = { 'm': 1, 'f': 2, 'd': 3 };
   const genderId = genderMap[gender] || null;
+  const fullPhone = (phoneCode || '+353') + (phone || '').replace(/^0+/, '');
 
   connection.query(
     'UPDATE tbl_users SET username = ?, email = ?, phonenumber = ?, FIDgender = ? WHERE IDuser = ?',
-    [name, email, phone || '', genderId, req.session.user.id],
+    [name, email, fullPhone, genderId, req.session.user.id],
     function(err) {
       if (err) {
         console.error('Update error:', err.message);

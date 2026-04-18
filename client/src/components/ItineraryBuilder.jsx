@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import '../styles/itinerary-builder.css';
 
 const HOURS = ['08.00','09.00','10.00','11.00','12.00','13.00','14.00','15.00','16.00','17.00','18.00','19.00','20.00','21.00','22.00','23.00','00.00','01.00','02.00'];
@@ -6,7 +6,20 @@ const DAY_LABELS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const DAY_NAMES = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-const defaultActivities = [];
+const DURATION_STEP = 1;
+const MIN_DURATION = 1;
+const MAX_DURATION = 6;
+var ROW_HEIGHT = 48;
+
+function slotsForDuration(dur) { return Math.ceil(dur); }
+
+function formatDuration(dur) {
+  var h = Math.floor(dur);
+  var m = Math.round((dur - h) * 60);
+  if (h === 0) return m + 'min';
+  if (m === 0) return h + 'h';
+  return h + 'h' + m;
+}
 
 const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDays = 7, isActive = false }) => {
   const today = new Date();
@@ -18,7 +31,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   useEffect(() => {
     var gid = groupId || tripId;
     if (!gid || !isActive) return;
-
     fetch('/api/votes/saved?groupId=' + gid + '&type=upvote')
       .then(r => r.json())
       .then(data => {
@@ -31,7 +43,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         })));
       })
       .catch(() => {});
-
     fetch('/api/votes/saved?groupId=' + gid + '&type=bookmark')
       .then(r => r.json())
       .then(data => {
@@ -50,6 +61,8 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const [calMonth, setCalMonth] = useState(today.getMonth());
   const [rangeStart, setRangeStart] = useState(null);
   const [rangeEnd, setRangeEnd] = useState(null);
+  const [rangeYear, setRangeYear] = useState(null);
+  const [rangeMonth, setRangeMonth] = useState(null);
   const [pickingEnd, setPickingEnd] = useState(false);
   const [activeDay, setActiveDay] = useState(0);
 
@@ -64,6 +77,8 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
           setRangeEnd(data.rangeEnd);
           setCalYear(data.calYear);
           setCalMonth(data.calMonth);
+          setRangeYear(data.calYear);
+          setRangeMonth(data.calMonth);
         }
       })
       .catch(() => {});
@@ -72,18 +87,12 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const actualDays = (rangeStart !== null && rangeEnd !== null) ? rangeEnd - rangeStart + 1 : tripDays;
 
   const weekDays = useMemo(() => {
-    if (!rangeStart) return [];
+    if (rangeStart === null || rangeYear === null) return [];
     return Array.from({ length: actualDays }, (_, i) => {
-      const date = new Date(calYear, calMonth, rangeStart + i);
-      return {
-        index: i,
-        num: date.getDate(),
-        month: date.getMonth(),
-        year: date.getFullYear(),
-        label: DAY_NAMES[date.getDay()]
-      };
+      const date = new Date(rangeYear, rangeMonth, rangeStart + i);
+      return { index: i, num: date.getDate(), month: date.getMonth(), year: date.getFullYear(), label: DAY_NAMES[date.getDay()] };
     });
-  }, [rangeStart, rangeEnd, actualDays, calYear, calMonth]);
+  }, [rangeStart, rangeEnd, actualDays, rangeYear, rangeMonth]);
 
   const [allBlocks, setAllBlocks] = useState({});
   const dayBlocks = allBlocks[activeDay] || {};
@@ -104,7 +113,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         var loaded = {};
         data.forEach(function(b) {
           if (!loaded[b.dayIndex]) loaded[b.dayIndex] = {};
-          loaded[b.dayIndex][b.timeSlot] = { name: b.activityName, color: b.activityColor || '#E8933A' };
+          loaded[b.dayIndex][b.timeSlot] = { name: b.activityName, color: b.activityColor || '#E8933A', duration: b.duration || 1 };
         });
         setAllBlocks(loaded);
         setHasLoadedBlocks(true);
@@ -123,9 +132,9 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     fetch('/api/itinerary/dates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ groupId: gid, rangeStart, rangeEnd, calYear, calMonth })
+      body: JSON.stringify({ groupId: gid, rangeStart, rangeEnd, calYear: rangeYear, calMonth: rangeMonth })
     }).catch(() => {});
-  }, [rangeStart, rangeEnd, calYear, calMonth, groupId, tripId]);
+  }, [rangeStart, rangeEnd, rangeYear, rangeMonth, groupId, tripId]);
 
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const firstDay = (() => { const d = new Date(calYear, calMonth, 1).getDay(); return d === 0 ? 6 : d - 1; })();
@@ -133,75 +142,46 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const cells = firstDay + daysInMonth;
   const overflow = cells % 7 === 0 ? 0 : 7 - (cells % 7);
 
-  const goPrev = () => {
-    if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); }
-    else setCalMonth(calMonth - 1);
-  };
-
-  const goNext = () => {
-    if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); }
-    else setCalMonth(calMonth + 1);
-  };
+  const goPrev = () => { if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); } else setCalMonth(calMonth - 1); };
+  const goNext = () => { if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); } else setCalMonth(calMonth + 1); };
 
   const clickDay = (d) => {
     if (pickingEnd && rangeStart !== null) {
-      if (d <= rangeStart) {
+      if (d <= rangeStart && calYear === rangeYear && calMonth === rangeMonth) {
         setPickingEnd(false);
-        const end = Math.min(d + tripDays - 1, daysInMonth);
-        setRangeStart(d);
-        setRangeEnd(end);
-        setActiveDay(0);
-        setAllBlocks({});
-        localStorage.removeItem(storageKey + '-blocks');
+        setRangeStart(d); setRangeEnd(Math.min(d + tripDays - 1, daysInMonth));
+        setRangeYear(calYear); setRangeMonth(calMonth); setActiveDay(0);
         return;
       }
-      const hasActivities = Object.values(allBlocks).some(day => Object.keys(day).length > 0);
-      if (hasActivities) {
-        const confirmed = window.confirm('Changing the end date will clear planned activities outside the new range. Continue?');
-        if (!confirmed) { setPickingEnd(false); return; }
-        const newLength = d - rangeStart + 1;
-        setAllBlocks(prev => {
-          var trimmed = {};
-          Object.keys(prev).forEach(idx => {
-            if (parseInt(idx) < newLength) trimmed[idx] = prev[idx];
-          });
-          return trimmed;
-        });
-      }
-      setRangeEnd(d);
-      setPickingEnd(false);
+      const newLength = d - rangeStart + 1;
+      setAllBlocks(prev => {
+        var trimmed = {};
+        Object.keys(prev).forEach(idx => { if (parseInt(idx) < newLength) trimmed[idx] = prev[idx]; });
+        return trimmed;
+      });
+      setRangeEnd(d); setPickingEnd(false);
       return;
     }
-
-    const hasActivities = Object.values(allBlocks).some(day => Object.keys(day).length > 0);
-    if (rangeStart !== null && hasActivities) {
-      const confirmed = window.confirm('Changing your start date will clear all your planned activities. Are you sure?');
-      if (!confirmed) return;
-    }
-    const end = Math.min(d + tripDays - 1, daysInMonth);
-    setRangeStart(d);
-    setRangeEnd(end);
-    setActiveDay(0);
-    setAllBlocks({});
-    localStorage.removeItem(storageKey + '-blocks');
-    localStorage.removeItem(storageKey + '-activeDay');
+    setRangeStart(d); setRangeEnd(Math.min(d + tripDays - 1, daysInMonth));
+    setRangeYear(calYear); setRangeMonth(calMonth); setActiveDay(0);
   };
 
   const daysWithBlocks = useMemo(() => {
     var result = {};
-    for (var dayIdx in allBlocks) {
-      if (Object.keys(allBlocks[dayIdx]).length > 0) result[dayIdx] = true;
-    }
+    for (var dayIdx in allBlocks) { if (Object.keys(allBlocks[dayIdx]).length > 0) result[dayIdx] = true; }
     return result;
   }, [allBlocks]);
 
   const dateToDayIndex = (d) => {
-    if (rangeStart === null || d < rangeStart || d > rangeEnd) return -1;
+    if (rangeStart === null || rangeYear === null) return -1;
+    if (calYear !== rangeYear || calMonth !== rangeMonth) return -1;
+    if (d < rangeStart || d > rangeEnd) return -1;
     return d - rangeStart;
   };
 
   const dayClass = (d) => {
-    if (rangeStart === null) return 'ib-cal__day';
+    if (rangeStart === null || rangeYear === null) return 'ib-cal__day';
+    if (calYear !== rangeYear || calMonth !== rangeMonth) return 'ib-cal__day';
     var cls = 'ib-cal__day';
     if (d === rangeStart) cls += ' ib-cal__day--start';
     else if (d === rangeEnd) cls += ' ib-cal__day--end';
@@ -217,6 +197,26 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     ? `${MONTHS[activeDayInfo.month]} ${activeDayInfo.num} (Day ${activeDay + 1})`
     : 'Schedule';
 
+  // ── API helpers ─────────────────────────────────────────────────────────────
+  const persistBlock = useCallback((dayIdx, timeSlot, block) => {
+    var gid = groupId || tripId;
+    if (!gid) return;
+    fetch('/api/itinerary/block', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId: gid, dayIndex: dayIdx, timeSlot, activityName: block.name, activityColor: block.color || '#E8933A', duration: block.duration || 1 })
+    }).catch(() => {});
+  }, [groupId, tripId]);
+
+  const deleteBlockAPI = useCallback((dayIdx, timeSlot) => {
+    var gid = groupId || tripId;
+    if (!gid) return;
+    fetch('/api/itinerary/block', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId: gid, dayIndex: dayIdx, timeSlot })
+    }).catch(() => {});
+  }, [groupId, tripId]);
+
+  // ── Drag & drop ─────────────────────────────────────────────────────────────
   const panelDragStart = (e, act) => {
     setDragInfo({ type: 'panel', name: act.name, id: act.id, color: act.color || '#E8933A' });
     e.dataTransfer.effectAllowed = 'move';
@@ -224,7 +224,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   };
 
   const blockDragStart = (e, timeKey, block) => {
-    setDragInfo({ type: 'block', id: block.id, name: block.name || block.text, from: timeKey });
+    setDragInfo({ type: 'block', id: block.id, name: block.name || block.text, from: timeKey, duration: block.duration || 1, color: block.color || '#E8933A' });
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', block.id || '');
   };
@@ -234,55 +234,166 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     setOverSlot(null);
     if (!dragInfo) return;
 
-    var gid = groupId || tripId;
+    var slotIndex = HOURS.indexOf(timeKey);
     var newName = dragInfo.name;
     var newColor = dragInfo.color || '#E8933A';
+    var dur = dragInfo.type === 'block' ? (dragInfo.duration || 1) : 1;
     var fromSlot = dragInfo.type === 'block' ? dragInfo.from : null;
 
     setAllBlocks(prev => {
       const dayData = { ...(prev[activeDay] || {}) };
-      if (dragInfo.type === 'panel') {
-        dayData[timeKey] = { id: 'sb-' + Date.now(), name: newName, color: newColor };
-      } else if (dragInfo.type === 'block') {
-        if (dragInfo.from) delete dayData[dragInfo.from];
-        dayData[timeKey] = { id: dragInfo.id, name: newName, color: newColor };
+      if (fromSlot) delete dayData[fromSlot];
+
+      // Clamp duration to not overlap or exceed grid
+      var finalDur = dur;
+      for (var i = slotIndex + 1; i < HOURS.length && (i - slotIndex) < slotsForDuration(dur); i++) {
+        if (dayData[HOURS[i]]) { finalDur = i - slotIndex; break; }
       }
+      finalDur = Math.min(finalDur, HOURS.length - slotIndex);
+      if (finalDur < MIN_DURATION) finalDur = MIN_DURATION;
+
+      var newBlock = { id: dragInfo.id || ('sb-' + Date.now()), name: newName, color: newColor, duration: finalDur };
+      dayData[timeKey] = newBlock;
+
+      if (fromSlot) deleteBlockAPI(activeDay, fromSlot);
+      persistBlock(activeDay, timeKey, newBlock);
       return { ...prev, [activeDay]: dayData };
     });
-
-    if (gid) {
-      if (fromSlot) {
-        fetch('/api/itinerary/block', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ groupId: gid, dayIndex: activeDay, timeSlot: fromSlot })
-        }).catch(() => {});
-      }
-      fetch('/api/itinerary/block', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: gid, dayIndex: activeDay, timeSlot: timeKey, activityName: newName, activityColor: newColor })
-      }).catch(() => {});
-    }
-
     setDragInfo(null);
-  }, [dragInfo, activeDay, groupId, tripId]);
+  }, [dragInfo, activeDay, persistBlock, deleteBlockAPI]);
 
   const removeBlock = (k) => {
+    setAllBlocks(prev => { const d = { ...(prev[activeDay] || {}) }; delete d[k]; return { ...prev, [activeDay]: d }; });
+    deleteBlockAPI(activeDay, k);
+  };
+
+  // ── Resize via +/- buttons ──────────────────────────────────────────────────
+  const resizeBlock = useCallback((timeKey, delta) => {
     setAllBlocks(prev => {
       const dayData = { ...(prev[activeDay] || {}) };
-      delete dayData[k];
+      const block = dayData[timeKey];
+      if (!block) return prev;
+
+      var oldDur = block.duration || 1;
+      var newDur = Math.max(MIN_DURATION, Math.min(MAX_DURATION, oldDur + delta));
+      var startIdx = HOURS.indexOf(timeKey);
+
+      // Can't exceed the grid
+      if (startIdx + slotsForDuration(newDur) > HOURS.length) {
+        newDur = HOURS.length - startIdx;
+      }
+
+      if (newDur > oldDur) {
+        // Push blocks down that sit in the expanded area
+        var expandStart = startIdx + slotsForDuration(oldDur);
+        var expandEnd = startIdx + slotsForDuration(newDur) - 1;
+        // Collect blocks that need to be pushed, sorted by slot index descending
+        // (move from bottom up so we don't overwrite)
+        var toPush = [];
+        for (var i = expandStart; i <= expandEnd && i < HOURS.length; i++) {
+          if (dayData[HOURS[i]]) {
+            toPush.push({ slot: HOURS[i], idx: i });
+          }
+        }
+        // Push each conflicting block down by the needed amount
+        // Process from bottom to top to avoid collision chains
+        toPush.sort(function(a, b) { return b.idx - a.idx; });
+        for (var p = 0; p < toPush.length; p++) {
+          var conflictSlot = toPush[p].slot;
+          var conflictIdx = toPush[p].idx;
+          var conflictBlock = dayData[conflictSlot];
+          var conflictDur = conflictBlock.duration || 1;
+          var conflictSpan = slotsForDuration(conflictDur);
+          // Find the first free slot below the expansion zone
+          var targetIdx = expandEnd + 1;
+          // Walk down to find a slot that has room for this block
+          while (targetIdx < HOURS.length) {
+            var fits = true;
+            for (var c = 0; c < conflictSpan && (targetIdx + c) < HOURS.length; c++) {
+              if (dayData[HOURS[targetIdx + c]] && HOURS[targetIdx + c] !== conflictSlot) {
+                fits = false;
+                break;
+              }
+            }
+            if (fits && targetIdx + conflictSpan <= HOURS.length) break;
+            targetIdx++;
+          }
+          // If no room to push, cap the resize instead
+          if (targetIdx + conflictSpan > HOURS.length) {
+            newDur = conflictIdx - startIdx;
+            if (newDur < MIN_DURATION) newDur = MIN_DURATION;
+            break;
+          }
+          // Move the block
+          delete dayData[conflictSlot];
+          dayData[HOURS[targetIdx]] = conflictBlock;
+          // Persist the move
+          deleteBlockAPI(activeDay, conflictSlot);
+          persistBlock(activeDay, HOURS[targetIdx], conflictBlock);
+        }
+      }
+
+      if (newDur === oldDur) return prev;
+      var updated = { ...block, duration: newDur };
+      dayData[timeKey] = updated;
+      persistBlock(activeDay, timeKey, updated);
       return { ...prev, [activeDay]: dayData };
     });
-    var gid = groupId || tripId;
-    if (gid) {
-      fetch('/api/itinerary/block', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ groupId: gid, dayIndex: activeDay, timeSlot: k })
-      }).catch(() => {});
-    }
-  };
+  }, [activeDay, persistBlock, deleteBlockAPI]);
+
+  // ── Covered slots (under multi-hour blocks) ─────────────────────────────────
+  const coveredSlots = useMemo(() => {
+    var covered = {};
+    Object.keys(dayBlocks).forEach(key => {
+      var idx = HOURS.indexOf(key);
+      if (idx === -1) return;
+      var dur = dayBlocks[key].duration || 1;
+      var span = slotsForDuration(dur);
+      for (var s = 1; s < span && (idx + s) < HOURS.length; s++) {
+        covered[HOURS[idx + s]] = key;
+      }
+    });
+    return covered;
+  }, [dayBlocks]);
+
+  // ── Drag-resize handle ──────────────────────────────────────────────────────
+  const onResizePointerDown = useCallback((e, timeKey) => {
+    e.preventDefault();
+    e.stopPropagation();
+    var startY = e.clientY;
+    var block = dayBlocks[timeKey];
+    var startDur = block ? (block.duration || 1) : 1;
+    var lastApplied = startDur;
+
+    var onMove = function(ev) {
+      var dy = ev.clientY - startY;
+      var slotDelta = Math.round(dy / ROW_HEIGHT);
+      var desired = Math.max(MIN_DURATION, Math.min(MAX_DURATION, startDur + slotDelta));
+      if (desired !== lastApplied) {
+        lastApplied = desired;
+        resizeBlock(timeKey, desired - startDur);
+      }
+    };
+
+    var onUp = function() {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+    };
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+  }, [dayBlocks, resizeBlock]);
+
+  // ── Week strip scroll ───────────────────────────────────────────────────────
+  const weekStripRef = useRef(null);
+  const activeDayRef = useRef(null);
+
+  useEffect(() => {
+    const strip = weekStripRef.current;
+    const pill = activeDayRef.current;
+    if (!strip || !pill) return;
+    strip.scrollLeft = pill.offsetLeft - strip.offsetWidth / 2 + pill.offsetWidth / 2;
+  }, [activeDay, weekDays.length]);
 
   const currentActivities = panelMode === 'recommend' ? upvotedActivities : savedActivities;
   const filtered = currentActivities.filter(a =>
@@ -306,7 +417,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         {rangeStart ? (
           <div>
             <p className="ib-cal__hint">
-              Trip: {MONTHS[calMonth]} {rangeStart} – {rangeEnd} ({rangeEnd - rangeStart + 1} days)
+              Trip: {MONTHS[rangeMonth]} {rangeStart} – {rangeEnd} ({rangeEnd - rangeStart + 1} days)
             </p>
             {pickingEnd ? (
               <p className="ib-cal__hint" style={{ color: 'var(--ib-accent)', marginTop: 4 }}>
@@ -343,9 +454,10 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       {/* ═══ CENTER: Schedule ═══ */}
       <div className="ib-schedule">
         {weekDays.length > 0 ? (
-          <div className="ib-week">
+          <div className="ib-week" ref={weekStripRef}>
             {weekDays.map((d, i) => (
               <div key={i}
+                ref={activeDay === i ? activeDayRef : null}
                 className={`ib-week__day${activeDay === i ? ' ib-week__day--active' : ''}${daysWithBlocks[i] ? ' ib-week__day--has-plans' : ''}`}
                 onClick={() => setActiveDay(i)}>
                 <span className="ib-week__num">{d.num}</span>
@@ -360,23 +472,64 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         )}
         <h4 className="ib-schedule__title">{scheduleTitle}</h4>
         <div className="ib-timeslots">
-          {HOURS.map(h => (
-            <div key={h} className="ib-timerow">
-              <span className="ib-timerow__label">{h}</span>
-              <div className={`ib-timerow__slot${overSlot === h ? ' ib-timerow__slot--over' : ''}`}
-                onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                onDragEnter={e => { e.preventDefault(); setOverSlot(h); }}
-                onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOverSlot(null); }}
-                onDrop={e => slotDrop(e, h)}>
-                {dayBlocks[h] && (
-                  <div className="ib-block" draggable onDragStart={e => blockDragStart(e, h, dayBlocks[h])}>
-                    <span className="ib-block__text">{dayBlocks[h].name || dayBlocks[h].text}</span>
-                    <button className="ib-block__x" onClick={() => removeBlock(h)}>&times;</button>
-                  </div>
-                )}
+          {HOURS.map((h, hIdx) => {
+            var isCovered = coveredSlots[h] !== undefined;
+            var block = dayBlocks[h];
+            var dur = block ? (block.duration || 1) : 1;
+            var spanSlots = block ? slotsForDuration(dur) : 1;
+            var canGrow = block && dur < MAX_DURATION && (hIdx + slotsForDuration(dur + DURATION_STEP)) <= HOURS.length;
+            // Also check if the very last slot of the schedule still has room to push blocks into
+            var canShrink = block && dur > MIN_DURATION;
+
+            if (isCovered) {
+              return (
+                <div key={h} className="ib-timerow ib-timerow--covered">
+                  <span className="ib-timerow__label">{h}</span>
+                  <div className="ib-timerow__slot" />
+                </div>
+              );
+            }
+
+            return (
+              <div key={h} className="ib-timerow">
+                <span className="ib-timerow__label">{h}</span>
+                <div className={`ib-timerow__slot${overSlot === h ? ' ib-timerow__slot--over' : ''}`}
+                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                  onDragEnter={e => { e.preventDefault(); setOverSlot(h); }}
+                  onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setOverSlot(null); }}
+                  onDrop={e => slotDrop(e, h)}>
+                  {block && (
+                    <div
+                      className="ib-block"
+                      draggable
+                      onDragStart={e => blockDragStart(e, h, block)}
+                      style={{
+                        minHeight: (spanSlots * ROW_HEIGHT - 6) + 'px',
+                        position: 'relative',
+                      }}
+                    >
+                      <div className="ib-block__row">
+                        <span className="ib-block__text">{block.name || block.text}</span>
+                        <div className="ib-block__controls">
+                          <span className="ib-block__dur">{formatDuration(dur)}</span>
+                          <button className="ib-block__resize-btn" disabled={!canShrink}
+                            onClick={e => { e.stopPropagation(); resizeBlock(h, -DURATION_STEP); }}
+                            title="Shrink by 30 min">−</button>
+                          <button className="ib-block__resize-btn" disabled={!canGrow}
+                            onClick={e => { e.stopPropagation(); resizeBlock(h, DURATION_STEP); }}
+                            title="Extend by 30 min">+</button>
+                          <button className="ib-block__x" onClick={() => removeBlock(h)}>&times;</button>
+                        </div>
+                      </div>
+                      <div className="ib-block__drag-handle"
+                        onPointerDown={e => onResizePointerDown(e, h)}
+                        title="Drag to resize" />
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
