@@ -394,6 +394,21 @@ function filterCities(query) {
   })();
 
   initLocationGrids();
+
+  document.getElementById('locationsForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  var data = new URLSearchParams(new FormData(this));
+  fetch('/users/update-locations', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: data.toString()
+  }).then(function() {
+    document.getElementById('countrySearch').value = '';
+    document.getElementById('citySearch').value = '';
+    initLocationGrids();
+  });
+});
+
 </script>
 
 </body>
