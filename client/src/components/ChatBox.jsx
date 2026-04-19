@@ -50,6 +50,10 @@ var ChatBox = function(props) {
       socket.on('new-message', function(msg) {
         setMessages(function(prev) { return prev.concat([msg]); });
         setLastActive(new Date().toISOString());
+        // Let the overlay know a message arrived (overlay listens to this instead of its own socket)
+        if (String(msg.userId) !== String(userId)) {
+          window.dispatchEvent(new CustomEvent('atlas-overlay-message', { detail: { groupId: msg.groupId } }));
+        }
       });
 
       socket.on('user-joined', function(data) {
@@ -234,13 +238,19 @@ var ChatBox = function(props) {
         )
       ),
       React.createElement('div', { className: 'cb__header-actions', style: { marginLeft: 'auto', position: 'relative' } },
-        React.createElement('a', {
-          href: 'javascript:void(0);',
-          className: 'burger',
+        React.createElement('button', {
+          type: 'button',
+          className: 'cb__invite-btn' + (showInvite ? ' cb__invite-btn--active' : ''),
           onClick: function() { setShowInvite(!showInvite); setInviteMsg(null); },
-          title: 'Invite a friend',
-          style: { textDecoration: 'none', color: 'var(--ib-text, #fff)', padding: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '20px' }
-        }, '\u2026'),
+          title: 'Invite a friend'
+        },
+          React.createElement('svg', { width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2.2', strokeLinecap: 'round', strokeLinejoin: 'round' },
+            React.createElement('path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }),
+            React.createElement('circle', { cx: '9', cy: '7', r: '4' }),
+            React.createElement('line', { x1: '19', y1: '8', x2: '19', y2: '14' }),
+            React.createElement('line', { x1: '22', y1: '11', x2: '16', y2: '11' })
+          )
+        ),
         showInvite && React.createElement('div', {
           className: 'cb__invite-popup',
           ref: inviteRef,
@@ -248,7 +258,10 @@ var ChatBox = function(props) {
         },
           React.createElement('p', { className: 'gc-invite-label' }, 'Search for a friend'),
           React.createElement('div', { className: 'gc-search' },
-            React.createElement('span', null, '\uD83D\uDD0D'),
+            React.createElement('svg', { width: '14', height: '14', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2.2', strokeLinecap: 'round', strokeLinejoin: 'round', style: { flexShrink: 0, opacity: 0.6 } },
+              React.createElement('circle', { cx: '11', cy: '11', r: '8' }),
+              React.createElement('line', { x1: '21', y1: '21', x2: '16.65', y2: '16.65' })
+            ),
             React.createElement('input', {
               type: 'text',
               name: 'friendEmail',
@@ -259,10 +272,17 @@ var ChatBox = function(props) {
             }),
             React.createElement('button', {
               type: 'button',
+              className: 'cb__invite-send',
               onClick: handleInviteSubmit,
               disabled: inviteLoading || !inviteQuery.trim(),
-              style: { background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '16px' }
-            }, inviteLoading ? '...' : '\u2717')
+              title: 'Send invite'
+            }, inviteLoading
+              ? React.createElement('span', { style: { fontSize: '11px' } }, '...')
+              : React.createElement('svg', { width: '14', height: '14', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: '2.2', strokeLinecap: 'round', strokeLinejoin: 'round' },
+                  React.createElement('line', { x1: '22', y1: '2', x2: '11', y2: '13' }),
+                  React.createElement('polygon', { points: '22 2 15 22 11 13 2 9 22 2' })
+                )
+            )
           ),
           inviteMsg && React.createElement('div', {
             className: 'cb__invite-msg cb__invite-msg--' + inviteMsg.type

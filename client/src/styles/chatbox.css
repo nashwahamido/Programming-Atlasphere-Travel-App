@@ -53,20 +53,140 @@
 .cb__messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
 .cb__messages::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
 
-/* ── Invite popup (uses existing gc-* classes from styles.css) ── */
+/* ── Invite trigger button ── */
+.cb__invite-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ib-input-bg);
+  border: 1px solid var(--ib-input-border);
+  color: var(--ib-text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.cb__invite-btn:hover,
+.cb__invite-btn--active {
+  background: #3B5F8A;
+  border-color: #3B5F8A;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* ── Invite popup ── */
 .cb__invite-popup {
-  position: absolute; top: calc(100% + 8px); right: 0;
-  width: 300px; z-index: 100;
-  background: var(--ib-card, #1a2736);
-  border: 1px solid var(--ib-card-border, rgba(255,255,255,0.1));
-  border-radius: 14px; padding: 18px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 290px;
+  z-index: 200;
+  background: var(--ib-card);
+  border: 1px solid var(--ib-card-border);
+  border-radius: 16px;
+  padding: 20px 18px;
+  box-shadow: var(--ib-card-shadow);
   text-align: center;
 }
-.cb__invite-msg {
-  margin: 8px 0; padding: 8px 10px; border-radius: 8px;
-  font-size: 12px; font-weight: 600; text-align: left;
+
+.cb__invite-popup .gc-invite-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ib-text);
+  margin: 0 0 12px;
+  letter-spacing: 0.2px;
 }
-.cb__invite-msg--success { background: rgba(34,197,94,0.15); color: #22c55e; }
-.cb__invite-msg--error { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+/* Search pill */
+.cb__invite-popup .gc-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ib-input-bg);
+  border: 1px solid var(--ib-input-border);
+  border-radius: 30px;
+  padding: 9px 14px;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 0 10px;
+  transition: border-color 0.2s;
+}
+.cb__invite-popup .gc-search:focus-within {
+  border-color: #3B5F8A;
+}
+.cb__invite-popup .gc-search svg {
+  color: var(--ib-text-muted);
+  flex-shrink: 0;
+}
+.cb__invite-popup .gc-search input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--ib-text);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  min-width: 0;
+}
+.cb__invite-popup .gc-search input::placeholder {
+  color: var(--ib-text-muted);
+}
+
+/* Send arrow inside search pill */
+.cb__invite-send {
+  background: none;
+  border: none;
+  color: var(--ib-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.cb__invite-send:hover:not(:disabled) { color: #E8933A; }
+.cb__invite-send:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* Divider "or" */
+.cb__invite-popup .gc-or {
+  color: var(--ib-text-muted);
+  font-size: 12px;
+  margin: 10px 0;
+}
+
+/* Share link button */
+.cb__invite-popup .gc-share-btn {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 24px;
+  border-radius: 30px;
+  background: var(--ib-input-bg);
+  border: 1px solid var(--ib-input-border);
+  color: var(--ib-text);
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.cb__invite-popup .gc-share-btn:hover {
+  background: #E8933A;
+  border-color: #E8933A;
+  color: #fff;
+}
+
+/* Feedback messages */
+.cb__invite-msg {
+  margin: 8px 0 4px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+}
+.cb__invite-msg--success { background: rgba(34,197,94,0.15);  color: #22c55e; }
+.cb__invite-msg--error   { background: rgba(239,68,68,0.15);   color: #ef4444; }
 .cb__messages { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }

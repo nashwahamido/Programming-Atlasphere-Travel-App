@@ -99,17 +99,18 @@ var Sidebar = function(props) {
     tabIndex: 0,
     style: { cursor: 'pointer', position: 'relative' },
     onClick: function() {
-      // Clear unread for this group when clicking
       try { localStorage.removeItem(PREFIX + g.id); } catch(e) {}
       window.dispatchEvent(new CustomEvent('atlas-unread-update'));
-      window.location.assign('/groups/' + g.id);
+      window.dispatchEvent(new CustomEvent('atlas-active-group-changed', { detail: { groupId: String(g.id) } }));
+      if (onSelect) onSelect(g);
     },
     onKeyDown: function(e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         try { localStorage.removeItem(PREFIX + g.id); } catch(ex) {}
         window.dispatchEvent(new CustomEvent('atlas-unread-update'));
-        window.location.assign('/groups/' + g.id);
+        window.dispatchEvent(new CustomEvent('atlas-active-group-changed', { detail: { groupId: String(g.id) } }));
+        if (onSelect) onSelect(g);
       }
     }
   },

@@ -141,6 +141,25 @@ body {
   border-radius: 1px;
 }
 
+/* Unread message count badge next to Groups nav link */
+.navbar-groups-badge {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #E8933A;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  box-shadow: 0 1px 4px rgba(232,147,58,0.4);
+}
+
 .btn {
   text-decoration: none;
   padding: 10px 28px;

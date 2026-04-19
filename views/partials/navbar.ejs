@@ -9,7 +9,7 @@
   <div class="navbar-center">
     <% if (typeof user !== 'undefined' && user) { %>
       <a href="/" class="nav-link">Home</a>
-      <a href="/groups" class="nav-link nav-link--groups">Groups<span id="navbar-groups-badge"></span></a>
+      <a href="/groups" class="nav-link nav-link--groups">Groups<span id="navbar-groups-badge" class="navbar-groups-badge"></span></a>
       <a href="/profile" class="nav-link">Profile</a>
       <a href="/settings" class="nav-link">Settings</a>
     <% } %>
@@ -106,7 +106,8 @@
               '<div class="notif-item__meta">' + (n.groupName || '') + ' · ' + timeAgo(n.createdAt) + '</div>' +
             '</div>';
           item.addEventListener('click', function() {
-            if (n.groupId) window.location.href = '/groups/' + n.groupId;
+            var gid = n.groupId ? String(n.groupId) : null;
+            if (gid) window.location.href = '/groups/' + gid;
           });
           list.appendChild(item);
         });

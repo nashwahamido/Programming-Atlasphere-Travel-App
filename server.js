@@ -1270,7 +1270,49 @@ app.post("/api/groups/invite", requireAuth, (req, res) => {
     [query.trim(), query.trim()],
     function(err, rows) {
       if (err) return res.status(500).json({ error: "Database error" });
-      if (!rows || rows.length === 0) return res.json({ success: false, error: 'No user found matching "' + query + '"' });
+
+      // ── No account found — send an email invite if query looks like an email ──
+      if (!rows || rows.length === 0) {
+        var isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query.trim());
+        if (!isEmail) {
+          return res.json({ success: false, error: 'No user found matching "' + query + '"' });
+        }
+        // Fetch group name + invite link to send in email
+        connection.query(
+          "SELECT name, inviteCode FROM tbl_groups WHERE id = ?",
+          [groupId],
+          function(gErr, gRows) {
+            if (gErr || !gRows || !gRows.length) {
+              return res.json({ success: false, error: 'Group not found' });
+            }
+            var gName = gRows[0].name;
+            var joinLink = req.protocol + '://' + req.get('host') + '/groups/join/' + gRows[0].inviteCode;
+            if (transporter) {
+              transporter.sendMail({
+                from: process.env.MAIL_FROM || '"Atlasphere" <noreply@atlasphere.com>',
+                to: query.trim(),
+                subject: userName + ' invited you to join "' + gName + '" on Atlasphere',
+                html: `
+                  <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+                    <h1 style="color:#0B3856;font-size:24px;">You've been invited!</h1>
+                    <p style="color:#555;font-size:16px;line-height:1.6;">
+                      <strong>${userName}</strong> invited you to join the <strong>"${gName}"</strong> group on Atlasphere.
+                    </p>
+                    <a href="${joinLink}" style="display:inline-block;margin:24px 0;padding:14px 32px;background:#E8933A;color:#fff;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;">
+                      Join "${gName}"
+                    </a>
+                    <p style="color:#888;font-size:13px;">
+                      You'll need to create a free account to join. The link above will take you straight there.
+                    </p>
+                  </div>
+                `
+              }).catch(function(e) { console.error('Invite email error:', e.message); });
+            }
+            return res.json({ success: true, message: 'Invite sent to ' + query.trim() });
+          }
+        );
+        return;
+      }
 
       var friend = rows[0];
       if (String(friend.IDuser) === String(userId)) return res.json({ success: false, error: "You can't invite yourself" });
@@ -1291,12 +1333,19 @@ app.post("/api/groups/invite", requireAuth, (req, res) => {
             function(insertErr) {
               if (insertErr) return res.status(500).json({ error: "Failed to add member" });
 
-              // Send notification
-              var notifMsg = userName + ' added you to a group';
+              // Fetch group name for the notification message
               connection.query(
-                "INSERT INTO tbl_notifications (userId, groupId, message, type) VALUES (?, ?, ?, ?)",
-                [friend.IDuser, groupId, notifMsg, 'invite'],
-                function() {}
+                "SELECT name FROM tbl_groups WHERE id = ?",
+                [groupId],
+                function(gErr, gRows) {
+                  var groupName = (gRows && gRows.length > 0) ? gRows[0].name : 'a group';
+                  var notifMsg = userName + ' added you to "' + groupName + '"';
+                  connection.query(
+                    "INSERT INTO tbl_notifications (userId, groupId, groupName, message, type) VALUES (?, ?, ?, ?, ?)",
+                    [friend.IDuser, groupId, groupName, notifMsg, 'invite'],
+                    function() {}
+                  );
+                }
               );
 
               return res.json({ success: true, message: friend.username + " has been added!" });
@@ -1353,6 +1402,15 @@ var roomMembers = {}; // { "group-123": { "userId1": true, ... } }
 io.on("connection", function(socket) {
   console.log("Socket connected:", socket.id);
 
+  // ── Notification socket: joins multiple group rooms for navbar badge updates ──
+  socket.on("join-notifications", function(data) {
+    if (!data.groupIds || !Array.isArray(data.groupIds)) return;
+    data.groupIds.forEach(function(gid) {
+      socket.join("group-" + gid);
+    });
+    console.log("Notification socket joined " + data.groupIds.length + " group rooms for user badges");
+  });
+
   socket.on("join-group", function(data) {
     var room = "group-" + data.groupId;
     socket.join(room);
@@ -1385,9 +1443,12 @@ io.on("connection", function(socket) {
   socket.on("send-message", function(data) {
     var room = "group-" + data.groupId;
     var msgId = Date.now() + "-" + Math.random().toString(36).substr(2, 5);
-    var timeStr = new Date().toISOString();
+    var now = new Date();
+    var timeStr = now.toISOString();                                    // full ISO → sent over socket
+    var timeForDb = now.toTimeString().slice(0, 5);                    // "HH:MM" → fits the time column
     var msg = {
       id: msgId,
+      groupId: data.groupId,
       userId: data.userId,
       userName: data.userName,
       userAvatar: data.userAvatar || '',
@@ -1399,7 +1460,7 @@ io.on("connection", function(socket) {
     // Save to DB
     connection.query(
       "INSERT INTO tbl_chat_messages (id, groupId, userId, userName, userAvatar, `text`, `time`, `system`) VALUES (?, ?, ?, ?, ?, ?, ?, 0)",
-      [msgId, data.groupId, data.userId, data.userName, data.userAvatar || '', data.text, timeStr],
+      [msgId, data.groupId, data.userId, data.userName, data.userAvatar || '', data.text, timeForDb],
       function (err) {
         if (err) console.error("Message save error:", err.message);
       }
