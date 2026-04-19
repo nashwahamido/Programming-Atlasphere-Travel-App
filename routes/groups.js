@@ -388,14 +388,46 @@ router.get("/:id", function (req, res) {
   });
 });
 
-// ── Delete group ────────────────────────────────────────────────────────
+// ── Delete group (owner only) ────────────────────────────────────────────
 router.post("/delete/:id", requireGroupAuth, function (req, res) {
   var db = getDb(req);
-  db.query("DELETE FROM tbl_group_members WHERE groupId = ?", [req.params.id], function () {
-    db.query("DELETE FROM tbl_chat_messages WHERE groupId = ?", [req.params.id], function () {
-      db.query("DELETE FROM tbl_groups WHERE id = ?", [req.params.id], function () {
-        res.redirect("/settings");
+  var userId = req.session.user.id;
+  var groupId = req.params.id;
+
+  // Verify the requesting user is the group creator
+  db.query("SELECT createdBy FROM tbl_groups WHERE id = ?", [groupId], function (err, rows) {
+    if (err || !rows || rows.length === 0) return res.status(404).json({ error: "Group not found" });
+    if (String(rows[0].createdBy) !== String(userId)) {
+      return res.status(403).json({ error: "Only the group creator can delete this group" });
+    }
+    // Cascade delete
+    db.query("DELETE FROM tbl_group_members WHERE groupId = ?", [groupId], function () {
+      db.query("DELETE FROM tbl_chat_messages WHERE groupId = ?", [groupId], function () {
+        db.query("DELETE FROM tbl_notifications WHERE groupId = ?", [groupId], function () {
+          db.query("DELETE FROM tbl_groups WHERE id = ?", [groupId], function () {
+            res.json({ success: true });
+          });
+        });
       });
+    });
+  });
+});
+
+// ── Leave group (non-owner members only) ─────────────────────────────────
+router.post("/leave/:id", requireGroupAuth, function (req, res) {
+  var db = getDb(req);
+  var userId = req.session.user.id;
+  var groupId = req.params.id;
+
+  // Owners must delete, not leave
+  db.query("SELECT createdBy FROM tbl_groups WHERE id = ?", [groupId], function (err, rows) {
+    if (err || !rows || rows.length === 0) return res.status(404).json({ error: "Group not found" });
+    if (String(rows[0].createdBy) === String(userId)) {
+      return res.status(403).json({ error: "You created this group — delete it instead of leaving" });
+    }
+    db.query("DELETE FROM tbl_group_members WHERE groupId = ? AND userId = ?", [groupId, userId], function (err2) {
+      if (err2) return res.status(500).json({ error: "Failed to leave group" });
+      res.json({ success: true });
     });
   });
 });
@@ -413,28 +445,3 @@ router.post("/rename/:id", requireGroupAuth, function (req, res) {
 });
 
 module.exports = router;
-
-router.post("/save-activities", requireGroupAuth, function (req, res) {
-  var db = getDb(req);
-  var groupId = req.body.groupId;
-  var activities = Array.isArray(req.body.activities)
-    ? req.body.activities.join(",")
-    : "";
-
-  if (!groupId) {
-    return res.status(400).json({ success: false, error: "Missing groupId" });
-  }
-
-  db.query(
-    "UPDATE tbl_groups SET activities = ? WHERE id = ?",
-    [activities, groupId],
-    function (err) {
-      if (err) {
-        console.error("Save activities error:", err.message);
-        return res.status(500).json({ success: false, error: "Database error" });
-      }
-
-      res.json({ success: true });
-    }
-  );
-});

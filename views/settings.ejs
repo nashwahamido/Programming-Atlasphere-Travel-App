@@ -146,24 +146,24 @@
         </div>
         <div class="groups-container">
           <div class="groups-list" id="groupsList">
-            <% const groupList = typeof groups !== 'undefined' && groups ? groups : [
-              { id: 1, name: 'Prague' },
-              { id: 2, name: 'Rome' },
-              { id: 3, name: 'Dublin' }
-            ]; %>
+            <% const groupList = typeof groups !== 'undefined' && groups ? groups : []; %>
+            <% const currentUserId = typeof user !== 'undefined' && user ? String(user.id) : ''; %>
             <% groupList.forEach(function(group) { %>
-              <div class="group-row" data-name="<%= group.name.toLowerCase() %>">
+              <% const isOwner = group.createdBy ? String(group.createdBy) === currentUserId : null; %>
+              <div class="group-row" data-name="<%= group.name.toLowerCase() %>" data-owner="<%= isOwner %>">
                 <button class="group-name-btn"
-                  onclick="selectGroup(<%= group.id %>, '<%= group.name %>', this)">
+                  onclick="selectGroup(<%= group.id %>, '<%= group.name %>', <%= isOwner %>, this)">
                   <%= group.name %>
+                  <% if (isOwner === true) { %><span class="group-owner-tag">Owner</span><% } %>
                 </button>
               </div>
             <% }) %>
           </div>
           <div class="group-actions">
-            <button class="btn-action" onclick="deleteSelectedGroup()">Delete Group</button>
-            <button class="btn-action" onclick="showRenameForm()">Change Name</button>
-            <button class="btn-action">Modify Interests</button>
+            <button class="btn-action" id="renameGroupBtn" onclick="showRenameForm()" style="display:none;">Change Name</button>
+            <button class="btn-action" id="modifyInterestsBtn" style="display:none;">Modify Interests</button>
+            <button class="btn-action btn-action--leave" id="leaveGroupBtn" onclick="leaveSelectedGroup()" style="display:none;">Leave Group</button>
+            <button class="btn-action btn-action--danger" id="deleteGroupBtn" onclick="deleteSelectedGroup()" style="display:none;">Delete Group</button>
           </div>
         </div>
 
@@ -175,9 +175,9 @@
               <input type="text" id="newGroupName" name="newName" placeholder="Enter new name">
             </div>
             <div class="form-actions" style="gap:8px;">
-            <button type="button" class="btn-save" onclick="submitRename()">Save Name</button>
-            <button type="button" class="btn-action" onclick="hideRenameForm()">Cancel</button>
-          </div>
+              <button type="submit" class="btn-save">Save Name</button>
+              <button type="button" class="btn-action" onclick="hideRenameForm()">Cancel</button>
+            </div>
           </form>
         </div>
 
@@ -297,10 +297,12 @@ function filterCities(query) {
 
   var selectedGroupId = null;
   var selectedGroupName = null;
+  var selectedGroupIsOwner = false;
 
-  function selectGroup(id, name, btn) {
+  function selectGroup(id, name, isOwner, btn) {
     selectedGroupId = id;
     selectedGroupName = name;
+    selectedGroupIsOwner = isOwner;
     document.querySelectorAll('.group-name-btn').forEach(function(b) {
       b.style.background = '';
       b.style.color = '';
@@ -311,6 +313,11 @@ function filterCities(query) {
     btn.style.borderColor = '#0B3856';
     document.getElementById('noGroupSelected').style.display = 'none';
     hideRenameForm();
+    // Show all 4 action buttons — server enforces ownership on delete
+    document.getElementById('renameGroupBtn').style.display     = 'inline-block';
+    document.getElementById('modifyInterestsBtn').style.display = 'inline-block';
+    document.getElementById('leaveGroupBtn').style.display      = 'inline-block';
+    document.getElementById('deleteGroupBtn').style.display     = 'inline-block';
   }
 
   function showConfirm(message, subMessage, onConfirm) {
@@ -337,26 +344,47 @@ function filterCities(query) {
   }
 
   function deleteSelectedGroup() {
-    if (!selectedGroupId) {
-      document.getElementById('noGroupSelected').style.display = 'block';
-      return;
-    }
+    if (!selectedGroupId) { document.getElementById('noGroupSelected').style.display = 'block'; return; }
     showConfirm(
       'Delete "' + selectedGroupName + '"?',
-      'This will permanently remove the group.',
+      'This will permanently remove the group and all its data.',
       function() {
         fetch('/groups/delete/' + selectedGroupId, { method: 'POST' })
-          .then(function() {
-            document.querySelectorAll('.group-row').forEach(function(row) {
-              var btn = row.querySelector('.group-name-btn');
-              if (btn && btn.textContent.trim() === selectedGroupName) {
-                row.remove();
-              }
-            });
-            selectedGroupId = null;
-            selectedGroupName = null;
-            hideRenameForm();
-            document.getElementById('noGroupSelected').style.display = 'none';
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.success) {
+              document.querySelectorAll('.group-row').forEach(function(row) {
+                if (row.querySelector('.group-name-btn').dataset.id == selectedGroupId) row.remove();
+              });
+              selectedGroupId = null; selectedGroupName = null; selectedGroupIsOwner = false;
+              ['deleteGroupBtn','leaveGroupBtn','renameGroupBtn','modifyInterestsBtn'].forEach(function(id){ document.getElementById(id).style.display='none'; });
+              hideRenameForm();
+            } else {
+              alert(data.error || 'Failed to delete group');
+            }
+          });
+      }
+    );
+  }
+
+  function leaveSelectedGroup() {
+    if (!selectedGroupId) { document.getElementById('noGroupSelected').style.display = 'block'; return; }
+    showConfirm(
+      'Leave "' + selectedGroupName + '"?',
+      'You will be removed from this group.',
+      function() {
+        fetch('/groups/leave/' + selectedGroupId, { method: 'POST' })
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+            if (data.success) {
+              document.querySelectorAll('.group-row').forEach(function(row) {
+                if (row.querySelector('.group-name-btn').dataset.id == selectedGroupId) row.remove();
+              });
+              selectedGroupId = null; selectedGroupName = null; selectedGroupIsOwner = false;
+              ['deleteGroupBtn','leaveGroupBtn','renameGroupBtn','modifyInterestsBtn'].forEach(function(id){ document.getElementById(id).style.display='none'; });
+            } else {
+              alert(data.error || 'Failed to leave group');
+            }
           });
       }
     );
@@ -394,41 +422,6 @@ function filterCities(query) {
   })();
 
   initLocationGrids();
-
-  document.getElementById('locationsForm').addEventListener('submit', function(e) {
-  e.preventDefault();
-  var data = new URLSearchParams(new FormData(this));
-  fetch('/users/update-locations', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: data.toString()
-  }).then(function() {
-    document.getElementById('countrySearch').value = '';
-    document.getElementById('citySearch').value = '';
-    initLocationGrids();
-  });
-});
-
-function submitRename() {
-  var newName = document.getElementById('newGroupName').value.trim();
-  if (!newName || !selectedGroupId) return;
-  fetch('/groups/rename/' + selectedGroupId, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'newName=' + encodeURIComponent(newName)
-  }).then(function() {
-    // Update the button text in the list
-    document.querySelectorAll('.group-name-btn').forEach(function(b) {
-      if (b.textContent.trim() === selectedGroupName) {
-        b.textContent = newName;
-        b.closest('.group-row').dataset.name = newName.toLowerCase();
-      }
-    });
-    selectedGroupName = newName;
-    hideRenameForm();
-  });
-}
-
 </script>
 
 </body>

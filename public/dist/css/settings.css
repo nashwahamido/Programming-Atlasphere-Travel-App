@@ -288,6 +288,40 @@
   border-color: #0B3856;
 }
 
+.btn-action--danger {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+.btn-action--danger:hover {
+  background: #ef4444;
+  color: #fff;
+  border-color: #ef4444;
+}
+
+.btn-action--leave {
+  border-color: #E8933A;
+  color: #E8933A;
+}
+.btn-action--leave:hover {
+  background: #E8933A;
+  color: #fff;
+  border-color: #E8933A;
+}
+
+/* Owner badge next to group name */
+.group-owner-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(232,147,58,0.15);
+  color: #E8933A;
+  vertical-align: middle;
+  letter-spacing: 0.3px;
+}
+
 /* ===== DELETE ACCOUNT ===== */
 .delete-msg {
   font-size: 18px;
@@ -391,6 +425,29 @@
   background: #1a2736;
   border-color: rgba(255,255,255,0.15);
   color: #ffffff;
+}
+
+[data-theme="dark"] .btn-action--danger {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+[data-theme="dark"] .btn-action--danger:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+[data-theme="dark"] .btn-action--leave {
+  border-color: #E8933A;
+  color: #E8933A;
+}
+[data-theme="dark"] .btn-action--leave:hover {
+  background: #E8933A;
+  color: #fff;
+}
+
+[data-theme="dark"] .group-owner-tag {
+  background: rgba(232,147,58,0.2);
+  color: #E8933A;
 }
 
 [data-theme="dark"] .location-card--checked,
