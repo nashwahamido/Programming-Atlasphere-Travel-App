@@ -798,6 +798,26 @@ app.get("/groups/create/activities", requireAuth, (req, res) => {
   });
 });
 
+// ── Save activity preferences for a group ───────────────────────────────
+app.post("/groups/save-activities", requireAuth, (req, res) => {
+  var { groupId, activities } = req.body;
+  if (!groupId || !Array.isArray(activities)) {
+    return res.status(400).json({ error: "Missing groupId or activities" });
+  }
+  var prefs = JSON.stringify(activities);
+  connection.query(
+    "UPDATE tbl_groups SET preferences = ? WHERE id = ?",
+    [prefs, groupId],
+    function(err) {
+      if (err) {
+        console.error("Save activities error:", err.message);
+        return res.status(500).json({ error: "Failed to save" });
+      }
+      res.json({ success: true });
+    }
+  );
+});
+
 // ── GROUPS / USERS ROUTES ────────────────────────────────────────────────
 app.use("/groups", require("./routes/groups"));
 app.use("/users", require("./routes/users"));
@@ -1483,6 +1503,16 @@ server.listen(PORT, function() {
       if (err && err.code === 'ER_DUP_FIELDNAME') { /* column already exists, fine */ }
       else if (err) { console.error("Migration note:", err.message); }
       else { console.log("Added duration column to tbl_itinerary_blocks"); }
+    }
+  );
+
+  // Auto-migrate: add preferences column to tbl_groups if it doesn't exist
+  connection.query(
+    "ALTER TABLE tbl_groups ADD COLUMN preferences TEXT",
+    function(err) {
+      if (err && err.code === 'ER_DUP_FIELDNAME') { /* column already exists, fine */ }
+      else if (err) { console.error("Migration note:", err.message); }
+      else { console.log("Added preferences column to tbl_groups"); }
     }
   );
 });
