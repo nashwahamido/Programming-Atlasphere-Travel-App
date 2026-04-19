@@ -69,12 +69,6 @@ app.use(express.static("assets"));
 app.use(fileUpload());
 app.use("/uploads", express.static(path.join(__dirname, "assets/uploads")));
 
-// ── SESSION CONFIGURATION ────────────────────────────────────────────────
-const sessionConfig = require("./config/session");
-app.use(session(sessionConfig));
-
-
-
 // ── DATABASE ─────────────────────────────────────────────────────────────
 const connection = mysql.createPool({
   host: process.env.DB_HOST,
@@ -88,6 +82,13 @@ const connection = mysql.createPool({
   queueLimit: 0,
   timezone: '+00:00',
 });
+
+// ── SESSION CONFIGURATION (stored in MySQL so sessions survive restarts) ──
+const MySQLStore = require("express-mysql-session")(session);
+const sessionStore = new MySQLStore({}, connection.promise());
+const sessionConfig = require("./config/session");
+sessionConfig.store = sessionStore;
+app.use(session(sessionConfig));
 
 connection.getConnection((err, conn) => {
   if (err) {
