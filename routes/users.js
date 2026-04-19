@@ -66,11 +66,15 @@ router.post('/update-locations', (req, res) => {
   if (!req.session.user) return res.redirect('/auth/login');
   const connection = req.app.get('db');
 
-  const selectedCountries = req.body['countries[]'] || req.body['countries'] || [];
-  const selectedCities = req.body['cities[]'] || req.body['cities'] || [];
+  const selectedCountries = req.body['countries[]'] || req.body['countries'] || req.body.countries || [];
+  const selectedCities = req.body['cities[]'] || req.body['cities'] || req.body.cities || [];
 
-  const countriesStr = Array.isArray(selectedCountries) ? selectedCountries.join(',') : selectedCountries;
-  const citiesStr = Array.isArray(selectedCities) ? selectedCities.join(',') : selectedCities;
+  const countriesStr = Array.isArray(selectedCountries) ? selectedCountries.join(',') : String(selectedCountries || '');
+  const citiesStr = Array.isArray(selectedCities) ? selectedCities.join(',') : String(selectedCities || '');
+
+  console.log('UPDATE-LOCATIONS body keys:', Object.keys(req.body));
+  console.log('UPDATE-LOCATIONS countries:', countriesStr);
+  console.log('UPDATE-LOCATIONS cities:', citiesStr);
 
   connection.query(
     'UPDATE tbl_users SET visitedCountries = ?, visitedCities = ? WHERE IDuser = ?',
@@ -79,12 +83,12 @@ router.post('/update-locations', (req, res) => {
       if (err) {
         console.error('Update locations error:', err.message);
       } else {
-        console.log('Saved countries:', countriesStr);
+        console.log('Saved OK — countries:', countriesStr, '| cities:', citiesStr);
         req.session.user.visitedCountries = countriesStr.split(',').filter(Boolean);
         req.session.user.visitedCities = citiesStr.split(',').filter(Boolean);
       }
       req.session.save(function() {
-        res.redirect('/settings');
+        res.redirect('/settings#visitedLocations');
       });
     }
   );

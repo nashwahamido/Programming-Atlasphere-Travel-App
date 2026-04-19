@@ -228,7 +228,7 @@ app.post("/auth/login", validationLoginRules, (req, res) => {
     async (dbErr, results) => {
       if (dbErr) {
         console.error(dbErr);
-        return res.status(500).send("Database error");
+        return res.render("login", { title: "Login", error: "Something went wrong. Please try again.", user: null });
       }
 
       if (results.length === 0) {
@@ -274,7 +274,7 @@ app.post("/auth/login", validationLoginRules, (req, res) => {
       req.session.save((err) => {
         if (err) {
           console.error("Session save error:", err);
-          return res.status(500).send("Session error");
+          return res.render("login", { title: "Login", error: "Session error. Please try again.", user: null });
         }
 
         // Check if user has any groups — if so, go straight to groups
@@ -321,11 +321,11 @@ app.post("/auth/register", validationRegisterRules, async (req, res) => {
       async (checkErr, existingUsers) => {
         if (checkErr) {
           console.error("Email lookup error:", checkErr);
-          return res.status(500).send("Database error");
+          return res.render("register", { title: "Register", error: "Something went wrong. Please try again.", user: null });
         }
 
         if (existingUsers.length > 0) {
-          return res.status(400).send("Email already registered");
+          return res.render("register", { title: "Register", error: "This email is already registered. Try logging in instead.", user: null });
         }
 
         const hashedPassword = await bcrypt.hash(psw, 10);
@@ -353,7 +353,7 @@ app.post("/auth/register", validationRegisterRules, async (req, res) => {
         connection.query(insertSql, insertValues, async (insertErr, result) => {
           if (insertErr) {
             console.error("User insert error:", insertErr);
-            return res.status(500).send("Registration failed");
+            return res.render("register", { title: "Register", error: "Registration failed. Please try again.", user: null });
           }
 
           const newUserId = result.insertId;
@@ -385,7 +385,7 @@ app.post("/auth/register", validationRegisterRules, async (req, res) => {
     );
   } catch (err) {
     console.error("Registration error:", err);
-    res.status(500).send("Server error");
+    res.render("register", { title: "Register", error: "Something went wrong. Please try again.", user: null });
   }
 });
 
@@ -460,7 +460,7 @@ app.post("/auth/verify", validationVerifyRules, (req, res) => {
     (err) => {
       if (err) {
         console.error("Verification update error:", err);
-        return res.status(500).send("Verification failed");
+        return res.render("register-step2", { title: "Verify", error: "Verification failed. Please try again.", email: pending.email, user: null });
       }
 
       req.session.user = {
@@ -773,8 +773,11 @@ app.get("/setup/cities", requireAuth, (req, res) => {
 
 app.post("/setup/save-visited", requireAuth, (req, res) => {
   var visitedCountryCodes = (req.body.countries || "").split(",").filter(Boolean);
-  var visitedCities = req.body["cities[]"] || [];
+  var visitedCities = req.body['cities[]'] || req.body['cities'] || req.body.cities || [];
   if (typeof visitedCities === "string") visitedCities = [visitedCities];
+
+  console.log("SAVE-VISITED countries:", visitedCountryCodes);
+  console.log("SAVE-VISITED cities:", visitedCities);
 
   req.session.user.visitedCities = visitedCities;
 
@@ -784,13 +787,22 @@ app.post("/setup/save-visited", requireAuth, (req, res) => {
     function(err) {
       if (err) console.error("Save visited error:", err.message);
       req.session.save(function() {
-        res.redirect("/profile/confirmed");
+        res.redirect("/");
       });
     }
   );
 });
 
 // ── PROFILE ──────────────────────────────────────────────────────────────
+
+app.get("/profile/confirmed", requireAuth, (req, res) => {
+  try {
+    res.render("profile/confirmed", { user: req.session.user || null });
+  } catch (err) {
+    console.error("Profile confirmed render error:", err.message);
+    res.redirect("/");
+  }
+});
 
 app.get("/profile", requireAuth, (req, res) => {
   var userId = req.session.user.id;
@@ -818,6 +830,8 @@ app.get("/profile", requireAuth, (req, res) => {
         });
 
         visitedCityList = (results[0].visitedCities || "").split(",").filter(Boolean);
+        console.log('Profile DB visitedCities raw:', results[0].visitedCities);
+        console.log('Profile DB visitedCityList parsed:', visitedCityList);
       }
 
       if (!image && req.session.user.profilePictureUrl) {

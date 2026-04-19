@@ -957,11 +957,12 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 .sel-search input::placeholder { color: rgba(255,255,255,0.5); }
 
 .flag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 16px; }
-.flag-card { background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border: 2px solid transparent; border-radius: 16px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.flag-card { background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border: 2px solid transparent; border-radius: 16px; padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
 .flag-card:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.15); }
 .flag-card.selected { border-color: #E8933A; background: rgba(232,147,58,0.15); }
 .flag-card input { display: none; }
-.flag-card__img { font-size: 3rem; display: block; margin-bottom: 8px; }
+.flag-card__img { display: block; margin: 0 auto 8px; line-height: 0; }
+.flag-card__img img { display: block; margin: 0 auto; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
 .flag-card__name { font-size: 12px; font-weight: 600; color: #fff; }
 
 .sel-actions { display: flex; gap: 12px; margin-top: 32px; justify-content: center; }

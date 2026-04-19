@@ -23,7 +23,7 @@
             Showing cities in: <strong><%= selectedCountryNames.join(', ') %></strong>
           </p>
         <% } %>
-        <div class="sel-search"><span>&#128269;</span><input type="text" placeholder="Search cities..." id="citySearch"></div>
+        <div class="sel-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.6;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Search cities..." id="citySearch"></div>
         <form action="/setup/save-visited" method="post" id="cityForm">
           <input type="hidden" name="countries" value="<%= typeof selectedCodes !== 'undefined' ? selectedCodes.join(',') : '' %>">
           <div class="flag-grid" id="cityGrid">
@@ -31,7 +31,7 @@
               <% cities.forEach(function(city, i) { %>
                 <label class="flag-card<%= i >= 12 ? ' hidden-card' : '' %>" data-index="<%= i %>">
                   <input type="checkbox" name="cities[]" value="<%= city.name %>">
-                  <span class="flag-card__img"><%= city.flag %></span>
+                  <span class="flag-card__img"><img src="https://flagcdn.com/w80/<%= city.countryCode.toLowerCase() %>.png" alt="" style="width:56px;height:auto;border-radius:4px;"></span>
                   <span class="flag-card__name"><%= city.name %></span>
                 </label>
               <% }); %>
