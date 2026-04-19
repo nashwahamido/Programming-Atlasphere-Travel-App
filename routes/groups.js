@@ -194,14 +194,14 @@ router.post("/upload-photo", requireGroupAuth, function (req, res) {
   file.mv(filePath, function (err) {
     if (err) {
       console.error("Group photo upload error:", err);
-      return res.redirect("/groups/" + groupId);
+      return res.redirect("/groups/create/activities?groupId=" + groupId);
     }
     var dbPath = "/uploads/" + fileName;
 
     db.query("UPDATE tbl_groups SET photo = ? WHERE id = ?", [dbPath, groupId], function (dbErr) {
       if (dbErr) console.error("Group photo DB error:", dbErr.message);
       else console.log("Group photo saved:", dbPath);
-      res.redirect("/groups/" + groupId);
+      res.redirect("/groups/create/activities?groupId=" + groupId);
     });
   });
 });

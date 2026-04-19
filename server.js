@@ -519,6 +519,120 @@ app.get("/auth/logout", (req, res) => {
   });
 });
 
+// ── FORGOT PASSWORD ─────────────────────────────────────────────────────
+app.get("/auth/forgot-password", (req, res) => {
+  res.render("forgot-password", { error: null, success: null });
+});
+
+app.post("/auth/forgot-password", (req, res) => {
+  var email = (req.body.email || '').trim();
+  if (!email) {
+    return res.render("forgot-password", { error: "Please enter your email.", success: null });
+  }
+
+  connection.query("SELECT IDuser, username, email FROM tbl_users WHERE email = ? LIMIT 1", [email], function(err, rows) {
+    if (err || !rows || rows.length === 0) {
+      // Don't reveal whether the email exists
+      return res.render("forgot-password", { error: null, success: "If an account with that email exists, a reset link has been sent." });
+    }
+
+    var user = rows[0];
+    var crypto = require('crypto');
+    var token = crypto.randomBytes(32).toString('hex');
+    var expires = new Date(Date.now() + 3600000); // 1 hour
+
+    connection.query(
+      "UPDATE tbl_users SET resetToken = ?, resetTokenExpires = ? WHERE IDuser = ?",
+      [token, expires, user.IDuser],
+      function(updateErr) {
+        if (updateErr) {
+          console.error("Reset token save error:", updateErr.message);
+          return res.render("forgot-password", { error: "Something went wrong. Please try again.", success: null });
+        }
+
+        var resetLink = req.protocol + '://' + req.get('host') + '/auth/reset-password?token=' + token;
+        var transporter = req.app.locals.transporter;
+
+        if (!transporter) {
+          console.log("Reset link (no email configured):", resetLink);
+          return res.render("forgot-password", { error: null, success: "Reset link generated (email not configured). Check server console." });
+        }
+
+        transporter.sendMail({
+          from: "Atlasphere <noreply@atlasphere.com>",
+          to: email,
+          subject: "Reset your Atlasphere password",
+          html: '<div style="font-family:Arial;max-width:480px;margin:0 auto;padding:32px">' +
+            '<h1 style="color:#0B3856">Reset your password</h1>' +
+            '<p style="font-size:16px;color:#555">Hi ' + user.username + ', click the button below to reset your password. This link expires in 1 hour.</p>' +
+            '<div style="text-align:center;margin:32px 0">' +
+            '<a href="' + resetLink + '" style="display:inline-block;padding:14px 40px;background:#E8933A;color:#fff;text-decoration:none;border-radius:30px;font-weight:700;font-size:16px">Reset Password</a>' +
+            '</div></div>'
+        }).then(function() {
+          res.render("forgot-password", { error: null, success: "If an account with that email exists, a reset link has been sent." });
+        }).catch(function(mailErr) {
+          console.error("Reset email error:", mailErr.message);
+          res.render("forgot-password", { error: null, success: "If an account with that email exists, a reset link has been sent." });
+        });
+      }
+    );
+  });
+});
+
+// ── RESET PASSWORD ──────────────────────────────────────────────────────
+app.get("/auth/reset-password", (req, res) => {
+  var token = req.query.token || '';
+  if (!token) {
+    return res.render("reset-password", { token: '', error: "Invalid or missing reset token.", success: null });
+  }
+  res.render("reset-password", { token: token, error: null, success: null });
+});
+
+app.post("/auth/reset-password", (req, res) => {
+  var token = req.body.token || '';
+  var password = req.body.password || '';
+  var confirmPassword = req.body.confirmPassword || '';
+
+  if (!token) {
+    return res.render("reset-password", { token: '', error: "Invalid reset token.", success: null });
+  }
+  if (password.length < 6) {
+    return res.render("reset-password", { token: token, error: "Password must be at least 6 characters.", success: null });
+  }
+  if (password !== confirmPassword) {
+    return res.render("reset-password", { token: token, error: "Passwords do not match.", success: null });
+  }
+
+  connection.query(
+    "SELECT IDuser FROM tbl_users WHERE resetToken = ? AND resetTokenExpires > NOW() LIMIT 1",
+    [token],
+    function(err, rows) {
+      if (err || !rows || rows.length === 0) {
+        return res.render("reset-password", { token: '', error: "This reset link has expired or is invalid.", success: null });
+      }
+
+      var userId = rows[0].IDuser;
+      var bcrypt = require('bcrypt');
+      bcrypt.hash(password, 10, function(hashErr, hash) {
+        if (hashErr) {
+          return res.render("reset-password", { token: token, error: "Something went wrong. Please try again.", success: null });
+        }
+
+        connection.query(
+          "UPDATE tbl_users SET password = ?, resetToken = NULL, resetTokenExpires = NULL WHERE IDuser = ?",
+          [hash, userId],
+          function(updateErr) {
+            if (updateErr) {
+              return res.render("reset-password", { token: token, error: "Failed to update password.", success: null });
+            }
+            res.render("reset-password", { token: '', error: null, success: "Your password has been reset! You can now log in." });
+          }
+        );
+      });
+    }
+  );
+});
+
 // ── PROFILE SETUP ────────────────────────────────────────────────────────
 app.get("/setup", requireAuth, (req, res) => {
   res.render("setup", {
@@ -1513,6 +1627,24 @@ server.listen(PORT, function() {
       if (err && err.code === 'ER_DUP_FIELDNAME') { /* column already exists, fine */ }
       else if (err) { console.error("Migration note:", err.message); }
       else { console.log("Added preferences column to tbl_groups"); }
+    }
+  );
+
+  // Auto-migrate: add reset token columns to tbl_users if they don't exist
+  connection.query(
+    "ALTER TABLE tbl_users ADD COLUMN resetToken VARCHAR(255) DEFAULT NULL",
+    function(err) {
+      if (err && err.code === 'ER_DUP_FIELDNAME') { /* already exists */ }
+      else if (err) { console.error("Migration note:", err.message); }
+      else { console.log("Added resetToken column to tbl_users"); }
+    }
+  );
+  connection.query(
+    "ALTER TABLE tbl_users ADD COLUMN resetTokenExpires DATETIME DEFAULT NULL",
+    function(err) {
+      if (err && err.code === 'ER_DUP_FIELDNAME') { /* already exists */ }
+      else if (err) { console.error("Migration note:", err.message); }
+      else { console.log("Added resetTokenExpires column to tbl_users"); }
     }
   );
 });
