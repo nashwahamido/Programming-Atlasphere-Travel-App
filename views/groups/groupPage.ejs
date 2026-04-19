@@ -35,7 +35,8 @@
      data-group-name="<%= typeof group !== 'undefined' && group ? group.name : '' %>"
      data-group-destination="<%= typeof group !== 'undefined' && group ? group.destination : '' %>"
      data-group-photo="<%= typeof group !== 'undefined' && group && group.photo ? group.photo : '' %>"
-     data-trip-days="<%= typeof tripDays !== 'undefined' ? tripDays : 7 %>">
+     data-trip-days="<%= typeof tripDays !== 'undefined' ? tripDays : 7 %>"
+     data-group-activities="<%= typeof group !== 'undefined' && group && group.activities ? group.activities : '' %>">
   <p style="text-align:center;padding:40px;opacity:0.5;">Loading...</p>
 </div>
 

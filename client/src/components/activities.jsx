@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "../styles/activities.css";
 
 var MAX_VISIBILITY = 2;
@@ -10,12 +10,17 @@ var activityOptions = [
   { id: 4, name: "Culture", image: "/images/culture.jpg" },
   { id: 5, name: "Nature", image: "/images/nature.jpg" },
   { id: 6, name: "Food", image: "/images/food.jpg" },
+  { id: 7, name: "Shopping", image: "/images/shopping.jpg" },
+  { id: 8, name: "Entertainment", image: "/images/entertainment.jpg" },
+  { id: 9, name: "Family", image: "/images/family.jpg" },
+  { id: 10, name: "Fun", image: "/images/fun.jpg" },
+  { id: 11, name: "Sightseeing", image: "/images/sightseeing.jpg" }
 ];
 
 var icons = {
   left: "/icons/Left Arrow Icon Bold.svg",
   right: "/icons/Right Arrow Icon Bold.svg",
-  close: "/icons/close-icon.svg",
+  close: "/icons/X Icon Bold.svg",
 };
 
 function ActivityCard(props) {
@@ -68,12 +73,15 @@ function Carousel(props) {
   return (
     <div className="carousel-3d">
       <button
+        type="button"
         className="nav-btn left"
         onClick={function () {
           setActive(function (i) {
-            return (i - 1 + count) % count;
+            return Math.max(0, i - 1);
           });
         }}
+        disabled={active === 0}
+        aria-label="Previous"
       >
         <img src={icons.left} alt="" className="nav-icon-dark" />
       </button>
@@ -101,12 +109,15 @@ function Carousel(props) {
       })}
 
       <button
+        type="button"
         className="nav-btn right"
         onClick={function () {
           setActive(function (i) {
-            return (i + 1) % count;
+            return Math.min(count - 1, i + 1);
           });
         }}
+        disabled={active === count - 1}
+        aria-label="Next"
       >
         <img src={icons.right} alt="" className="nav-icon-dark" />
       </button>
@@ -115,9 +126,9 @@ function Carousel(props) {
 }
 
 export default function Activities(props) {
-  var groupId = props.groupId || '';
+  var groupId = props.groupId || "";
 
-  var activeState = useState(2);
+  var activeState = useState(0);
   var active = activeState[0];
   var setActive = activeState[1];
 
@@ -132,6 +143,30 @@ export default function Activities(props) {
   var errorState = useState("");
   var error = errorState[0];
   var setError = errorState[1];
+
+  useEffect(function () {
+    try {
+      var saved = groupId
+        ? localStorage.getItem("activityPreferences-" + groupId)
+        : localStorage.getItem("activityPreferences");
+
+      if (!saved) return;
+
+      var parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return;
+
+      var nextSelected = {};
+      activityOptions.forEach(function (activity) {
+        if (parsed.indexOf(activity.name) !== -1) {
+          nextSelected[activity.id] = true;
+        }
+      });
+
+      setSelected(nextSelected);
+    } catch (e) {
+      console.error("Could not load saved activities:", e);
+    }
+  }, [groupId]);
 
   var visibleActivities = useMemo(function () {
     return activityOptions.filter(function (activity) {
@@ -171,41 +206,58 @@ export default function Activities(props) {
 
     setActive(function (prev) {
       if (visibleActivities.length <= 1) return 0;
-      return Math.max(0, Math.min(prev, visibleActivities.length - 2));
+      return Math.min(prev, visibleActivities.length - 2);
     });
   }
 
-  function handleContinue() {
-    if (selectedActivities.length === 0) {
-      setError("Please select at least one activity.");
-      return;
-    }
+function handleContinue() {
+  if (selectedActivities.length === 0) {
+    setError("Please select at least one activity.");
+    return;
+  }
 
-    setError("");
+  setError("");
 
-    // Save preferences to localStorage (used by recommendations API)
+  localStorage.setItem(
+    "activityPreferences",
+    JSON.stringify(selectedActivities)
+  );
+
+  if (groupId) {
     localStorage.setItem(
-      "activityPreferences",
+      "activityPreferences-" + groupId,
       JSON.stringify(selectedActivities)
     );
 
-    // Also save per-group preferences
-    if (groupId) {
-      localStorage.setItem(
-        "activityPreferences-" + groupId,
-        JSON.stringify(selectedActivities)
-      );
-    }
+    fetch("/groups/save-activities", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        groupId: groupId,
+        activities: selectedActivities
+      })
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error("Failed to save activities");
+        }
+        return res.json();
+      })
+      .then(function () {
+        window.location.href = "/groups/" + groupId;
+      })
+      .catch(function (err) {
+        console.error(err);
+        setError("Could not save activities. Please try again.");
+      });
 
-    console.log("Saved preferences:", selectedActivities);
-
-    // Navigate to the group chat page
-    if (groupId) {
-      window.location.href = "/groups/" + groupId;
-    } else {
-      window.location.href = "/groups";
-    }
+    return;
   }
+
+  window.location.href = "/groups";
+}
 
   function handleSkip() {
     if (groupId) {
@@ -255,13 +307,7 @@ export default function Activities(props) {
             Skip
           </button>
         </div>
-
-        {selectedActivities.length > 0 && (
-          <p className="activities-selected-summary">
-            Selected: {selectedActivities.join(", ")}
-          </p>
-        )}
-
+        
         {error && (
           <p className="activities-error">{error}</p>
         )}
