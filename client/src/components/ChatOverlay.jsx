@@ -25,6 +25,9 @@ var ChatOverlay = function(props) {
     isOpenRef.current = isOpen;
     if (isOpen) {
       setUnreadCount(0);
+      // Clear this group's unread in localStorage when opening
+      try { localStorage.removeItem('atlas_unread_' + groupId); } catch (e) {}
+      window.dispatchEvent(new CustomEvent('atlas-unread-update'));
     }
   }, [isOpen]);
 
@@ -33,6 +36,31 @@ var ChatOverlay = function(props) {
       setUnreadCount(0);
     }
   }, [notificationsMuted]);
+
+  // ── Sync unread count from localStorage (shared with navbar badges) ──
+  useEffect(function() {
+    if (!groupId) return;
+
+    function getLocalUnread() {
+      try {
+        return parseInt(localStorage.getItem('atlas_unread_' + groupId) || '0', 10);
+      } catch (e) { return 0; }
+    }
+
+    // Read initial value on load
+    if (!isOpenRef.current) setUnreadCount(getLocalUnread());
+
+    function onUpdate() {
+      if (!isOpenRef.current) setUnreadCount(getLocalUnread());
+    }
+
+    window.addEventListener('atlas-unread-update', onUpdate);
+    window.addEventListener('storage', onUpdate);
+    return function() {
+      window.removeEventListener('atlas-unread-update', onUpdate);
+      window.removeEventListener('storage', onUpdate);
+    };
+  }, [groupId]);
 
   useEffect(function() {
     if (!groupId || !userId) return;

@@ -52,4 +52,21 @@
 .cb__messages::-webkit-scrollbar-track { background: transparent; }
 .cb__messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
 .cb__messages::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
+
+/* ── Invite popup (uses existing gc-* classes from styles.css) ── */
+.cb__invite-popup {
+  position: absolute; top: calc(100% + 8px); right: 0;
+  width: 300px; z-index: 100;
+  background: var(--ib-card, #1a2736);
+  border: 1px solid var(--ib-card-border, rgba(255,255,255,0.1));
+  border-radius: 14px; padding: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  text-align: center;
+}
+.cb__invite-msg {
+  margin: 8px 0; padding: 8px 10px; border-radius: 8px;
+  font-size: 12px; font-weight: 600; text-align: left;
+}
+.cb__invite-msg--success { background: rgba(34,197,94,0.15); color: #22c55e; }
+.cb__invite-msg--error { background: rgba(239,68,68,0.15); color: #ef4444; }
 .cb__messages { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent; }

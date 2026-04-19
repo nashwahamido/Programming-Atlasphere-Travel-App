@@ -1257,6 +1257,73 @@ app.get("/api/groups/last-active", requireAuth, (req, res) => {
   );
 });
 
+// ── Invite friend to group (JSON API) ─────────────────────────────────────
+app.post("/api/groups/invite", requireAuth, (req, res) => {
+  var userId = req.session.user.id;
+  var userName = req.session.user.username;
+  var { groupId, query } = req.body;
+  if (!groupId || !query) return res.status(400).json({ error: "Missing groupId or search query" });
+
+  // Try to find user by username or email
+  connection.query(
+    "SELECT IDuser, username, email FROM tbl_users WHERE username = ? OR email = ?",
+    [query.trim(), query.trim()],
+    function(err, rows) {
+      if (err) return res.status(500).json({ error: "Database error" });
+      if (!rows || rows.length === 0) return res.json({ success: false, error: 'No user found matching "' + query + '"' });
+
+      var friend = rows[0];
+      if (String(friend.IDuser) === String(userId)) return res.json({ success: false, error: "You can't invite yourself" });
+
+      // Check if already a member
+      connection.query(
+        "SELECT id FROM tbl_group_members WHERE groupId = ? AND userId = ?",
+        [groupId, friend.IDuser],
+        function(checkErr, checkRows) {
+          if (checkRows && checkRows.length > 0) {
+            return res.json({ success: false, error: friend.username + " is already in this group" });
+          }
+
+          // Add to group
+          connection.query(
+            "INSERT IGNORE INTO tbl_group_members (groupId, userId, username, email) VALUES (?, ?, ?, ?)",
+            [groupId, friend.IDuser, friend.username, friend.email],
+            function(insertErr) {
+              if (insertErr) return res.status(500).json({ error: "Failed to add member" });
+
+              // Send notification
+              var notifMsg = userName + ' added you to a group';
+              connection.query(
+                "INSERT INTO tbl_notifications (userId, groupId, message, type) VALUES (?, ?, ?, ?)",
+                [friend.IDuser, groupId, notifMsg, 'invite'],
+                function() {}
+              );
+
+              return res.json({ success: true, message: friend.username + " has been added!" });
+            }
+          );
+        }
+      );
+    }
+  );
+});
+
+// ── Get invite link for a group ───────────────────────────────────────────
+app.get("/api/groups/invite-link", requireAuth, (req, res) => {
+  var groupId = req.query.groupId;
+  if (!groupId) return res.status(400).json({ error: "Missing groupId" });
+
+  connection.query(
+    "SELECT inviteCode FROM tbl_groups WHERE id = ?",
+    [groupId],
+    function(err, rows) {
+      if (err || !rows || rows.length === 0) return res.status(404).json({ error: "Group not found" });
+      var inviteLink = req.protocol + "://" + req.get("host") + "/groups/join/" + rows[0].inviteCode;
+      res.json({ inviteLink: inviteLink });
+    }
+  );
+});
+
 // ── ERROR HANDLING ───────────────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).render("error", {

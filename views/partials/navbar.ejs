@@ -1,5 +1,5 @@
 <!-- Navigation Bar -->
-<nav class="navbar">
+<nav class="navbar" id="atlasphere-navbar" <% if (typeof user !== 'undefined' && user) { %>data-user-id="<%= user.id %>"<% } else { %>data-user-id=""<% } %>>
   <div class="navbar-left">
     <a href="/" class="navbar-brand">
   <img src="/icons/Atlasphere Logo.svg" alt="Atlasphere" class="navbar-logo">
@@ -9,7 +9,7 @@
   <div class="navbar-center">
     <% if (typeof user !== 'undefined' && user) { %>
       <a href="/" class="nav-link">Home</a>
-      <a href="/groups" class="nav-link">Groups</a>
+      <a href="/groups" class="nav-link nav-link--groups">Groups<span id="navbar-groups-badge"></span></a>
       <a href="/profile" class="nav-link">Profile</a>
       <a href="/settings" class="nav-link">Settings</a>
     <% } %>
@@ -51,6 +51,9 @@
     <% } %>
   </div>
 </nav>
+
+<link rel="stylesheet" href="/css/chat-notification.css">
+<script src="/js/chat-notification.js" defer></script>
 
 <script>
   (function() {

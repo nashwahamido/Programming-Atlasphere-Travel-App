@@ -145,6 +145,84 @@ var ChatBox = function(props) {
 
   var statusText = messages.length > 0 ? 'Online' : (lastActive ? chatTimeAgo(lastActive) : 'Online');
 
+  // ── Invite popup state ──────────────────────────────────────────────────
+  var inviteState = useState(false);
+  var showInvite = inviteState[0];
+  var setShowInvite = inviteState[1];
+  var inviteQueryState = useState('');
+  var inviteQuery = inviteQueryState[0];
+  var setInviteQuery = inviteQueryState[1];
+  var inviteMsgState = useState(null);
+  var inviteMsg = inviteMsgState[0];
+  var setInviteMsg = inviteMsgState[1];
+  var inviteLoadingState = useState(false);
+  var inviteLoading = inviteLoadingState[0];
+  var setInviteLoading = inviteLoadingState[1];
+  var inviteLinkState = useState('');
+  var inviteLinkVal = inviteLinkState[0];
+  var setInviteLinkVal = inviteLinkState[1];
+  var inviteCopiedState = useState(false);
+  var inviteCopied = inviteCopiedState[0];
+  var setInviteCopied = inviteCopiedState[1];
+  var inviteRef = useRef(null);
+
+  // Close popup when clicking outside
+  useEffect(function() {
+    if (!showInvite) return;
+    function handleClickOutside(e) {
+      if (inviteRef.current && !inviteRef.current.contains(e.target)) setShowInvite(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return function() { document.removeEventListener('mousedown', handleClickOutside); };
+  }, [showInvite]);
+
+  function handleInviteSubmit() {
+    if (!inviteQuery.trim() || inviteLoading) return;
+    setInviteLoading(true);
+    setInviteMsg(null);
+    fetch('/api/groups/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ groupId: groupId, query: inviteQuery.trim() })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      setInviteLoading(false);
+      if (data.success) {
+        setInviteMsg({ type: 'success', text: data.message });
+        setInviteQuery('');
+      } else {
+        setInviteMsg({ type: 'error', text: data.error || 'Something went wrong' });
+      }
+    })
+    .catch(function() {
+      setInviteLoading(false);
+      setInviteMsg({ type: 'error', text: 'Network error' });
+    });
+  }
+
+  function handleCopyLink() {
+    if (inviteLinkVal) {
+      navigator.clipboard.writeText(inviteLinkVal).then(function() {
+        setInviteCopied(true);
+        setTimeout(function() { setInviteCopied(false); }, 2000);
+      });
+      return;
+    }
+    fetch('/api/groups/invite-link?groupId=' + groupId)
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (data.inviteLink) {
+          setInviteLinkVal(data.inviteLink);
+          navigator.clipboard.writeText(data.inviteLink).then(function() {
+            setInviteCopied(true);
+            setTimeout(function() { setInviteCopied(false); }, 2000);
+          });
+        }
+      })
+      .catch(function() {});
+  }
+
   return React.createElement('div', { className: compact ? 'cb cb--compact' : 'cb' },
     !compact && React.createElement('div', { className: 'cb__header' },
       headerIcon,
@@ -153,6 +231,48 @@ var ChatBox = function(props) {
         React.createElement('div', { className: 'cb__header-status' },
           React.createElement('span', { className: 'cb__status-dot' }),
           statusText
+        )
+      ),
+      React.createElement('div', { className: 'cb__header-actions', style: { marginLeft: 'auto', position: 'relative' } },
+        React.createElement('a', {
+          href: 'javascript:void(0);',
+          className: 'burger',
+          onClick: function() { setShowInvite(!showInvite); setInviteMsg(null); },
+          title: 'Invite a friend',
+          style: { textDecoration: 'none', color: 'var(--ib-text, #fff)', padding: '10px', cursor: 'pointer', fontWeight: 'bold', fontSize: '20px' }
+        }, '\u2026'),
+        showInvite && React.createElement('div', {
+          className: 'cb__invite-popup',
+          ref: inviteRef,
+          id: 'inviteContent'
+        },
+          React.createElement('p', { className: 'gc-invite-label' }, 'Search for a friend'),
+          React.createElement('div', { className: 'gc-search' },
+            React.createElement('span', null, '\uD83D\uDD0D'),
+            React.createElement('input', {
+              type: 'text',
+              name: 'friendEmail',
+              placeholder: 'Username or email...',
+              value: inviteQuery,
+              onChange: function(e) { setInviteQuery(e.target.value); },
+              onKeyDown: function(e) { if (e.key === 'Enter') { e.preventDefault(); handleInviteSubmit(); } }
+            }),
+            React.createElement('button', {
+              type: 'button',
+              onClick: handleInviteSubmit,
+              disabled: inviteLoading || !inviteQuery.trim(),
+              style: { background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '16px' }
+            }, inviteLoading ? '...' : '\u2717')
+          ),
+          inviteMsg && React.createElement('div', {
+            className: 'cb__invite-msg cb__invite-msg--' + inviteMsg.type
+          }, inviteMsg.text),
+          React.createElement('p', { className: 'gc-or' }, 'or'),
+          React.createElement('button', {
+            type: 'button',
+            className: 'gc-share-btn',
+            onClick: handleCopyLink
+          }, inviteCopied ? 'Copied!' : 'Share Link')
         )
       )
     ),

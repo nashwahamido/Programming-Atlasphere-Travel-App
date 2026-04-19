@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/sidebar.css';
 
+var PREFIX = 'atlas_unread_';
+
 var Sidebar = function(props) {
   var activeGroup = props.activeGroup;
   var onSelect = props.onSelect;
@@ -11,18 +13,49 @@ var Sidebar = function(props) {
   var groups = groupsState[0];
   var setGroups = groupsState[1];
 
+  // Track unread counts per group from localStorage
+  var unreadState = useState({});
+  var unreadCounts = unreadState[0];
+  var setUnreadCounts = unreadState[1];
+
+  function readAllUnread() {
+    var counts = {};
+    try {
+      Object.keys(localStorage).forEach(function(k) {
+        if (k.startsWith(PREFIX)) {
+          var gid = k.substring(PREFIX.length);
+          var val = parseInt(localStorage.getItem(k) || '0', 10);
+          if (val > 0) counts[gid] = val;
+        }
+      });
+    } catch (e) {}
+    return counts;
+  }
+
   useEffect(function() {
     fetch('/groups/api/my-groups')
       .then(function(r) { return r.json(); })
       .then(function(data) {
         console.log("GROUPS FROM API:", data);
         setGroups(data);
-        // If no active group is set yet and we have groups, select the first
         if (data.length > 0 && (!activeGroup || !activeGroup.id)) {
           if (onSelect) onSelect(data[0]);
         }
       })
       .catch(function(err) { console.error('Failed to load groups:', err); });
+  }, []);
+
+  // Sync unread from localStorage
+  useEffect(function() {
+    setUnreadCounts(readAllUnread());
+
+    function onUpdate() { setUnreadCounts(readAllUnread()); }
+    window.addEventListener('atlas-unread-update', onUpdate);
+    window.addEventListener('storage', onUpdate);
+    return function() {
+      window.removeEventListener('atlas-unread-update', onUpdate);
+      window.removeEventListener('storage', onUpdate);
+    };
   }, []);
 
   var filtered = groups.filter(function(g) {
@@ -58,18 +91,24 @@ var Sidebar = function(props) {
       ),
      filtered.map(function(g) {
   var isActive = activeGroup && activeGroup.id === g.id;
+  var unread = unreadCounts[String(g.id)] || 0;
   return React.createElement('div', {
     key: g.id,
     className: 'sb__item' + (isActive ? ' sb__item--active' : ''),
     role: 'button',
     tabIndex: 0,
-    style: { cursor: 'pointer' },
+    style: { cursor: 'pointer', position: 'relative' },
     onClick: function() {
+      // Clear unread for this group when clicking
+      try { localStorage.removeItem(PREFIX + g.id); } catch(e) {}
+      window.dispatchEvent(new CustomEvent('atlas-unread-update'));
       window.location.assign('/groups/' + g.id);
     },
     onKeyDown: function(e) {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
+        try { localStorage.removeItem(PREFIX + g.id); } catch(ex) {}
+        window.dispatchEvent(new CustomEvent('atlas-unread-update'));
         window.location.assign('/groups/' + g.id);
       }
     }
@@ -87,6 +126,9 @@ var Sidebar = function(props) {
     ),
     React.createElement('div', { className: 'sb__item-info' },
       React.createElement('div', { className: 'sb__item-name' }, g.name)
+    ),
+    unread > 0 && React.createElement('span', { className: 'sb__item-badge' },
+      unread > 99 ? '99+' : unread
     )
   );
 })
