@@ -150,7 +150,7 @@
             <% const currentUserId = typeof user !== 'undefined' && user ? String(user.id) : ''; %>
             <% groupList.forEach(function(group) { %>
               <% const isOwner = group.createdBy ? String(group.createdBy) === currentUserId : null; %>
-              <div class="group-row" data-name="<%= group.name.toLowerCase() %>" data-owner="<%= isOwner %>">
+              <div class="group-row" data-name="<%= group.name.toLowerCase() %>" data-group-id="<%= group.id %>" data-owner="<%= isOwner %>">
                 <button class="group-name-btn"
                   onclick="selectGroup(<%= group.id %>, '<%= group.name %>', <%= isOwner %>, this)">
                   <%= group.name %>
@@ -169,16 +169,16 @@
 
         <!-- Rename form (hidden by default) -->
         <div id="renameForm" style="display:none; margin-top:20px;">
-          <form id="renameGroupForm" method="post">
+          <div id="renameGroupInner">
             <div class="form-group">
               <label>New group name</label>
-              <input type="text" id="newGroupName" name="newName" placeholder="Enter new name">
+              <input type="text" id="newGroupName" placeholder="Enter new name">
             </div>
             <div class="form-actions" style="gap:8px;">
-              <button type="submit" class="btn-save">Save Name</button>
+              <button type="button" class="btn-save" onclick="submitRename()">Save Name</button>
               <button type="button" class="btn-action" onclick="hideRenameForm()">Cancel</button>
             </div>
-          </form>
+          </div>
         </div>
 
         <p id="noGroupSelected" style="color:#aaa; font-size:13px; margin-top:12px; display:none;">
@@ -224,22 +224,32 @@
     <p id="confirmModalMsg" style="font-size:17px; font-weight:600; color:#0B3856; margin-bottom:12px;"></p>
     <p id="confirmModalSub" style="font-size:14px; color:#aaa; margin-bottom:28px;"></p>
     <div style="display:flex; gap:12px; justify-content:center;">
-      <button id="confirmModalYes" class="btn-confirm" style="min-width:120px;">Delete</button>
+      <button id="confirmModalYes" class="btn-confirm" style="min-width:120px;">Confirm</button>
       <button id="confirmModalNo" class="btn-cancel" style="min-width:120px;">Cancel</button>
     </div>
   </div>
 </div>
 
+<div class="settings-toast" id="settingsToast"></div>
 <%- include('partials/footer') %>
 
 <script>
+  function showToast(msg, type) {
+    var t = document.getElementById('settingsToast');
+    t.textContent = msg;
+    t.className = 'settings-toast settings-toast--' + (type || 'error') + ' settings-toast--visible';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.classList.remove('settings-toast--visible'); }, 3500);
+  }
+
   function showTab(e, tabId) {
     document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
-    e.target.classList.add('active');
+    if (e && e.target) e.target.classList.add('active');
     var input = document.getElementById('deleteConfirmInput');
     if (input) { input.value = ''; checkDeleteInput(''); }
+    try { localStorage.setItem('atlas_settings_tab', tabId); } catch(ex) {}
   }
 
   function checkDeleteInput(value) {
@@ -354,13 +364,14 @@ function filterCities(query) {
           .then(function(data) {
             if (data.success) {
               document.querySelectorAll('.group-row').forEach(function(row) {
-                if (row.querySelector('.group-name-btn').dataset.id == selectedGroupId) row.remove();
+                if (row.dataset.groupId == selectedGroupId) row.remove();
               });
               selectedGroupId = null; selectedGroupName = null; selectedGroupIsOwner = false;
               ['deleteGroupBtn','leaveGroupBtn','renameGroupBtn','modifyInterestsBtn'].forEach(function(id){ document.getElementById(id).style.display='none'; });
               hideRenameForm();
+              showToast('Group deleted', 'success');
             } else {
-              alert(data.error || 'Failed to delete group');
+              showToast(data.error || 'Failed to delete group', 'error');
             }
           });
       }
@@ -378,12 +389,13 @@ function filterCities(query) {
           .then(function(data) {
             if (data.success) {
               document.querySelectorAll('.group-row').forEach(function(row) {
-                if (row.querySelector('.group-name-btn').dataset.id == selectedGroupId) row.remove();
+                if (row.dataset.groupId == selectedGroupId) row.remove();
               });
               selectedGroupId = null; selectedGroupName = null; selectedGroupIsOwner = false;
               ['deleteGroupBtn','leaveGroupBtn','renameGroupBtn','modifyInterestsBtn'].forEach(function(id){ document.getElementById(id).style.display='none'; });
+              showToast('You left the group', 'success');
             } else {
-              alert(data.error || 'Failed to leave group');
+              showToast(data.error || 'Failed to leave group', 'error');
             }
           });
       }
@@ -396,7 +408,6 @@ function filterCities(query) {
       return;
     }
     document.getElementById('newGroupName').value = selectedGroupName;
-    document.getElementById('renameGroupForm').action = '/groups/rename/' + selectedGroupId;
     document.getElementById('renameForm').style.display = 'block';
     document.getElementById('noGroupSelected').style.display = 'none';
   }
@@ -405,18 +416,51 @@ function filterCities(query) {
     document.getElementById('renameForm').style.display = 'none';
   }
 
-  // Restore active tab from URL hash on page load
+  function submitRename() {
+    var newName = document.getElementById('newGroupName').value.trim();
+    if (!newName || !selectedGroupId) return;
+    fetch('/groups/rename/' + selectedGroupId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ newName: newName })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        // Update the button text in place
+        document.querySelectorAll('.group-row').forEach(function(row) {
+          if (row.dataset.groupId == selectedGroupId) {
+            var btn = row.querySelector('.group-name-btn');
+            var ownerTag = btn.querySelector('.group-owner-tag');
+            btn.textContent = newName + ' ';
+            if (ownerTag) btn.appendChild(ownerTag);
+            row.dataset.name = newName.toLowerCase();
+          }
+        });
+        selectedGroupName = newName;
+        hideRenameForm();
+        showToast('Group renamed', 'success');
+      } else {
+        showToast(data.error || 'Failed to rename', 'error');
+      }
+    });
+  }
+
+  // Restore active tab from URL hash or localStorage on page load
   (function() {
     var hash = window.location.hash.replace('#', '');
-    if (hash) {
-      var panel = document.getElementById(hash);
+    var savedTab = null;
+    try { savedTab = localStorage.getItem('atlas_settings_tab'); } catch(ex) {}
+    var tabId = hash || savedTab;
+    if (tabId) {
+      var panel = document.getElementById(tabId);
       var tabs = document.querySelectorAll('.settings-tab');
       var tabMap = { 'manageInfo': 0, 'visitedLocations': 1, 'manageGroups': 2, 'deleteAccount': 3 };
-      if (panel && tabMap[hash] !== undefined) {
+      if (panel && tabMap[tabId] !== undefined) {
         document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
         panel.classList.add('active');
-        tabs[tabMap[hash]].classList.add('active');
+        tabs[tabMap[tabId]].classList.add('active');
       }
     }
   })();

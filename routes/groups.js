@@ -413,35 +413,29 @@ router.post("/delete/:id", requireGroupAuth, function (req, res) {
   });
 });
 
-// ── Leave group (non-owner members only) ─────────────────────────────────
+// ── Leave group (any member, including creator) ───────────────────────────
 router.post("/leave/:id", requireGroupAuth, function (req, res) {
   var db = getDb(req);
   var userId = req.session.user.id;
   var groupId = req.params.id;
 
-  // Owners must delete, not leave
-  db.query("SELECT createdBy FROM tbl_groups WHERE id = ?", [groupId], function (err, rows) {
-    if (err || !rows || rows.length === 0) return res.status(404).json({ error: "Group not found" });
-    if (String(rows[0].createdBy) === String(userId)) {
-      return res.status(403).json({ error: "You created this group — delete it instead of leaving" });
-    }
-    db.query("DELETE FROM tbl_group_members WHERE groupId = ? AND userId = ?", [groupId, userId], function (err2) {
-      if (err2) return res.status(500).json({ error: "Failed to leave group" });
-      res.json({ success: true });
-    });
+  db.query("DELETE FROM tbl_group_members WHERE groupId = ? AND userId = ?", [groupId, userId], function (err) {
+    if (err) return res.status(500).json({ error: "Failed to leave group" });
+    res.json({ success: true });
   });
 });
 
 // ── Rename group ────────────────────────────────────────────────────────
 router.post("/rename/:id", requireGroupAuth, function (req, res) {
   var db = getDb(req);
-  if (req.body.newName) {
-    db.query("UPDATE tbl_groups SET name = ? WHERE id = ?", [req.body.newName, req.params.id], function () {
-      res.redirect("/settings");
-    });
-  } else {
-    res.redirect("/settings");
+  var newName = req.body.newName;
+  if (!newName || !newName.trim()) {
+    return res.json({ success: false, error: "Name cannot be empty" });
   }
+  db.query("UPDATE tbl_groups SET name = ? WHERE id = ?", [newName.trim(), req.params.id], function (err) {
+    if (err) return res.status(500).json({ success: false, error: "Failed to rename" });
+    res.json({ success: true });
+  });
 });
 
 module.exports = router;
