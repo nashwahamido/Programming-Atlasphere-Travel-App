@@ -8,25 +8,30 @@ const bcrypt = require("bcrypt");
 const nodemailer = require("nodemailer");
 const fileUpload = require("express-fileupload");
 const fs = require("fs");
-const { check, validationResult } = require("express-validator");
+
 
 // ── Validation Rules ────────────────────────────────────────────────────
+const { check, validationResult } = require("express-validator");
+
 const validationRegisterRules = [
   check("username")
+    .trim()
     .exists({ checkFalsy: true }).withMessage("Username is required")
     .isString().withMessage("Username must be a string")
-    .trim()
     .isLength({ min: 3, max: 20 }).withMessage("Username must be 3–20 characters")
     .escape(),
   check("useremail")
+    .trim()
     .exists({ checkFalsy: true }).withMessage("Email is required")
     .isEmail().withMessage("Invalid email format")
     .normalizeEmail(),
   check("userphone")
+    .trim()
     .isMobilePhone().withMessage("Invalid phone number"),
   check("gender")
     .optional(),
   check("psw")
+    .trim()
     .exists({ checkFalsy: true }).withMessage("Password is required")
     .isLength({ min: 6, max: 12 }).withMessage("Password must be at least 6 characters or a maximum of 12")
 ];
@@ -41,11 +46,14 @@ const validationVerifyRules = [
 
 const validationLoginRules = [
   check("loginemail")
+    .trim()
     .exists({ checkFalsy: true }).withMessage("Email is required")
     .isEmail().withMessage("Invalid email format"),
   check("loginpsw")
-    .exists({ checkFalsy: true }).withMessage("Password is required")
+    .trim().exists({ checkFalsy: true }).withMessage("Password is required")
 ];
+
+
 
 const app = express();
 
