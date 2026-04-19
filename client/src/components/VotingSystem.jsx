@@ -402,9 +402,6 @@ export default function VotingSystem(props) {
           })}
         </Carousel>
 
-        <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary, #888)' }}>
-          {visibleActivities.length} of {activities.length} remaining
-        </div>
       </section>
     </main>
   );
