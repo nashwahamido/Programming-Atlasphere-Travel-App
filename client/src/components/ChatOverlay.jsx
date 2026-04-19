@@ -2,6 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import ChatBox from './ChatBox';
 import '../styles/chat-overlay.css';
 
+var PREFIX = 'atlas_unread_';
+
+function getUnread(groupId) {
+  try {
+    return parseInt(localStorage.getItem(PREFIX + groupId) || '0', 10);
+  } catch (e) { return 0; }
+}
+
 var ChatOverlay = function(props) {
   var openState = useState(false);
   var isOpen = openState[0];
@@ -16,31 +24,58 @@ var ChatOverlay = function(props) {
   var groupId = props.groupId || '';
   var notificationsMuted = !!props.notificationsMuted;
 
-  // Keep isOpenRef in sync so the event listener always reads current state
+  // Keep isOpenRef in sync
   useEffect(function() {
     isOpenRef.current = isOpen;
     if (isOpen) {
       setUnreadCount(0);
-      try { localStorage.removeItem('atlas_unread_' + groupId); } catch (e) {}
+      try { localStorage.removeItem(PREFIX + groupId); } catch (e) {}
       window.dispatchEvent(new CustomEvent('atlas-unread-update'));
     }
   }, [isOpen]);
 
-  // Listen to events dispatched by the main ChatBox — no duplicate socket needed.
-  // Re-register whenever notificationsMuted changes so the closure is always fresh.
+  // Read unread count from localStorage (single source of truth).
+  // chat-notification.js writes to localStorage on new messages.
+  // We just read from it whenever it changes.
   useEffect(function() {
-    function onMessage() {
-      if (!isOpenRef.current && !notificationsMuted) {
-        setUnreadCount(function(prev) { return prev + 1; });
+    if (!groupId) return;
+
+    // Initial read
+    if (!isOpenRef.current && !notificationsMuted) {
+      setUnreadCount(getUnread(groupId));
+    }
+
+    function onUpdate() {
+      if (isOpenRef.current) {
+        // Overlay is open — user is reading, keep at 0 and clear storage
+        setUnreadCount(0);
+        try { localStorage.removeItem(PREFIX + groupId); } catch (e) {}
+      } else if (!notificationsMuted) {
+        setUnreadCount(getUnread(groupId));
       }
     }
-    window.addEventListener('atlas-overlay-message', onMessage);
-    return function() { window.removeEventListener('atlas-overlay-message', onMessage); };
-  }, [notificationsMuted]);
+
+    // Listen for updates from chat-notification.js and cross-tab storage events
+    window.addEventListener('atlas-unread-update', onUpdate);
+    window.addEventListener('storage', onUpdate);
+    // Also listen for the overlay-specific message event (from ChatBox socket)
+    window.addEventListener('atlas-overlay-message', onUpdate);
+
+    return function() {
+      window.removeEventListener('atlas-unread-update', onUpdate);
+      window.removeEventListener('storage', onUpdate);
+      window.removeEventListener('atlas-overlay-message', onUpdate);
+    };
+  }, [groupId, notificationsMuted]);
 
   function handleToggle() {
-    if (!isOpen) setUnreadCount(0);
-    setIsOpen(!isOpen);
+    var opening = !isOpen;
+    setUnreadCount(0);
+    setIsOpen(opening);
+    if (opening) {
+      try { localStorage.removeItem(PREFIX + groupId); } catch (e) {}
+      window.dispatchEvent(new CustomEvent('atlas-unread-update'));
+    }
   }
 
   function handleClose() {
