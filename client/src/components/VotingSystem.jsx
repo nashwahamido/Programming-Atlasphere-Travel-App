@@ -179,6 +179,12 @@ export default function VotingSystem(props) {
   var setFeedback = feedbackState[1];
 
   var preferences = useMemo(function () {
+    if (props.savedActivities && props.savedActivities.length > 0) {
+      return props.savedActivities.split(",").map(function (s) {
+        return s.trim();
+      }).filter(Boolean);
+    }
+
     try {
       var gp = localStorage.getItem("activityPreferences-" + groupId);
       if (gp) return JSON.parse(gp);
@@ -186,7 +192,7 @@ export default function VotingSystem(props) {
     } catch (e) {
       return [];
     }
-  }, [groupId]);
+  }, [props.savedActivities, groupId]);
 
   useEffect(function () {
     setLoading(true);
@@ -279,7 +285,7 @@ export default function VotingSystem(props) {
       return;
     }
     try {
-      // Reuse existing socket connection if possible
+
       var socket = window._atlasphereSocket;
       if (!socket || !socket.connected) {
         socket = window.io();
@@ -396,9 +402,6 @@ export default function VotingSystem(props) {
           })}
         </Carousel>
 
-        <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px', color: 'var(--text-secondary, #888)' }}>
-          {visibleActivities.length} of {activities.length} remaining
-        </div>
       </section>
     </main>
   );

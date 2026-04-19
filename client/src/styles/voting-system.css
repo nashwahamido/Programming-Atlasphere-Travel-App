@@ -201,6 +201,7 @@
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
+  line-clamp: 4;
   overflow: hidden;
   opacity: var(--active);
   transition: opacity 0.3s ease-out;

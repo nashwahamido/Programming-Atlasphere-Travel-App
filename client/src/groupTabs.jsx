@@ -26,6 +26,7 @@ if (mount) {
   var groupDestination = mount.dataset.groupDestination;
   var groupPhoto = mount.dataset.groupPhoto || '';
   var tripDays = parseInt(mount.dataset.tripDays) || 7;
+  var groupActivities = mount.dataset.groupActivities || "";
 
   var App = function() {
     var tabState = React.useState('chat');
@@ -39,12 +40,12 @@ if (mount) {
     }, []);
 
     var groupState = React.useState({
-  id: groupId,
-  name: groupName || 'Rome',
-  color: '#3B5F8A',
-  destination: groupDestination || '',
-  photo: groupPhoto || ''
-});
+      id: groupId,
+      name: groupName || 'Rome',
+      color: '#3B5F8A',
+      destination: groupDestination || '',
+      photo: groupPhoto || ''
+    });
     var activeGroup = groupState[0];
     var setActiveGroup = groupState[1];
 
@@ -59,12 +60,13 @@ if (mount) {
     };
 
     console.log("ACTIVE GROUP:", activeGroup);
+
     return React.createElement('div', { className: 'gp-app' },
       React.createElement(TabSwitcher, { active: activeTab, onChange: setActiveTab }),
       React.createElement('div', { className: 'gp-content' },
 
         // Chat tab — always mounted, hidden when not active
-        React.createElement('div', { style: { display: activeTab === 'chat' ? 'contents' : 'none' } },
+        activeTab === 'chat' && React.createElement(React.Fragment, null,
           React.createElement(Sidebar, {
             activeGroup: activeGroup,
             onSelect: function(g) { setActiveGroup(g); }
@@ -73,37 +75,36 @@ if (mount) {
         ),
 
         // Discover tab — always mounted, hidden when not active
-React.createElement('div', { style: { display: activeTab === 'discover' ? 'contents' : 'none' } },
-  React.createElement('div', { className: 'gp-tab-with-overlay' },
-    React.createElement(VotingSystem, {
-      destination: activeGroup.destination || groupDestination,
-      groupId: activeGroup.id || groupId,
-      userId: userId,
-      userName: userName,
-      userAvatar: userAvatar
-    }),
-    React.createElement(ChatOverlay, Object.assign({
-      key: 'overlay-discover-' + (activeGroup.id || groupId),
-      notificationsMuted: activeTab === 'chat'
-    }, chatProps))
-  )
-),
+        activeTab === 'discover' && React.createElement('div', { className: 'gp-tab-with-overlay' },
+          React.createElement(VotingSystem, {
+            key: 'vote-' + (activeGroup.id || groupId),
+            destination: activeGroup.destination || groupDestination,
+            groupId: activeGroup.id || groupId,
+            savedActivities: groupActivities,
+            userId: userId,
+            userName: userName,
+            userAvatar: userAvatar
+          }),
+          React.createElement(ChatOverlay, Object.assign({
+            key: 'overlay-discover-' + (activeGroup.id || groupId),
+            notificationsMuted: false
+          }, chatProps))
+        ),
 
         // Itinerary tab — always mounted, hidden when not active
-    React.createElement('div', { style: { display: activeTab === 'itinerary' ? 'contents' : 'none' } },
-  React.createElement('div', { className: 'gp-tab-with-overlay' },
-    React.createElement(ItineraryBuilder, {
-      tripId: activeGroup.id || groupId,
-      groupId: activeGroup.id || groupId,
-      tripDays: tripDays,
-      isActive: activeTab === 'itinerary'
-    }),
-    React.createElement(ChatOverlay, Object.assign({
-      key: 'overlay-itinerary-' + (activeGroup.id || groupId),
-      notificationsMuted: activeTab === 'chat'
-    }, chatProps))
-  )
-)
+        activeTab === 'itinerary' && React.createElement('div', { className: 'gp-tab-with-overlay' },
+          React.createElement(ItineraryBuilder, {
+            tripId: activeGroup.id || groupId,
+            groupId: activeGroup.id || groupId,
+            tripDays: tripDays,
+            isActive: true
+          }),
+          React.createElement(ChatOverlay, Object.assign({
+            key: 'overlay-itinerary-' + (activeGroup.id || groupId),
+            notificationsMuted: false
+          }, chatProps))
+        )
+
       )
     );
   };

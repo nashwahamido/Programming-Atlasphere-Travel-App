@@ -798,7 +798,6 @@ app.get("/groups/create/activities", requireAuth, (req, res) => {
   });
 });
 
-
 // ── GROUPS / USERS ROUTES ────────────────────────────────────────────────
 app.use("/groups", require("./routes/groups"));
 app.use("/users", require("./routes/users"));
@@ -806,74 +805,42 @@ app.use("/users", require("./routes/users"));
 // ── API Route ────────────────────────────────────────────────
 const axios = require("axios");
 
-function inferTags(name, ranking, subcategory) {
-  var text = [
-    name || "",
-    ranking || "",
-    subcategory || ""
-  ].join(" ").toLowerCase();
+var allCategories = new Set();
+var allSubcategories = new Set();
 
+var SUBCATEGORY_TO_TAGS = {
+  "Sights & Landmarks": ["Sightseeing", "Culture"],
+  "Museums": ["Culture"],
+  "Concerts & Shows": ["Entertainment", "Nightlife"],
+  "Events": ["Entertainment", "Fun"],
+  "Food & Drink": ["Food", "Nightlife"],
+  "Nature & Parks": ["Nature", "Relax"],
+  "Outdoor Activities": ["Active", "Fun"],
+  "Water & Amusement Parks": ["Fun", "Family", "Active"],
+  "Zoos & Aquariums": ["Family", "Nature"],
+  "Shopping": ["Shopping"],
+  "Traveler Resources": ["Sightseeing"],
+  "Other": ["Sightseeing"]
+};
+
+function inferTagsFromApi(item) {
   var tags = [];
 
-  if (
-    text.includes("museum") ||
-    text.includes("church") ||
-    text.includes("cathedral") ||
-    text.includes("historic") ||
-    text.includes("monument") ||
-    text.includes("archae")
-  ) {
-    tags.push("Culture");
-  }
+  if (Array.isArray(item.subcategory)) {
+    item.subcategory.forEach(function(sub) {
+      var name = sub && sub.name ? sub.name : "";
+      var mapped = SUBCATEGORY_TO_TAGS[name] || [];
 
-  if (
-    text.includes("park") ||
-    text.includes("garden") ||
-    text.includes("beach") ||
-    text.includes("nature") ||
-    text.includes("trail")
-  ) {
-    tags.push("Nature");
-  }
-
-  if (
-    text.includes("bar") ||
-    text.includes("night") ||
-    text.includes("club") ||
-    text.includes("pub")
-  ) {
-    tags.push("Nightlife");
-  }
-
-  if (
-    text.includes("food") ||
-    text.includes("market") ||
-    text.includes("wine") ||
-    text.includes("culinary")
-  ) {
-    tags.push("Food");
-  }
-
-  if (
-    text.includes("spa") ||
-    text.includes("relax") ||
-    text.includes("thermal")
-  ) {
-    tags.push("Relax");
-  }
-
-  if (
-    text.includes("hike") ||
-    text.includes("bike") ||
-    text.includes("adventure") ||
-    text.includes("sport") ||
-    text.includes("climb")
-  ) {
-    tags.push("Active");
+      mapped.forEach(function(tag) {
+        if (tags.indexOf(tag) === -1) {
+          tags.push(tag);
+        }
+      });
+    });
   }
 
   if (tags.length === 0) {
-    tags.push("Explore");
+    tags.push("Sightseeing");
   }
 
   return tags;
@@ -884,7 +851,7 @@ function scoreAttraction(item, preferences) {
   var matched = 0;
   var itemTags = item.tags || [];
 
-  prefList.forEach(function (pref) {
+  prefList.forEach(function(pref) {
     if (itemTags.indexOf(pref) !== -1) {
       matched += 1;
     }
@@ -898,7 +865,9 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
   console.log("Requested city:", city);
 
   var preferences = req.query.activities
-    ? req.query.activities.split(",").map(function (s) { return s.trim(); }).filter(Boolean)
+    ? req.query.activities.split(",").map(function(s) {
+        return s.trim();
+      }).filter(Boolean)
     : [];
 
   try {
@@ -910,7 +879,6 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
           query: city,
           limit: "50",
           offset: "0",
-          units: "km",
           location_id: "1",
           sort: "relevance",
           lang: "en_US"
@@ -926,11 +894,12 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
       ? locationResponse.data.data
       : [];
 
-    var geoResult = locationData.find(function (item) {
+    var geoResult = locationData.find(function(item) {
       return item.result_type === "geos";
     });
 
     if (!geoResult || !geoResult.result_object || !geoResult.result_object.location_id) {
+      console.log("No valid location found for:", city);
       return res.json([]);
     }
 
@@ -942,9 +911,7 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
       {
         params: {
           location_id: locationId,
-          currency: "EUR",
           lang: "en_US",
-          lunit: "km",
           sort: "recommended"
         },
         headers: {
@@ -958,11 +925,28 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
       ? attractionsResponse.data.data
       : [];
 
+    attractionData.forEach(function(item) {
+      if (item.category && item.category.name) {
+        allCategories.add(item.category.name);
+      }
+
+      if (Array.isArray(item.subcategory)) {
+        item.subcategory.forEach(function(sub) {
+          if (sub && sub.name) {
+            allSubcategories.add(sub.name);
+          }
+        });
+      }
+    });
+
+    console.log("ALL CATEGORIES:", Array.from(allCategories).sort());
+    console.log("ALL SUBCATEGORIES:", Array.from(allSubcategories).sort());
+
     var normalized = attractionData
-      .filter(function (item) {
+      .filter(function(item) {
         return item && item.name;
       })
-      .map(function (item, index) {
+      .map(function(item, index) {
         var image =
           item.photo &&
           item.photo.images &&
@@ -971,13 +955,7 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
             ? item.photo.images.large.url
             : "/images/fallback.jpg";
 
-        var ranking = item.ranking || "";
-        var subcategory =
-          item.subcategory && item.subcategory.length > 0
-            ? item.subcategory.map(function (x) { return x.name; }).join(" ")
-            : "";
-
-        var tags = inferTags(item.name, ranking, subcategory);
+        var tags = inferTagsFromApi(item);
 
         return {
           id: item.location_id || index + 1,
@@ -994,16 +972,16 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
       });
 
     var sorted = normalized
-      .map(function (item) {
+      .map(function(item) {
         return {
           item: item,
           score: scoreAttraction(item, preferences)
         };
       })
-      .sort(function (a, b) {
+      .sort(function(a, b) {
         return b.score - a.score;
       })
-      .map(function (entry) {
+      .map(function(entry) {
         return entry.item;
       });
 

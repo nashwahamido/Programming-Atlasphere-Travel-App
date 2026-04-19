@@ -413,3 +413,28 @@ router.post("/rename/:id", requireGroupAuth, function (req, res) {
 });
 
 module.exports = router;
+
+router.post("/save-activities", requireGroupAuth, function (req, res) {
+  var db = getDb(req);
+  var groupId = req.body.groupId;
+  var activities = Array.isArray(req.body.activities)
+    ? req.body.activities.join(",")
+    : "";
+
+  if (!groupId) {
+    return res.status(400).json({ success: false, error: "Missing groupId" });
+  }
+
+  db.query(
+    "UPDATE tbl_groups SET activities = ? WHERE id = ?",
+    [activities, groupId],
+    function (err) {
+      if (err) {
+        console.error("Save activities error:", err.message);
+        return res.status(500).json({ success: false, error: "Database error" });
+      }
+
+      res.json({ success: true });
+    }
+  );
+});
