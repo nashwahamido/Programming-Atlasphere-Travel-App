@@ -150,7 +150,11 @@
             <% const currentUserId = typeof user !== 'undefined' && user ? String(user.id) : ''; %>
             <% groupList.forEach(function(group) { %>
               <% const isOwner = group.createdBy ? String(group.createdBy) === currentUserId : null; %>
-              <div class="group-row" data-name="<%= group.name.toLowerCase() %>" data-group-id="<%= group.id %>" data-owner="<%= isOwner %>">
+              <div class="group-row"
+                   data-name="<%= group.name.toLowerCase() %>"
+                   data-group-id="<%= group.id %>"
+                   data-owner="<%= isOwner %>"
+                   data-activities="<%= group.activities || '' %>">
                 <button class="group-name-btn"
                   onclick="selectGroup(<%= group.id %>, '<%= group.name %>', <%= isOwner %>, this)">
                   <%= group.name %>
@@ -161,7 +165,7 @@
           </div>
           <div class="group-actions">
             <button class="btn-action" id="renameGroupBtn" onclick="showRenameForm()" style="display:none;">Change Name</button>
-            <button class="btn-action" id="modifyInterestsBtn" style="display:none;">Modify Interests</button>
+            <button class="btn-action" id="modifyInterestsBtn" onclick="showActivitiesForm()" style="display:none;">Modify Interests</button>
             <button class="btn-action btn-action--leave" id="leaveGroupBtn" onclick="leaveSelectedGroup()" style="display:none;">Leave Group</button>
             <button class="btn-action btn-action--danger" id="deleteGroupBtn" onclick="deleteSelectedGroup()" style="display:none;">Delete Group</button>
           </div>
@@ -178,6 +182,81 @@
               <button type="button" class="btn-save" onclick="submitRename()">Save Name</button>
               <button type="button" class="btn-action" onclick="hideRenameForm()">Cancel</button>
             </div>
+          </div>
+        </div>
+
+        <!-- Activities form (hidden by default) -->
+        <div id="activitiesForm" style="display:none; margin-top:20px;">
+          <div id="activitiesFormInner">
+            <div class="form-group">
+              <label>Modify group activities</label>
+            </div>
+
+            <form id="updateActivitiesForm">
+              <input type="hidden" id="activitiesGroupId" name="groupId">
+
+              <div class="location-grid" id="activitiesGrid">
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Relax">
+                  <span class="location-name">Relax</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Nightlife">
+                  <span class="location-name">Nightlife</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Active">
+                  <span class="location-name">Active</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Culture">
+                  <span class="location-name">Culture</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Nature">
+                  <span class="location-name">Nature</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Food">
+                  <span class="location-name">Food</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Shopping">
+                  <span class="location-name">Shopping</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Entertainment">
+                  <span class="location-name">Entertainment</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Family">
+                  <span class="location-name">Family</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Fun">
+                  <span class="location-name">Fun</span>
+                </label>
+
+                <label class="location-card activity-option-card">
+                  <input type="checkbox" name="activities" value="Sightseeing">
+                  <span class="location-name">Sightseeing</span>
+                </label>
+              </div>
+
+              <div class="form-actions" style="gap:8px; margin-top:16px;">
+                <button type="submit" class="btn-save">Save Activities</button>
+                <button type="button" class="btn-action" onclick="hideActivitiesForm()">Cancel</button>
+              </div>
+            </form>
           </div>
         </div>
 
@@ -268,14 +347,14 @@
     }
   }
 
-function initLocationGrids() {
-  document.querySelectorAll('#countryGrid .location-card').forEach(function(card) {
-    card.style.display = card.querySelector('input').checked ? '' : 'none';
-  });
-  document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
-    card.style.display = card.querySelector('input').checked ? '' : 'none';
-  });
-}
+  function initLocationGrids() {
+    document.querySelectorAll('#countryGrid .location-card').forEach(function(card) {
+      card.style.display = card.querySelector('input').checked ? '' : 'none';
+    });
+    document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
+      card.style.display = card.querySelector('input').checked ? '' : 'none';
+    });
+  }
 
   function filterCountries(query) {
     var q = query.toLowerCase();
@@ -288,16 +367,16 @@ function initLocationGrids() {
     });
   }
 
-function filterCities(query) {
-  var q = query.toLowerCase();
-  document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
-    if (q.length < 2) {
-      card.style.display = card.querySelector('input').checked ? '' : 'none';
-    } else {
-      card.style.display = card.dataset.name.includes(q) ? '' : 'none';
-    }
-  });
-}
+  function filterCities(query) {
+    var q = query.toLowerCase();
+    document.querySelectorAll('#cityGrid .location-card').forEach(function(card) {
+      if (q.length < 2) {
+        card.style.display = card.querySelector('input').checked ? '' : 'none';
+      } else {
+        card.style.display = card.dataset.name.includes(q) ? '' : 'none';
+      }
+    });
+  }
 
   function filterGroups(query) {
     document.querySelectorAll('.group-row').forEach(function(row) {
@@ -323,6 +402,7 @@ function filterCities(query) {
     btn.style.borderColor = '#0B3856';
     document.getElementById('noGroupSelected').style.display = 'none';
     hideRenameForm();
+    hideActivitiesForm();
     // Show all 4 action buttons — server enforces ownership on delete
     document.getElementById('renameGroupBtn').style.display     = 'inline-block';
     document.getElementById('modifyInterestsBtn').style.display = 'inline-block';
@@ -369,6 +449,7 @@ function filterCities(query) {
               selectedGroupId = null; selectedGroupName = null; selectedGroupIsOwner = false;
               ['deleteGroupBtn','leaveGroupBtn','renameGroupBtn','modifyInterestsBtn'].forEach(function(id){ document.getElementById(id).style.display='none'; });
               hideRenameForm();
+              hideActivitiesForm();
               showToast('Group deleted', 'success');
             } else {
               showToast(data.error || 'Failed to delete group', 'error');
@@ -393,6 +474,7 @@ function filterCities(query) {
               });
               selectedGroupId = null; selectedGroupName = null; selectedGroupIsOwner = false;
               ['deleteGroupBtn','leaveGroupBtn','renameGroupBtn','modifyInterestsBtn'].forEach(function(id){ document.getElementById(id).style.display='none'; });
+              hideActivitiesForm();
               showToast('You left the group', 'success');
             } else {
               showToast(data.error || 'Failed to leave group', 'error');
@@ -409,11 +491,42 @@ function filterCities(query) {
     }
     document.getElementById('newGroupName').value = selectedGroupName;
     document.getElementById('renameForm').style.display = 'block';
+    document.getElementById('activitiesForm').style.display = 'none';
     document.getElementById('noGroupSelected').style.display = 'none';
   }
 
   function hideRenameForm() {
     document.getElementById('renameForm').style.display = 'none';
+  }
+
+  function showActivitiesForm() {
+    if (!selectedGroupId) {
+      document.getElementById('noGroupSelected').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('activitiesGroupId').value = selectedGroupId;
+
+    var row = document.querySelector('.group-row[data-group-id="' + selectedGroupId + '"]');
+    var savedActivities = row ? (row.dataset.activities || '') : '';
+
+    var selectedActivities = savedActivities
+      ? savedActivities.split(',').map(function(a) { return a.trim(); }).filter(Boolean)
+      : [];
+
+    document.querySelectorAll('#activitiesForm input[name="activities"]').forEach(function(input) {
+      var isSelected = selectedActivities.includes(input.value);
+      input.checked = isSelected;
+      input.closest('.location-card').classList.toggle('location-card--checked', isSelected);
+    });
+
+    document.getElementById('activitiesForm').style.display = 'block';
+    document.getElementById('renameForm').style.display = 'none';
+    document.getElementById('noGroupSelected').style.display = 'none';
+  }
+
+  function hideActivitiesForm() {
+    document.getElementById('activitiesForm').style.display = 'none';
   }
 
   function submitRename() {
@@ -452,18 +565,58 @@ function filterCities(query) {
     var savedTab = null;
     try { savedTab = localStorage.getItem('atlas_settings_tab'); } catch(ex) {}
     var tabId = hash || savedTab;
+    var tabs = document.querySelectorAll('.settings-tab');
+    var tabMap = { 'manageInfo': 0, 'visitedLocations': 1, 'manageGroups': 2, 'deleteAccount': 3 };
     if (tabId) {
       var panel = document.getElementById(tabId);
-      var tabs = document.querySelectorAll('.settings-tab');
-      var tabMap = { 'manageInfo': 0, 'visitedLocations': 1, 'manageGroups': 2, 'deleteAccount': 3 };
       if (panel && tabMap[tabId] !== undefined) {
-        document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.settings-panel').forEach(function(p) { p.classList.remove('active'); });
+        document.querySelectorAll('.settings-tab').forEach(function(t) { t.classList.remove('active'); });
         panel.classList.add('active');
         tabs[tabMap[tabId]].classList.add('active');
       }
     }
   })();
+
+  document.getElementById('updateActivitiesForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    var groupId = document.getElementById('activitiesGroupId').value;
+
+    var activities = Array.from(
+      document.querySelectorAll('#activitiesForm input[name="activities"]:checked')
+    ).map(function(input) {
+      return input.value;
+    });
+
+    fetch('/groups/update-activities/' + groupId, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activities: activities })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.success) {
+        var row = document.querySelector('.group-row[data-group-id="' + groupId + '"]');
+        if (row) {
+          row.dataset.activities = activities.join(',');
+        }
+        hideActivitiesForm();
+        showToast('Activities updated', 'success');
+      } else {
+        showToast(data.error || 'Failed to update activities', 'error');
+      }
+    })
+    .catch(function() {
+      showToast('Failed to update activities', 'error');
+    });
+  });
+
+  document.addEventListener('change', function(e) {
+    if (e.target.matches('#activitiesForm input[name="activities"]')) {
+      e.target.closest('.location-card').classList.toggle('location-card--checked', e.target.checked);
+    }
+  });
 
   initLocationGrids();
 </script>

@@ -438,4 +438,22 @@ router.post("/rename/:id", requireGroupAuth, function (req, res) {
   });
 });
 
+// ── Update group activities/interests ────────────────────────────────────
+router.post("/update-activities/:id", requireGroupAuth, function (req, res) {
+  var db = getDb(req);
+  var groupId = req.params.id;
+  var activities = req.body.activities || [];
+  if (!Array.isArray(activities)) activities = [activities];
+
+  var prefsJson = JSON.stringify(activities);
+
+  db.query("UPDATE tbl_groups SET preferences = ? WHERE id = ?", [prefsJson, groupId], function (err) {
+    if (err) {
+      console.error("Update activities error:", err.message);
+      return res.status(500).json({ success: false, error: "Failed to update activities" });
+    }
+    res.json({ success: true });
+  });
+});
+
 module.exports = router;
