@@ -23,8 +23,7 @@ const validationRegisterRules = [
   check("useremail")
     .trim()
     .exists({ checkFalsy: true }).withMessage("Email is required")
-    .isEmail().withMessage("Invalid email format")
-    .normalizeEmail(),
+    .isEmail().withMessage("Invalid email format"),
   check("userphone")
     .trim()
     .isMobilePhone().withMessage("Invalid phone number"),
