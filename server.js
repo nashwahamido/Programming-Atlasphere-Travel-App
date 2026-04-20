@@ -117,10 +117,19 @@ async function setupEmail() {
         host: process.env.MAIL_HOST,
         port: parseInt(process.env.MAIL_PORT, 10) || 587,
         secure: false,
+        requireTLS: true,
         auth: {
           user: process.env.MAIL_USER,
           pass: process.env.MAIL_PASS,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+      // Verify connection on startup
+      transporter.verify((err) => {
+        if (err) console.error("SMTP connection error:", err.message);
+        else console.log("SMTP connection verified — ready to send emails");
       });
       console.log("Email: using configured SMTP (" + process.env.MAIL_HOST + ")");
     } else {
