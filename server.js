@@ -1642,8 +1642,8 @@ io.on("connection", function(socket) {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, function() {
-  console.log("Server running on http://localhost:" + PORT);
+server.listen(PORT, '0.0.0.0', function() {
+  console.log("Server running on port " + PORT);
   console.log("Socket.io enabled for real-time chat");
 
   // Auto-migrate: add duration column if it doesn't exist yet
