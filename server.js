@@ -947,6 +947,7 @@ app.post("/groups/save-activities", requireAuth, (req, res) => {
   if (!groupId || !Array.isArray(activities)) {
     return res.status(400).json({ error: "Missing groupId or activities" });
   }
+  //stores activities as a JSON string in the database
   var prefs = JSON.stringify(activities);
   connection.query(
     "UPDATE tbl_groups SET preferences = ? WHERE id = ?",
@@ -968,9 +969,11 @@ app.use("/users", require("./routes/users"));
 // ── API Route ────────────────────────────────────────────────
 const axios = require("axios");
 
+//tracks al unique categories and subcategories from the API
 var allCategories = new Set();
 var allSubcategories = new Set();
 
+//set Travel Advisor subcategory names to our own activity tag labels
 var SUBCATEGORY_TO_TAGS = {
   "Sights & Landmarks": ["Sightseeing", "Culture"],
   "Museums": ["Culture"],
@@ -985,7 +988,7 @@ var SUBCATEGORY_TO_TAGS = {
   "Traveler Resources": ["Sightseeing"],
   "Other": ["Sightseeing"]
 };
-
+//converts API subcategories into our own tag format
 function inferTagsFromApi(item) {
   var tags = [];
 
@@ -1002,6 +1005,7 @@ function inferTagsFromApi(item) {
     });
   }
 
+  //will default to sightseeing if tag cant be matched
   if (tags.length === 0) {
     tags.push("Sightseeing");
   }
@@ -1057,6 +1061,7 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
       ? locationResponse.data.data
       : [];
 
+      // finds the first result that is a location that sin't a hotel or restaurant
     var geoResult = locationData.find(function(item) {
       return item.result_type === "geos";
     });
@@ -1134,6 +1139,7 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
         };
       });
 
+      // sorts by how closely each attraction matches the user's preferences from activity page
     var sorted = normalized
       .map(function(item) {
         return {
@@ -1161,6 +1167,7 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
 
 // ── VOTE API ────────────────────────────────────────────────────────────
 
+// saves or updates user's vote on an activity
 app.post("/api/votes", requireAuth, (req, res) => {
   var userId = req.session.user.id;
   var userName = req.session.user.username || 'Someone';
