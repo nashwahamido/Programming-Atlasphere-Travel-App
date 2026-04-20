@@ -560,10 +560,13 @@ app.post("/auth/forgot-password", (req, res) => {
             }]
           },
           { auth: { username: process.env.MAILJET_API_KEY, password: process.env.MAILJET_SECRET_KEY } }
-        ).then(function() {
+        ).then(function(mjRes) {
+          var status = mjRes.data && mjRes.data.Messages && mjRes.data.Messages[0] ? mjRes.data.Messages[0].Status : 'unknown';
+          console.log("Reset email Mailjet status:", status, "to:", email);
           res.render("forgot-password", { error: null, success: "If an account with that email exists, a reset link has been sent." });
         }).catch(function(mailErr) {
-          console.error("Reset email error:", mailErr.message);
+          var detail = mailErr.response ? JSON.stringify(mailErr.response.data) : mailErr.message;
+          console.error("Reset email error:", detail);
           res.render("forgot-password", { error: null, success: "If an account with that email exists, a reset link has been sent." });
         });
       }
