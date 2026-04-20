@@ -20,7 +20,6 @@ var activityOptions = [
 var icons = {
   left: "/icons/Left Arrow Icon Bold.svg",
   right: "/icons/Right Arrow Icon Bold.svg",
-  close: "/icons/X Icon Bold.svg",
 };
 
 function ActivityCard(props) {
@@ -33,15 +32,6 @@ function ActivityCard(props) {
     <div className="vote-card selection-card">
       <img src={activity.image} alt={activity.name} className="vote-card-image" />
       <div className="vote-card-overlay selection-overlay" />
-
-      <button
-        type="button"
-        className="dismiss-btn"
-        onClick={onDismiss}
-        aria-label={"Remove " + activity.name}
-      >
-        <img src={icons.close} alt="" className="dismiss-icon" />
-      </button>
 
       <div className="vote-card-content selection-card-content">
         <div className="selection-bottom">
