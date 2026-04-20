@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "../styles/activities.css";
 
+//max number of cards visible on either side of the active card in the carousel
 var MAX_VISIBILITY = 2;
 
+//all the available activity options
 var activityOptions = [
   { id: 1, name: "Relax", image: "/images/relax.jpg" },
   { id: 2, name: "Nightlife", image: "/images/nightlife.jpg" },
@@ -22,11 +24,11 @@ var icons = {
   right: "/icons/Right Arrow Icon Bold.svg",
 };
 
+//main activity card showing the image, name and a select/deselect button
 function ActivityCard(props) {
   var activity = props.activity;
   var selected = props.selected;
   var onSelect = props.onSelect;
-  var onDismiss = props.onDismiss;
 
   return (
     <div className="vote-card selection-card">
@@ -37,6 +39,7 @@ function ActivityCard(props) {
         <div className="selection-bottom">
           <h2 className="selection-title">{activity.name}</h2>
 
+          {/*toggles the selected state on button click */}
           <button
             type="button"
             className={"select-btn" + (selected ? " selected" : "")}
@@ -50,6 +53,7 @@ function ActivityCard(props) {
   );
 }
 
+//3D carousel
 function Carousel(props) {
   var children = props.children;
   var active = props.active;
@@ -62,6 +66,7 @@ function Carousel(props) {
 
   return (
     <div className="carousel-3d">
+      {/* Left navigation button disabled for the first card so users go throguh list fully from start (different from recommended) */}
       <button
         type="button"
         className="nav-btn left"
@@ -87,6 +92,7 @@ function Carousel(props) {
               "--offset": rawOffset / 3,
               "--direction": Math.sign(rawOffset),
               "--abs-offset": Math.abs(rawOffset) / 3,
+              //only the active card is interactive
               pointerEvents: i === active ? "auto" : "none",
               opacity: Math.abs(rawOffset) > MAX_VISIBILITY ? "0" : "1",
               display: Math.abs(rawOffset) > MAX_VISIBILITY ? "none" : "block",
@@ -98,6 +104,7 @@ function Carousel(props) {
         );
       })}
 
+      {/*right navigation button is disabled on the last card */}
       <button
         type="button"
         className="nav-btn right"
@@ -126,14 +133,11 @@ export default function Activities(props) {
   var selected = selectedState[0];
   var setSelected = selectedState[1];
 
-  var dismissedState = useState({});
-  var dismissed = dismissedState[0];
-  var setDismissed = dismissedState[1];
-
   var errorState = useState("");
   var error = errorState[0];
   var setError = errorState[1];
 
+  // restores any saved activity preferences from localStorage
   useEffect(function () {
     try {
       var saved = groupId
@@ -158,17 +162,12 @@ export default function Activities(props) {
     }
   }, [groupId]);
 
-  var visibleActivities = useMemo(function () {
-    return activityOptions.filter(function (activity) {
-      return !dismissed[activity.id];
-    });
-  }, [dismissed]);
-
   var safeActive =
     visibleActivities.length === 0
       ? 0
       : Math.min(active, visibleActivities.length - 1);
 
+  //derives a plain array of selected activity names for saving
   var selectedActivities = activityOptions
     .filter(function (activity) {
       return !!selected[activity.id];
@@ -177,6 +176,7 @@ export default function Activities(props) {
       return activity.name;
     });
 
+  //toggles an ativity's selected state
   function handleSelect(activityId) {
     setSelected(function (prev) {
       var next = {};
@@ -186,69 +186,64 @@ export default function Activities(props) {
     });
   }
 
-  function handleDismiss(activityId) {
-    setDismissed(function (prev) {
-      var next = {};
-      for (var k in prev) next[k] = prev[k];
-      next[activityId] = true;
-      return next;
-    });
-
     setActive(function (prev) {
       if (visibleActivities.length <= 1) return 0;
       return Math.min(prev, visibleActivities.length - 2);
     });
   }
 
-function handleContinue() {
-  if (selectedActivities.length === 0) {
-    setError("Please select at least one activity.");
-    return;
-  }
+  // save selections and navigate to the next step
+  function handleContinue() {
+    if (selectedActivities.length === 0) {
+      setError("Please select at least one activity.");
+      return;
+    }
 
-  setError("");
+    setError("");
 
-  localStorage.setItem(
-    "activityPreferences",
-    JSON.stringify(selectedActivities)
-  );
-
-  if (groupId) {
     localStorage.setItem(
-      "activityPreferences-" + groupId,
+      "activityPreferences",
       JSON.stringify(selectedActivities)
     );
 
-    fetch("/groups/save-activities", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        groupId: groupId,
-        activities: selectedActivities
-      })
-    })
-      .then(function (res) {
-        if (!res.ok) {
-          throw new Error("Failed to save activities");
-        }
-        return res.json();
-      })
-      .then(function () {
-        window.location.href = "/groups/" + groupId;
-      })
-      .catch(function (err) {
-        console.error(err);
-        setError("Could not save activities. Please try again.");
-      });
+    if (groupId) {
+      localStorage.setItem(
+        "activityPreferences-" + groupId,
+        JSON.stringify(selectedActivities)
+      );
 
-    return;
+      fetch("/groups/save-activities", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          groupId: groupId,
+          activities: selectedActivities
+        })
+      })
+        .then(function (res) {
+          if (!res.ok) {
+            throw new Error("Failed to save activities");
+          }
+          return res.json();
+        })
+        .then(function () {
+          window.location.href = "/groups/" + groupId;
+        })
+        .catch(function (err) {
+          console.error(err);
+          setError("Could not save activities. Please try again.");
+        });
+
+      return;
+    }
+
+    // no group, go straight to the groups page
+    window.location.href = "/groups";
   }
 
-  window.location.href = "/groups";
-}
-
+  // skip activity selection and go directly to the group page
   function handleSkip() {
     if (groupId) {
       window.location.href = "/groups/" + groupId;
@@ -297,11 +292,9 @@ function handleContinue() {
             Skip
           </button>
         </div>
-        
         {error && (
           <p className="activities-error">{error}</p>
         )}
       </section>
     </main>
   );
-}

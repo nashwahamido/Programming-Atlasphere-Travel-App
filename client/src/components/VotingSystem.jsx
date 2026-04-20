@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import "../styles/voting-system.css";
 
+//max number of cards visible on either side of the main card in the carousel
 var MAX_VISIBILITY = 2;
 
 var icons = {
@@ -12,16 +13,19 @@ var icons = {
   maybe: "/icons/maybe-icon.svg",
 };
 
+//main activity card will show image, tags, description and vote buttons
 function ActivityCard({ activity, vote, onVote, onShare, animation }) {
   return (
     <div className={"vote-card" + (animation ? " " + animation : "")}>
       <img src={activity.image} alt={activity.name} className="vote-card-image" />
       <div className="vote-card-overlay" />
 
+{/*share button to send activity to group chat */}
       <button type="button" className="share-btn" onClick={function() { if (onShare) onShare(activity); }} aria-label={"Share " + activity.name} title="Share to group chat">
         <img src={icons.send} alt="" className="share-icon" />
       </button>
 
+{/*activity tags connected to chosen activities on activity page */}
       <div className="vote-card-content">
         <div className="tag-list">
           {(activity.tags || []).map(function (tag) {
@@ -38,6 +42,7 @@ function ActivityCard({ activity, vote, onVote, onShare, animation }) {
           <p>{activity.description}</p>
         </div>
 
+{/* yes/maybe/no vote buttons */}
         <div className="vote-buttons">
           <button
             type="button"
@@ -103,7 +108,7 @@ function Carousel({ children, active, setActive }) {
       var count = React.Children.count(children);
       var rawOffset = active - i;
 
-      // Lets carousel loop
+      //lets carousel loop
       if (rawOffset > count / 2) rawOffset -= count;
       if (rawOffset < -count / 2) rawOffset += count;
 
@@ -114,7 +119,8 @@ function Carousel({ children, active, setActive }) {
             "--active": i === active ? 1 : 0,
             "--offset": rawOffset / 3,
             "--direction": Math.sign(rawOffset),
-            "--abs-offset": Math.abs(rawOffset) / 3,
+            "--abs-offset": Math.abs(rawOffset) / 3, 
+            //only the active card is interactive, others aren't
             pointerEvents: i === active ? "auto" : "none",
             opacity: Math.abs(rawOffset) > MAX_VISIBILITY ? "0" : "1",
             display: Math.abs(rawOffset) > MAX_VISIBILITY ? "none" : "block",
@@ -153,7 +159,7 @@ export default function VotingSystem(props) {
   var activeState = useState(0);
   var active = activeState[0];
   var setActive = activeState[1];
-
+ //list of recommended activities fetched from the API
   var activitiesState = useState([]);
   var activities = activitiesState[0];
   var setActivities = activitiesState[1];
@@ -170,10 +176,12 @@ export default function VotingSystem(props) {
   var error = errorState[0];
   var setError = errorState[1];
 
+  //prevents user frm double submitting a vote while
   var votingState = useState(false);
   var isVoting = votingState[0];
   var setIsVoting = votingState[1];
 
+  //feedback message shown after voting or sharing
   var feedbackState = useState(null);
   var feedback = feedbackState[0];
   var setFeedback = feedbackState[1];
@@ -198,6 +206,7 @@ export default function VotingSystem(props) {
     }
   }, [props.savedActivities, groupId]);
 
+   //fetches recommendations from the API when destination or preferences change
   useEffect(function () {
     setLoading(true);
     fetch(
@@ -221,6 +230,7 @@ export default function VotingSystem(props) {
       });
   }, [preferences, destination]);
 
+  //loads all the existing votes the user has already made for this group
   useEffect(function () {
     if (!groupId) return;
     fetch("/api/votes?groupId=" + groupId)
@@ -233,6 +243,7 @@ export default function VotingSystem(props) {
       .catch(function () {});
   }, [groupId]);
 
+  //filters out any activities the user has already voted on
   var visibleActivities = useMemo(function () {
     return activities.filter(function (a) { return !votedIds[a.id]; });
   }, [activities, votedIds]);
@@ -256,6 +267,7 @@ var handleVote = function (activity, choice) {
     type: animationType
   });
 
+  //waits for the animation to play before sending the request
   setTimeout(function () {
     fetch("/api/votes", {
       method: "POST",
@@ -283,6 +295,7 @@ var handleVote = function (activity, choice) {
 
         setAnimating(null);
 
+        // moves to the next card
         setActive(function (prev) {
           var remaining = visibleActivities.length - 1;
           if (remaining <= 0) return 0;
@@ -369,6 +382,7 @@ var handleVote = function (activity, choice) {
     );
   }
 
+  //for when all activities have been voted on
   if (visibleActivities.length === 0 && activities.length > 0) {
     return (
       <main className="voting-page">
