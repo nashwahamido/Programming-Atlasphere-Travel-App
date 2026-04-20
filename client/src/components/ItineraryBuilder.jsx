@@ -24,12 +24,62 @@ function formatDuration(dur) {
 const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDays = 7, isActive = false }) => {
   const today = new Date();
   const storageKey = 'itinerary-' + (tripId || 'default');
+  const gid = groupId || tripId;
+
+  // ── Socket ref for real-time sync ─────────────────────────────────────────
+  const socketRef = useRef(null);
+  const isRemoteUpdate = useRef(false);
+
+  useEffect(() => {
+    if (!gid || !isActive) return;
+    // Reuse existing socket if possible
+    if (window.io) {
+      var socket = window.io();
+      socketRef.current = socket;
+
+      socket.on('itinerary-update', function(data) {
+        if (String(data.groupId) !== String(gid)) return;
+        isRemoteUpdate.current = true;
+        if (data.action === 'set') {
+          setAllBlocks(prev => {
+            var dayData = { ...(prev[data.dayIndex] || {}) };
+            dayData[data.timeSlot] = data.block;
+            return { ...prev, [data.dayIndex]: dayData };
+          });
+        } else if (data.action === 'delete') {
+          setAllBlocks(prev => {
+            var dayData = { ...(prev[data.dayIndex] || {}) };
+            delete dayData[data.timeSlot];
+            return { ...prev, [data.dayIndex]: dayData };
+          });
+        } else if (data.action === 'dates') {
+          setRangeStart(data.rangeStart);
+          setRangeEnd(data.rangeEnd);
+          setCalYear(data.calYear);
+          setCalMonth(data.calMonth);
+          setRangeYear(data.calYear);
+          setRangeMonth(data.calMonth);
+        }
+        setTimeout(() => { isRemoteUpdate.current = false; }, 0);
+      });
+
+      return () => {
+        socket.off('itinerary-update');
+      };
+    }
+  }, [gid, isActive]);
+
+  const emitUpdate = useCallback((data) => {
+    if (isRemoteUpdate.current) return;
+    if (socketRef.current && gid) {
+      socketRef.current.emit('itinerary-update', { ...data, groupId: gid });
+    }
+  }, [gid]);
 
   const [upvotedActivities, setUpvotedActivities] = useState([]);
   const [savedActivities, setSavedActivities] = useState([]);
 
   useEffect(() => {
-    var gid = groupId || tripId;
     if (!gid || !isActive) return;
     fetch('/api/votes/saved?groupId=' + gid + '&type=upvote')
       .then(r => r.json())
@@ -55,7 +105,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         })));
       })
       .catch(() => {});
-  }, [groupId, tripId, isActive]);
+  }, [gid, isActive]);
 
   const [calYear, setCalYear] = useState(today.getFullYear());
   const [calMonth, setCalMonth] = useState(today.getMonth());
@@ -67,7 +117,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const [activeDay, setActiveDay] = useState(0);
 
   useEffect(() => {
-    var gid = groupId || tripId;
     if (!gid || !isActive) return;
     fetch('/api/itinerary/dates?groupId=' + gid)
       .then(r => r.json())
@@ -82,7 +131,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         }
       })
       .catch(() => {});
-  }, [groupId, tripId, isActive]);
+  }, [gid, isActive]);
 
   const actualDays = (rangeStart !== null && rangeEnd !== null) ? rangeEnd - rangeStart + 1 : tripDays;
 
@@ -104,7 +153,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   const [hasLoadedBlocks, setHasLoadedBlocks] = useState(false);
 
   useEffect(() => {
-    var gid = groupId || tripId;
     if (!gid || !isActive) return;
     fetch('/api/itinerary/blocks?groupId=' + gid)
       .then(r => r.json())
@@ -119,7 +167,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
         setHasLoadedBlocks(true);
       })
       .catch(() => { setHasLoadedBlocks(true); });
-  }, [groupId, tripId, isActive]);
+  }, [gid, isActive]);
 
   useEffect(() => {
     if (!hasLoadedBlocks) return;
@@ -127,14 +175,14 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
   }, [allBlocks, hasLoadedBlocks, storageKey]);
 
   useEffect(() => {
-    var gid = groupId || tripId;
-    if (!gid || rangeStart === null) return;
+    if (!gid || rangeStart === null || isRemoteUpdate.current) return;
     fetch('/api/itinerary/dates', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ groupId: gid, rangeStart, rangeEnd, calYear: rangeYear, calMonth: rangeMonth })
     }).catch(() => {});
-  }, [rangeStart, rangeEnd, rangeYear, rangeMonth, groupId, tripId]);
+    emitUpdate({ action: 'dates', rangeStart, rangeEnd, calYear: rangeYear, calMonth: rangeMonth });
+  }, [rangeStart, rangeEnd, rangeYear, rangeMonth, gid]);
 
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   const firstDay = (() => { const d = new Date(calYear, calMonth, 1).getDay(); return d === 0 ? 6 : d - 1; })();
@@ -199,22 +247,22 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
 
   // ── API helpers ─────────────────────────────────────────────────────────────
   const persistBlock = useCallback((dayIdx, timeSlot, block) => {
-    var gid = groupId || tripId;
     if (!gid) return;
     fetch('/api/itinerary/block', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ groupId: gid, dayIndex: dayIdx, timeSlot, activityName: block.name, activityColor: block.color || '#E8933A', duration: block.duration || 1 })
     }).catch(() => {});
-  }, [groupId, tripId]);
+    emitUpdate({ action: 'set', dayIndex: dayIdx, timeSlot, block });
+  }, [gid, emitUpdate]);
 
   const deleteBlockAPI = useCallback((dayIdx, timeSlot) => {
-    var gid = groupId || tripId;
     if (!gid) return;
     fetch('/api/itinerary/block', {
       method: 'DELETE', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ groupId: gid, dayIndex: dayIdx, timeSlot })
     }).catch(() => {});
-  }, [groupId, tripId]);
+    emitUpdate({ action: 'delete', dayIndex: dayIdx, timeSlot });
+  }, [gid, emitUpdate]);
 
   // ── Drag & drop ─────────────────────────────────────────────────────────────
   const panelDragStart = (e, act) => {
@@ -244,7 +292,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       const dayData = { ...(prev[activeDay] || {}) };
       if (fromSlot) delete dayData[fromSlot];
 
-      // Clamp duration to not overlap or exceed grid
       var finalDur = dur;
       for (var i = slotIndex + 1; i < HOURS.length && (i - slotIndex) < slotsForDuration(dur); i++) {
         if (dayData[HOURS[i]]) { finalDur = i - slotIndex; break; }
@@ -278,25 +325,17 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
       var newDur = Math.max(MIN_DURATION, Math.min(MAX_DURATION, oldDur + delta));
       var startIdx = HOURS.indexOf(timeKey);
 
-      // Can't exceed the grid
       if (startIdx + slotsForDuration(newDur) > HOURS.length) {
         newDur = HOURS.length - startIdx;
       }
 
       if (newDur > oldDur) {
-        // Push blocks down that sit in the expanded area
         var expandStart = startIdx + slotsForDuration(oldDur);
         var expandEnd = startIdx + slotsForDuration(newDur) - 1;
-        // Collect blocks that need to be pushed, sorted by slot index descending
-        // (move from bottom up so we don't overwrite)
         var toPush = [];
         for (var i = expandStart; i <= expandEnd && i < HOURS.length; i++) {
-          if (dayData[HOURS[i]]) {
-            toPush.push({ slot: HOURS[i], idx: i });
-          }
+          if (dayData[HOURS[i]]) toPush.push({ slot: HOURS[i], idx: i });
         }
-        // Push each conflicting block down by the needed amount
-        // Process from bottom to top to avoid collision chains
         toPush.sort(function(a, b) { return b.idx - a.idx; });
         for (var p = 0; p < toPush.length; p++) {
           var conflictSlot = toPush[p].slot;
@@ -304,30 +343,22 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
           var conflictBlock = dayData[conflictSlot];
           var conflictDur = conflictBlock.duration || 1;
           var conflictSpan = slotsForDuration(conflictDur);
-          // Find the first free slot below the expansion zone
           var targetIdx = expandEnd + 1;
-          // Walk down to find a slot that has room for this block
           while (targetIdx < HOURS.length) {
             var fits = true;
             for (var c = 0; c < conflictSpan && (targetIdx + c) < HOURS.length; c++) {
-              if (dayData[HOURS[targetIdx + c]] && HOURS[targetIdx + c] !== conflictSlot) {
-                fits = false;
-                break;
-              }
+              if (dayData[HOURS[targetIdx + c]] && HOURS[targetIdx + c] !== conflictSlot) { fits = false; break; }
             }
             if (fits && targetIdx + conflictSpan <= HOURS.length) break;
             targetIdx++;
           }
-          // If no room to push, cap the resize instead
           if (targetIdx + conflictSpan > HOURS.length) {
             newDur = conflictIdx - startIdx;
             if (newDur < MIN_DURATION) newDur = MIN_DURATION;
             break;
           }
-          // Move the block
           delete dayData[conflictSlot];
           dayData[HOURS[targetIdx]] = conflictBlock;
-          // Persist the move
           deleteBlockAPI(activeDay, conflictSlot);
           persistBlock(activeDay, HOURS[targetIdx], conflictBlock);
         }
@@ -341,7 +372,7 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
     });
   }, [activeDay, persistBlock, deleteBlockAPI]);
 
-  // ── Covered slots (under multi-hour blocks) ─────────────────────────────────
+  // ── Covered slots ────────────────────────────────────────────────────────────
   const coveredSlots = useMemo(() => {
     var covered = {};
     Object.keys(dayBlocks).forEach(key => {
@@ -478,7 +509,6 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
             var dur = block ? (block.duration || 1) : 1;
             var spanSlots = block ? slotsForDuration(dur) : 1;
             var canGrow = block && dur < MAX_DURATION && (hIdx + slotsForDuration(dur + DURATION_STEP)) <= HOURS.length;
-            // Also check if the very last slot of the schedule still has room to push blocks into
             var canShrink = block && dur > MIN_DURATION;
 
             if (isCovered) {
@@ -514,10 +544,10 @@ const ItineraryBuilder = ({ tripId = null, groupId = null, onSave = null, tripDa
                           <span className="ib-block__dur">{formatDuration(dur)}</span>
                           <button className="ib-block__resize-btn" disabled={!canShrink}
                             onClick={e => { e.stopPropagation(); resizeBlock(h, -DURATION_STEP); }}
-                            title="Shrink by 30 min">−</button>
+                            title="Shrink by 1h">−</button>
                           <button className="ib-block__resize-btn" disabled={!canGrow}
                             onClick={e => { e.stopPropagation(); resizeBlock(h, DURATION_STEP); }}
-                            title="Extend by 30 min">+</button>
+                            title="Extend by 1h">+</button>
                           <button className="ib-block__x" onClick={() => removeBlock(h)}>&times;</button>
                         </div>
                       </div>

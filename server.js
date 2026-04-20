@@ -1610,6 +1610,13 @@ io.on("connection", function(socket) {
     io.to(room).emit("new-message", msg);
   });
 
+  // ── Itinerary real-time sync ─────────────────────────────────────────────
+  socket.on("itinerary-update", function(data) {
+    // Broadcast to everyone else in the group room
+    var room = "group-" + data.groupId;
+    socket.to(room).emit("itinerary-update", data);
+  });
+
   socket.on("disconnect", function() {
     console.log("Socket disconnected:", socket.id);
     if (socket.userData) {
