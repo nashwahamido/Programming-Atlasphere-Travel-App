@@ -5,7 +5,6 @@ const countries = require("./data/countries");
 const session = require("express-session");
 const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
-const nodemailer = require("nodemailer");
 const fileUpload = require("express-fileupload");
 const fs = require("fs");
 
@@ -108,52 +107,8 @@ try {
 app.use(session(sessionConfig));
 
 // ── EMAIL SETUP ──────────────────────────────────────────────────────────
-let transporter = null;
-
-async function setupEmail() {
-  try {
-    if (process.env.MAIL_HOST && process.env.MAIL_USER) {
-      transporter = nodemailer.createTransport({
-        host: process.env.MAIL_HOST,
-        port: parseInt(process.env.MAIL_PORT, 10) || 587,
-        secure: false,
-        requireTLS: true,
-        auth: {
-          user: process.env.MAIL_USER,
-          pass: process.env.MAIL_PASS,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-      });
-      // Verify connection on startup
-      transporter.verify((err) => {
-        if (err) console.error("SMTP connection error:", err.message);
-        else console.log("SMTP connection verified — ready to send emails");
-      });
-      console.log("Email: using configured SMTP (" + process.env.MAIL_HOST + ")");
-    } else {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: "smtp.ethereal.email",
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass,
-        },
-      });
-      console.log("Email: using Ethereal test account");
-      console.log("View sent emails at: https://ethereal.email");
-      console.log("Login:", testAccount.user, "/", testAccount.pass);
-    }
-
-    app.locals.transporter = transporter;
-  } catch (err) {
-    console.error("Email setup failed:", err.message);
-  }
-}
-setupEmail();
+// Uses Mailjet HTTP API (port 443) — bypasses Railway SMTP port blocking
+console.log("Email: using Mailjet HTTP API");
 
 // ── HELPERS ──────────────────────────────────────────────────────────────
 function generateCode() {
@@ -161,35 +116,52 @@ function generateCode() {
 }
 
 async function sendVerificationEmail(toEmail, code) {
-  if (!transporter) {
-    console.log("Email not ready yet — code is:", code);
+  const apiKey = process.env.MAILJET_API_KEY;
+  const secretKey = process.env.MAILJET_SECRET_KEY;
+  const fromEmail = process.env.MAIL_FROM || "atlasphretravelapp@gmail.com";
+
+  if (!apiKey || !secretKey) {
+    console.error("Mailjet credentials missing — set MAILJET_API_KEY and MAILJET_SECRET_KEY");
     return false;
   }
 
   try {
-    const info = await transporter.sendMail({
-      from: process.env.MAIL_FROM || '"Atlasphere" <noreply@atlasphere.com>',
-      to: toEmail,
-      subject: "Atlasphere — Verify your email",
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
-          <h1 style="color: #0B3856; font-size: 24px;">Welcome to Atlasphere!</h1>
-          <p style="color: #555; font-size: 16px; line-height: 1.6;">Your verification code is:</p>
-          <div style="background: #f0f4f8; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
-            <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #0B3856;">${code}</span>
-          </div>
-          <p style="color: #888; font-size: 14px;">This code expires in 10 minutes.</p>
-        </div>
-      `,
-    });
+    const response = await axios.post(
+      "https://api.mailjet.com/v3.1/send",
+      {
+        Messages: [
+          {
+            From: { Email: fromEmail, Name: "Atlasphere" },
+            To: [{ Email: toEmail }],
+            Subject: "Atlasphere — Verify your email",
+            HTMLPart: `
+              <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px;">
+                <h1 style="color: #0B3856; font-size: 24px;">Welcome to Atlasphere!</h1>
+                <p style="color: #555; font-size: 16px; line-height: 1.6;">Your verification code is:</p>
+                <div style="background: #f0f4f8; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+                  <span style="font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #0B3856;">${code}</span>
+                </div>
+                <p style="color: #888; font-size: 14px;">This code expires in 30 minutes.</p>
+              </div>
+            `,
+          },
+        ],
+      },
+      {
+        auth: { username: apiKey, password: secretKey },
+      }
+    );
 
-    console.log("Email sent:", info.messageId);
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    if (previewUrl) console.log("Preview email at:", previewUrl);
-
-    return true;
+    const status = response.data.Messages[0].Status;
+    if (status === "success") {
+      console.log("Email sent via Mailjet API to:", toEmail);
+      return true;
+    } else {
+      console.error("Mailjet send failed:", JSON.stringify(response.data.Messages[0]));
+      return false;
+    }
   } catch (err) {
-    console.error("Email error:", err.message);
+    console.error("Mailjet API error:", err.response ? JSON.stringify(err.response.data) : err.message);
     return false;
   }
 }
@@ -382,7 +354,7 @@ app.post("/auth/register", validationRegisterRules, async (req, res) => {
             username,
             email: useremail,
             code,
-            expiresAt: Date.now() + 10 * 60 * 1000,
+            expiresAt: Date.now() + 30 * 60 * 1000,
           };
 
           const sent = await sendVerificationEmail(useremail, code);
@@ -504,7 +476,7 @@ app.get("/auth/resend-code", async (req, res) => {
 
   const newCode = generateCode();
   req.session.pendingVerification.code = newCode;
-  req.session.pendingVerification.expiresAt = Date.now() + 10 * 60 * 1000;
+  req.session.pendingVerification.expiresAt = Date.now() + 30 * 60 * 1000;
 
   connection.query(
     "UPDATE tbl_users SET verificationCode = ? WHERE IDuser = ?",
@@ -570,24 +542,24 @@ app.post("/auth/forgot-password", (req, res) => {
         }
 
         var resetLink = req.protocol + '://' + req.get('host') + '/auth/reset-password?token=' + token;
-        var transporter = req.app.locals.transporter;
 
-        if (!transporter) {
-          console.log("Reset link (no email configured):", resetLink);
-          return res.render("forgot-password", { error: null, success: "Reset link generated (email not configured). Check server console." });
-        }
-
-        transporter.sendMail({
-          from: "Atlasphere <noreply@atlasphere.com>",
-          to: email,
-          subject: "Reset your Atlasphere password",
-          html: '<div style="font-family:Arial;max-width:480px;margin:0 auto;padding:32px">' +
-            '<h1 style="color:#0B3856">Reset your password</h1>' +
-            '<p style="font-size:16px;color:#555">Hi ' + user.username + ', click the button below to reset your password. This link expires in 1 hour.</p>' +
-            '<div style="text-align:center;margin:32px 0">' +
-            '<a href="' + resetLink + '" style="display:inline-block;padding:14px 40px;background:#E8933A;color:#fff;text-decoration:none;border-radius:30px;font-weight:700;font-size:16px">Reset Password</a>' +
-            '</div></div>'
-        }).then(function() {
+        axios.post(
+          "https://api.mailjet.com/v3.1/send",
+          {
+            Messages: [{
+              From: { Email: process.env.MAIL_FROM || "atlasphretravelapp@gmail.com", Name: "Atlasphere" },
+              To: [{ Email: email }],
+              Subject: "Reset your Atlasphere password",
+              HTMLPart: '<div style="font-family:Arial;max-width:480px;margin:0 auto;padding:32px">' +
+                '<h1 style="color:#0B3856">Reset your password</h1>' +
+                '<p style="font-size:16px;color:#555">Hi ' + user.username + ', click the button below to reset your password. This link expires in 1 hour.</p>' +
+                '<div style="text-align:center;margin:32px 0">' +
+                '<a href="' + resetLink + '" style="display:inline-block;padding:14px 40px;background:#E8933A;color:#fff;text-decoration:none;border-radius:30px;font-weight:700;font-size:16px">Reset Password</a>' +
+                '</div></div>'
+            }]
+          },
+          { auth: { username: process.env.MAILJET_API_KEY, password: process.env.MAILJET_SECRET_KEY } }
+        ).then(function() {
           res.render("forgot-password", { error: null, success: "If an account with that email exists, a reset link has been sent." });
         }).catch(function(mailErr) {
           console.error("Reset email error:", mailErr.message);
@@ -1448,27 +1420,31 @@ app.post("/api/groups/invite", requireAuth, (req, res) => {
             }
             var gName = gRows[0].name;
             var joinLink = req.protocol + '://' + req.get('host') + '/groups/join/' + gRows[0].inviteCode;
-            if (transporter) {
-              transporter.sendMail({
-                from: process.env.MAIL_FROM || '"Atlasphere" <noreply@atlasphere.com>',
-                to: query.trim(),
-                subject: userName + ' invited you to join "' + gName + '" on Atlasphere',
-                html: `
-                  <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
-                    <h1 style="color:#0B3856;font-size:24px;">You've been invited!</h1>
-                    <p style="color:#555;font-size:16px;line-height:1.6;">
-                      <strong>${userName}</strong> invited you to join the <strong>"${gName}"</strong> group on Atlasphere.
-                    </p>
-                    <a href="${joinLink}" style="display:inline-block;margin:24px 0;padding:14px 32px;background:#E8933A;color:#fff;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;">
-                      Join "${gName}"
-                    </a>
-                    <p style="color:#888;font-size:13px;">
-                      You'll need to create a free account to join. The link above will take you straight there.
-                    </p>
-                  </div>
-                `
-              }).catch(function(e) { console.error('Invite email error:', e.message); });
-            }
+            axios.post(
+              "https://api.mailjet.com/v3.1/send",
+              {
+                Messages: [{
+                  From: { Email: process.env.MAIL_FROM || "atlasphretravelapp@gmail.com", Name: "Atlasphere" },
+                  To: [{ Email: query.trim() }],
+                  Subject: userName + ' invited you to join "' + gName + '" on Atlasphere',
+                  HTMLPart: `
+                    <div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px;">
+                      <h1 style="color:#0B3856;font-size:24px;">You've been invited!</h1>
+                      <p style="color:#555;font-size:16px;line-height:1.6;">
+                        <strong>${userName}</strong> invited you to join the <strong>"${gName}"</strong> group on Atlasphere.
+                      </p>
+                      <a href="${joinLink}" style="display:inline-block;margin:24px 0;padding:14px 32px;background:#E8933A;color:#fff;border-radius:30px;text-decoration:none;font-weight:700;font-size:16px;">
+                        Join "${gName}"
+                      </a>
+                      <p style="color:#888;font-size:13px;">
+                        You'll need to create a free account to join. The link above will take you straight there.
+                      </p>
+                    </div>
+                  `
+                }]
+              },
+              { auth: { username: process.env.MAILJET_API_KEY, password: process.env.MAILJET_SECRET_KEY } }
+            ).catch(function(e) { console.error('Invite email error:', e.message); });
             return res.json({ success: true, message: 'Invite sent to ' + query.trim() });
           }
         );
