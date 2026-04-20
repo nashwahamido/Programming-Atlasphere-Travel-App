@@ -2,14 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import ChatBox from './ChatBox';
 import '../styles/chat-overlay.css';
 
-var PREFIX = 'atlas_unread_';
-
-function getUnread(groupId) {
-  try {
-    return parseInt(localStorage.getItem(PREFIX + groupId) || '0', 10);
-  } catch (e) { return 0; }
-}
-
 var ChatOverlay = function(props) {
   var openState = useState(false);
   var isOpen = openState[0];
@@ -24,58 +16,59 @@ var ChatOverlay = function(props) {
   var groupId = props.groupId || '';
   var notificationsMuted = !!props.notificationsMuted;
 
-  // Keep isOpenRef in sync
+  // Keep isOpenRef in sync so the event listener always reads current state
   useEffect(function() {
     isOpenRef.current = isOpen;
     if (isOpen) {
       setUnreadCount(0);
-      try { localStorage.removeItem(PREFIX + groupId); } catch (e) {}
+      try { localStorage.removeItem('atlas_unread_' + groupId); } catch (e) {}
       window.dispatchEvent(new CustomEvent('atlas-unread-update'));
     }
   }, [isOpen]);
 
-  // Read unread count from localStorage (single source of truth).
-  // chat-notification.js writes to localStorage on new messages.
-  // We just read from it whenever it changes.
+  // Source 1: Listen to events dispatched by the main ChatBox (instant, same-tab)
+  useEffect(function() {
+    function onMessage() {
+      if (!isOpenRef.current && !notificationsMuted) {
+        setUnreadCount(function(prev) { return prev + 1; });
+      }
+    }
+    window.addEventListener('atlas-overlay-message', onMessage);
+    return function() { window.removeEventListener('atlas-overlay-message', onMessage); };
+  }, [notificationsMuted]);
+
+  // Source 2: Sync from localStorage (written by chat-notification.js via its own socket — reliable fallback)
   useEffect(function() {
     if (!groupId) return;
 
-    // Initial read
-    if (!isOpenRef.current && !notificationsMuted) {
-      setUnreadCount(getUnread(groupId));
+    function readLocalUnread() {
+      try {
+        return parseInt(localStorage.getItem('atlas_unread_' + groupId) || '0', 10);
+      } catch (e) { return 0; }
     }
 
-    function onUpdate() {
-      if (isOpenRef.current) {
-        // Overlay is open — user is reading, keep at 0 and clear storage
-        setUnreadCount(0);
-        try { localStorage.removeItem(PREFIX + groupId); } catch (e) {}
-      } else if (!notificationsMuted) {
-        setUnreadCount(getUnread(groupId));
+    function onStorageUpdate() {
+      if (isOpenRef.current || notificationsMuted) return;
+      var stored = readLocalUnread();
+      if (stored > 0) {
+        setUnreadCount(function(prev) { return Math.max(prev, stored); });
       }
     }
 
-    // Listen for updates from chat-notification.js and cross-tab storage events
-    window.addEventListener('atlas-unread-update', onUpdate);
-    window.addEventListener('storage', onUpdate);
-    // Also listen for the overlay-specific message event (from ChatBox socket)
-    window.addEventListener('atlas-overlay-message', onUpdate);
+    // Check on mount
+    onStorageUpdate();
 
+    window.addEventListener('atlas-unread-update', onStorageUpdate);
+    window.addEventListener('storage', onStorageUpdate);
     return function() {
-      window.removeEventListener('atlas-unread-update', onUpdate);
-      window.removeEventListener('storage', onUpdate);
-      window.removeEventListener('atlas-overlay-message', onUpdate);
+      window.removeEventListener('atlas-unread-update', onStorageUpdate);
+      window.removeEventListener('storage', onStorageUpdate);
     };
   }, [groupId, notificationsMuted]);
 
   function handleToggle() {
-    var opening = !isOpen;
-    setUnreadCount(0);
-    setIsOpen(opening);
-    if (opening) {
-      try { localStorage.removeItem(PREFIX + groupId); } catch (e) {}
-      window.dispatchEvent(new CustomEvent('atlas-unread-update'));
-    }
+    if (!isOpen) setUnreadCount(0);
+    setIsOpen(!isOpen);
   }
 
   function handleClose() {
