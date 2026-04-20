@@ -518,11 +518,13 @@ app.get("/auth/forgot-password", (req, res) => {
 
 app.post("/auth/forgot-password", (req, res) => {
   var email = (req.body.email || '').trim();
+  console.log("Forgot password request for:", email);
   if (!email) {
     return res.render("forgot-password", { error: "Please enter your email.", success: null });
   }
 
-  connection.query("SELECT IDuser, username, email FROM tbl_users WHERE email = ? LIMIT 1", [email], function(err, rows) {
+  connection.query("SELECT IDuser, username, email, isConfirmed FROM tbl_users WHERE email = ? LIMIT 1", [email], function(err, rows) {
+    console.log("Forgot password DB lookup:", { email, err: err ? err.message : null, found: rows ? rows.length : 0 });
     if (err || !rows || rows.length === 0) {
       // Don't reveal whether the email exists
       return res.render("forgot-password", { error: null, success: "If an account with that email exists, a reset link has been sent." });
