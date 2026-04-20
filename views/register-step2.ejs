@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-<nav class="auth-nav"><a href="/" class="auth-nav__brand">Atlasphere</a><a href="/auth/login" class="auth-nav__btn">Log in</a></nav>
+<nav class="auth-nav"><a href="/" class="auth-nav__brand"><img src="/icons/Atlasphere Logo.svg" alt="Atlasphere" class="navbar-logo"></a><a href="/auth/login" class="auth-nav__btn">Log in</a></nav>
 <div class="framed-page">
   <div class="framed-box">
     <div class="framed-box__bg"><img src="/images/person-portrait.jpg" alt="person portrait"></div>
@@ -16,6 +16,7 @@
       <div class="auth-card">
         <h1>We've sent you an email</h1>
         <p class="subtitle">Enter the 6-digit code to verify your account</p>
+        <p class="subtitle" style="font-size:13px; opacity:0.7; margin-top:4px;">Can't find it? Check your <strong>spam/junk folder</strong>. The code is valid for 30 minutes.</p>
         <% if (typeof email !== 'undefined' && email) { %><span class="verify-email"><%= email %></span><% } %>
         <% if (typeof error !== 'undefined' && error) { %><div class="msg-error"><%= error %></div><% } %>
         <% if (typeof success !== 'undefined' && success) { %><div class="msg-success"><%= success %></div><% } %>
