@@ -104,28 +104,6 @@
   justify-content: space-between;
 }
 
-.dismiss-btn {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 3;
-  width: 60px;
-  height: 60px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 50%;
-  background: rgba(170, 170, 170, 0.35);
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-  backdrop-filter: blur(6px);
-}
-
-.dismiss-icon {
-  width: 48px;
-  height: 48px;
-  display: block;
-}
-
 .selection-bottom {
   margin-top: auto;
   display: flex;
@@ -177,11 +155,13 @@
 
 .nav-btn.left {
   transform: translateX(-120%) translateY(-50%);
+  filter: brightness(0) invert(1);
 }
 
 .nav-btn.right {
   right: 0;
   transform: translateX(120%) translateY(-50%);
+  filter: brightness(0) invert(1);
 }
 
 .nav-icon {
