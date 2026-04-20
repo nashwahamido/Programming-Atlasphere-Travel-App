@@ -7,6 +7,7 @@ const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
 const fileUpload = require("express-fileupload");
 const fs = require("fs");
+const axios = require("axios");
 
 
 // ── Validation Rules ────────────────────────────────────────────────────
@@ -952,7 +953,6 @@ app.use("/groups", require("./routes/groups"));
 app.use("/users", require("./routes/users"));
 
 // ── API Route ────────────────────────────────────────────────
-const axios = require("axios");
 
 //tracks al unique categories and subcategories from the API
 var allCategories = new Set();
