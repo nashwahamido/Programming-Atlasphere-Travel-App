@@ -69,12 +69,6 @@ app.use(express.static("assets"));
 app.use(fileUpload());
 app.use("/uploads", express.static(path.join(__dirname, "assets/uploads")));
 
-// ── SESSION CONFIGURATION ────────────────────────────────────────────────
-const sessionConfig = require("./config/session");
-app.use(session(sessionConfig));
-
-
-
 // ── DATABASE ─────────────────────────────────────────────────────────────
 const connection = mysql.createPool({
   host: process.env.DB_HOST,
@@ -100,6 +94,18 @@ connection.getConnection((err, conn) => {
 
 // Make DB connection accessible to route files
 app.set('db', connection);
+
+// ── SESSION CONFIGURATION (stored in MySQL so sessions survive restarts) ──
+const sessionConfig = require("./config/session");
+try {
+  var MySQLStore = require("express-mysql-session")(session);
+  var sessionStore = new MySQLStore({}, connection.promise());
+  sessionConfig.store = sessionStore;
+  console.log("Sessions: stored in MySQL (persistent)");
+} catch (e) {
+  console.warn("Sessions: using memory store (install express-mysql-session for persistence)");
+}
+app.use(session(sessionConfig));
 
 // ── EMAIL SETUP ──────────────────────────────────────────────────────────
 let transporter = null;
