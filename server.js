@@ -9,49 +9,10 @@ const nodemailer = require("nodemailer");
 const fileUpload = require("express-fileupload");
 const fs = require("fs");
 
-
-// ── Validation Rules ────────────────────────────────────────────────────
-const { check, validationResult } = require("express-validator");
-
-const validationRegisterRules = [
-  check("username")
-    .trim()
-    .exists({ checkFalsy: true }).withMessage("Username is required")
-    .isString().withMessage("Username must be a string")
-    .isLength({ min: 3, max: 20 }).withMessage("Username must be 3–20 characters")
-    .escape(),
-  check("useremail")
-    .trim()
-    .exists({ checkFalsy: true }).withMessage("Email is required")
-    .isEmail().withMessage("Invalid email format")
-    .normalizeEmail(),
-  check("userphone")
-    .trim()
-    .isMobilePhone().withMessage("Invalid phone number"),
-  check("gender")
-    .optional(),
-  check("psw")
-    .trim()
-    .exists({ checkFalsy: true }).withMessage("Password is required")
-    .isLength({ min: 6, max: 12 }).withMessage("Password must be at least 6 characters or a maximum of 12")
-];
-
-const validationVerifyRules = [
-  check(["code1", "code2", "code3", "code4", "code5", "code6"])
-    .exists({ checkFalsy: true }).withMessage("All code fields are required")
-    .isInt().withMessage("Each code must be a number")
-    .isLength({ min: 1, max: 1 }).withMessage("Each code must be a single number")
-    .trim(),
-];
-
-const validationLoginRules = [
-  check("loginemail")
-    .trim()
-    .exists({ checkFalsy: true }).withMessage("Email is required")
-    .isEmail().withMessage("Invalid email format"),
-  check("loginpsw")
-    .trim().exists({ checkFalsy: true }).withMessage("Password is required")
-];
+// ── Validation & Error Handling ──────────────────────────────────────────
+const { validationResult } = require("express-validator");
+const validate = require("./middleware/validate");
+const { handleApiErrors, handlePageErrors } = require("./middleware/errorHandler");
 
 
 
@@ -199,7 +160,7 @@ app.get("/auth/login", (req, res) => {
   res.render("login", { title: "Sign In", error: null, user: null });
 });
 
-app.post("/auth/login", validationLoginRules, (req, res) => {
+app.post("/auth/login", validate.login, (req, res) => {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
@@ -300,7 +261,7 @@ app.get("/auth/register", (req, res) => {
   res.render("register", { title: "Register", user: null });
 });
 
-app.post("/auth/register", validationRegisterRules, async (req, res) => {
+app.post("/auth/register", validate.register, async (req, res) => {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
@@ -407,7 +368,7 @@ app.get("/auth/verify", (req, res) => {
   });
 });
 
-app.post("/auth/verify", validationVerifyRules, (req, res) => {
+app.post("/auth/verify", validate.verify, (req, res) => {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
@@ -525,7 +486,11 @@ app.get("/auth/forgot-password", (req, res) => {
   res.render("forgot-password", { error: null, success: null });
 });
 
-app.post("/auth/forgot-password", (req, res) => {
+app.post("/auth/forgot-password", validate.forgotPassword, (req, res) => {
+  var errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.render("forgot-password", { error: errors.array().map(e => e.msg).join(", "), success: null });
+  }
   var email = (req.body.email || '').trim();
   if (!email) {
     return res.render("forgot-password", { error: "Please enter your email.", success: null });
@@ -589,7 +554,11 @@ app.get("/auth/reset-password", (req, res) => {
   res.render("reset-password", { token: token, error: null, success: null });
 });
 
-app.post("/auth/reset-password", (req, res) => {
+app.post("/auth/reset-password", validate.resetPassword, (req, res) => {
+  var errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.render("reset-password", { token: req.body.token || "", error: errors.array().map(e => e.msg).join(", "), success: null });
+  }
   var token = req.body.token || '';
   var password = req.body.password || '';
   var confirmPassword = req.body.confirmPassword || '';
@@ -928,7 +897,7 @@ app.get("/groups/create/activities", requireAuth, (req, res) => {
 });
 
 // ── Save activity preferences for a group ───────────────────────────────
-app.post("/groups/save-activities", requireAuth, (req, res) => {
+app.post("/groups/save-activities", requireAuth, validate.saveActivities, handleApiErrors, (req, res) => {
   var { groupId, activities } = req.body;
   if (!groupId || !Array.isArray(activities)) {
     return res.status(400).json({ error: "Missing groupId or activities" });
@@ -1147,7 +1116,7 @@ app.get("/api/recommendations", requireAuth, async (req, res) => {
 
 // ── VOTE API ────────────────────────────────────────────────────────────
 
-app.post("/api/votes", requireAuth, (req, res) => {
+app.post("/api/votes", requireAuth, validate.vote, handleApiErrors, (req, res) => {
   var userId = req.session.user.id;
   var userName = req.session.user.username || 'Someone';
   var { groupId, activityId, activityName, activityImage, activityDesc, activityTags, vote } = req.body;
@@ -1212,7 +1181,7 @@ app.get("/api/votes/saved", requireAuth, (req, res) => {
 // ── ITINERARY BLOCKS API ─────────────────────────────────────────────────
 
 // Save a single block (upsert)
-app.post("/api/itinerary/block", requireAuth, (req, res) => {
+app.post("/api/itinerary/block", requireAuth, validate.itineraryBlock, handleApiErrors, (req, res) => {
   var userId = req.session.user.id;
   var { groupId, dayIndex, timeSlot, activityName, activityColor, duration } = req.body;
   if (!groupId || dayIndex === undefined || !timeSlot || !activityName) return res.status(400).json({ error: "Missing fields" });
@@ -1283,7 +1252,7 @@ app.get("/api/itinerary/blocks", requireAuth, (req, res) => {
 });
 
 // Save shared date range for a group
-app.post("/api/itinerary/dates", requireAuth, (req, res) => {
+app.post("/api/itinerary/dates", requireAuth, validate.itineraryDates, handleApiErrors, (req, res) => {
   var { groupId, rangeStart, rangeEnd, calYear, calMonth } = req.body;
   if (!groupId) return res.status(400).json({ error: "Missing groupId" });
   connection.query(
@@ -1385,7 +1354,7 @@ app.get("/api/groups/last-active", requireAuth, (req, res) => {
 });
 
 // ── Invite friend to group (JSON API) ─────────────────────────────────────
-app.post("/api/groups/invite", requireAuth, (req, res) => {
+app.post("/api/groups/invite", requireAuth, validate.invite, handleApiErrors, (req, res) => {
   var userId = req.session.user.id;
   var userName = req.session.user.username;
   var { groupId, query } = req.body;
