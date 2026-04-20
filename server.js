@@ -340,7 +340,11 @@ app.post("/auth/register", validationRegisterRules, async (req, res) => {
         }
 
         if (existingUsers.length > 0) {
-          return res.render("register", { title: "Register", error: "This email is already registered. Try logging in instead.", user: null });
+          if (existingUsers[0].isConfirmed === 1) {
+            return res.render("register", { title: "Register", error: "This email is already registered. Try logging in instead.", user: null });
+          }
+          // Unverified account — delete it and allow re-registration
+          await connection.promise().query("DELETE FROM tbl_users WHERE email = ?", [useremail]);
         }
 
         const hashedPassword = await bcrypt.hash(psw, 10);
