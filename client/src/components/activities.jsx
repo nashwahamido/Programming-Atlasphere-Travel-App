@@ -162,6 +162,9 @@ export default function Activities(props) {
     }
   }, [groupId]);
 
+  // all activities are visible
+  var visibleActivities = activityOptions;
+
   var safeActive =
     visibleActivities.length === 0
       ? 0
@@ -183,12 +186,6 @@ export default function Activities(props) {
       for (var k in prev) next[k] = prev[k];
       next[activityId] = !prev[activityId];
       return next;
-    });
-  }
-
-    setActive(function (prev) {
-      if (visibleActivities.length <= 1) return 0;
-      return Math.min(prev, visibleActivities.length - 2);
     });
   }
 
@@ -270,9 +267,6 @@ export default function Activities(props) {
                 onSelect={function () {
                   handleSelect(activity.id);
                 }}
-                onDismiss={function () {
-                  handleDismiss(activity.id);
-                }}
               />
             );
           })}
@@ -298,3 +292,5 @@ export default function Activities(props) {
       </section>
     </main>
   );
+}
+

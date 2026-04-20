@@ -1,5 +1,5 @@
 .activities-page {
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 120px); /*fills viewport minus navbar */
   background: var(--bg, #e4f1ff);
   padding: 32px 24px 44px;
   font-family: "Lexend", sans-serif;
@@ -9,7 +9,7 @@
   flex-direction: column;
   align-items: center;
 }
-
+ 
 .activities-section {
   max-width: 1400px;
   margin: 0 auto;
@@ -17,11 +17,12 @@
   text-align: center;
 }
 
+/* header */
 .activities-header {
   margin-bottom: 26px;
   text-align: left;
 }
-
+ 
 .activities-header h1 {
   font-size: clamp(3rem, 6vw, 5rem);
   line-height: 0.95;
@@ -29,18 +30,20 @@
   color: var(--text, #000);
   margin-bottom: 8px;
 }
-
+ 
 .activities-header p {
   font-size: 1rem;
   color: var(--text-secondary, #111);
 }
-
+ 
+/* 3d carousel*/
+ 
 .carousel-3d {
   position: relative;
   width: 28rem;
   height: 32rem;
   margin: 0 auto;
-  perspective: 1100px;
+  perspective: 1100px;       /* Depth for the 3D card effect */
   transform-style: preserve-3d;
 }
 
@@ -51,17 +54,19 @@
   transition: all 0.35s ease-out;
   transform:
     rotateY(calc(var(--offset) * 38deg))
-    scale(calc(1 - var(--abs-offset) * 0.22))
-    translateZ(calc(var(--abs-offset) * -24rem))
+    scale(calc(1 - var(--abs-offset) * 0.22)) /* shrink cards further from centre */
+    translateZ(calc(var(--abs-offset) * -24rem)) /*puhs side cards back in Z */
     translateX(
       calc(
         var(--direction) *
         (-12rem - (var(--abs-offset) * 20rem))
       )
     );
-  filter: blur(calc(var(--abs-offset) * 0.4rem));
+  filter: blur(calc(var(--abs-offset) * 0.4rem)); /* blur cards further from centre */
 }
-
+ 
+/* card styles */
+ 
 .vote-card,
 .selection-card {
   position: relative;
@@ -70,16 +75,17 @@
   overflow: hidden;
   border-radius: 3rem;
   box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
-  background: #ccc;
+  background: #ccc; /* Fallback while image loads */
 }
-
+ 
 .vote-card-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-
+ 
+/* dark gradient overlay so text is readable over the image */
 .vote-card-overlay,
 .selection-overlay {
   position: absolute;
@@ -103,7 +109,8 @@
   flex-direction: column;
   justify-content: space-between;
 }
-
+ 
+/*pushes the title and button to the bottom of the card */
 .selection-bottom {
   margin-top: auto;
   display: flex;
@@ -111,7 +118,7 @@
   align-items: flex-end;
   padding-bottom: 15px;
 }
-
+ 
 .selection-title {
   color: white;
   font-size: 2.5rem;
@@ -121,7 +128,8 @@
   opacity: var(--active);
   transition: opacity 0.3s ease-out;
 }
-
+ 
+/*select/ selected toggle button */
 .select-btn {
   border: none;
   border-radius: 999px;
@@ -134,11 +142,12 @@
   backdrop-filter: blur(5px);
   transition: background 0.2s ease, transform 0.2s ease;
 }
-
+ 
 .select-btn.selected {
-  background: #2364aa;
+  background: #2364aa; /*blue when activity is selected */
 }
 
+/*carousel navigation buttons */
 .nav-btn {
   position: absolute;
   top: 50%;
@@ -152,18 +161,18 @@
   justify-content: center;
   cursor: pointer;
 }
-
+ 
 .nav-btn.left {
-  transform: translateX(-120%) translateY(-50%);
-  filter: brightness(0) invert(1);
+  transform: translateX(-120%) translateY(-50%); /*position outside left edge of carousel */
+  filter: brightness(0) invert(1);               /*makes icon white for readability */
 }
-
+ 
 .nav-btn.right {
   right: 0;
-  transform: translateX(120%) translateY(-50%);
+  transform: translateX(120%) translateY(-50%);  /*position outside right edge of carousel */
   filter: brightness(0) invert(1);
 }
-
+ 
 .nav-icon {
   width: 60px;
   height: 60px;
@@ -176,25 +185,13 @@
   display: block;
 }
 
-.empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  border-radius: 3rem;
-  background: rgba(255, 255, 255, 0.5);
-  color: #111;
-  font-size: 1.1rem;
-  font-weight: 500;
-}
-
+/*continue and skip buttons */ 
 .submit-container {
   display: flex;
   justify-content: center;
   margin-top: 44px;
 }
-
+ 
 .submit-votes-button {
   border: none;
   border-radius: 999px;
@@ -206,23 +203,24 @@
   cursor: pointer;
   transition: background 0.2s ease, opacity 0.2s ease;
 }
-
+ 
 .submit-votes-button:hover {
   background: #feb75b;
 }
-
+ 
 .submit-votes-button:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
-
+ 
 .activities-selected-summary {
   margin-top: 16px;
   text-align: center;
   color: #111;
   font-size: 0.98rem;
 }
-
+ 
+/* shown when the user tries to continue without selecting anything */
 .activities-error {
   margin-top: 12px;
   text-align: center;
@@ -230,48 +228,52 @@
   font-size: 0.95rem;
   font-weight: 500;
 }
-
+ 
+/*responsive for tablet */
 @media (max-width: 900px) {
   .carousel-3d {
     width: 21rem;
     height: 29rem;
   }
-
+ 
   .selection-title {
     font-size: 2.4rem;
   }
 }
-
+ 
+/* responsive for mobile */
 @media (max-width: 640px) {
   .activities-page {
     padding: 24px 16px 36px;
   }
-
+ 
   .activities-header h1 {
     font-size: 2.8rem;
   }
-
+ 
   .carousel-3d {
     width: 18rem;
     height: 26rem;
   }
-
+ 
   .nav-btn {
     width: 44px;
     height: 44px;
   }
-
+ 
   .nav-icon,
   .nav-icon-dark {
     width: 22px;
     height: 22px;
   }
-
+ 
   .select-btn {
     padding: 12px 20px;
     font-size: 0.95rem;
   }
 }
+ 
+/* skip button */
 .skip-activities-btn {
   border: none;
   border-radius: 999px;
@@ -281,10 +283,11 @@
   font-weight: 600;
   padding: 14px 24px;
   cursor: pointer;
-  margin-left: 16px;
+  margin-left: 16px; /* Space between Continue and Skip */
   transition: background 0.2s ease;
   font-family: inherit;
 }
+ 
 .skip-activities-btn:hover {
   background: rgba(255, 255, 255, 0.25);
 }

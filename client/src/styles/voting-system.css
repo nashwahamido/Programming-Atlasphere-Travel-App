@@ -1,5 +1,5 @@
 .voting-page {
-  min-height: calc(100vh - 120px);
+  min-height: calc(100vh - 120px); /* fills viewport minus navbar */
   background: var(--bg, #e4f1ff);
   padding: 32px 24px 80px;
   font-family: "Lexend", sans-serif;
@@ -8,7 +8,7 @@
   flex-direction: column;
   align-items: center;
 }
-
+ 
 .voting-section {
   max-width: 1400px;
   margin: 0 auto;
@@ -18,13 +18,14 @@
   flex-direction: column;
   align-items: center;
 }
-
+ 
+/*header */
 .voting-header {
   margin-bottom: 26px;
   text-align: left;
   width: 100%;
 }
-
+ 
 .voting-header h1 {
   font-size: clamp(3rem, 6vw, 5rem);
   line-height: 0.95;
@@ -32,7 +33,7 @@
   color: var(--text, #000);
   margin-bottom: 8px;
 }
-
+ 
 .voting-header p {
   font-size: 1rem;
   color: var(--text-secondary, #111);
@@ -48,7 +49,7 @@
   align-items: center;
   gap: 8px;
 }
-
+ 
 .toggle-btn {
   width: 44px;
   height: 44px;
@@ -63,19 +64,21 @@
 .toggle-btn.active {
   background: #eef4fb;
 }
-
+ 
 .toggle-icon {
   width: 20px;
   height: 20px;
   display: block;
 }
-
+ 
+/* 3D carousel*/
+ 
 .carousel-3d {
   position: relative;
   width: 28rem;
   height: 32rem;
   margin: 0 auto;
-  perspective: 1100px;
+  perspective: 1100px;       /* depth for 3D card effect */
   transform-style: preserve-3d;
   overflow: visible;
 }
@@ -87,17 +90,19 @@
   transition: all 0.35s ease-out;
   transform:
     rotateY(calc(var(--offset) * 38deg))
-    scale(calc(1 - var(--abs-offset) * 0.22))
-    translateZ(calc(var(--abs-offset) * -24rem))
+    scale(calc(1 - var(--abs-offset) * 0.22)) /*shrink cards further from centre */
+    translateZ(calc(var(--abs-offset) * -24rem)) /*push side cards back in Z */
     translateX(
       calc(
         var(--direction) *
-        (-12rem - (var(--abs-offset) * 20rem))
+        (-12rem - (var(--abs-offset) * 20rem)) /*spreads cards horizontally */
       )
     );
-  filter: blur(calc(var(--abs-offset) * 0.4rem));
+  filter: blur(calc(var(--abs-offset) * 0.4rem)); /*blurs cards further from centre */
 }
-
+ 
+/*vote card */
+ 
 .vote-card {
   position: relative;
   width: 100%;
@@ -105,16 +110,19 @@
   overflow: hidden;
   border-radius: 3rem;
   box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
-  background: #ccc;
+  background: #ccc; /* Fallback while image loads */
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  will-change: transform, opacity; /* Hint browser to GPU-accelerate swipe animations */
 }
-
+ 
 .vote-card-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
-
+ 
+/*dark gradient overlay so text is readable over the image */
 .vote-card-overlay {
   position: absolute;
   inset: 0;
@@ -126,7 +134,9 @@
     rgba(0, 0, 0, 0.03) 100%
   );
 }
-
+ 
+/* share button in top right of card  */
+ 
 .share-btn {
   position: absolute;
   top: 14px;
@@ -142,7 +152,7 @@
   cursor: pointer;
   backdrop-filter: blur(6px);
 }
-
+ 
 .share-icon {
   width: 28px;
   height: 28px;
@@ -158,14 +168,16 @@
   flex-direction: column;
   justify-content: space-between;
 }
-
+ 
+/*activity tags*/
+ 
 .tag-list {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
 }
-
+ 
 .activity-tag {
   display: inline-flex;
   align-items: center;
@@ -177,11 +189,13 @@
   font-size: 0.9rem;
   font-weight: 500;
 }
-
+ 
+/* activity name and brief description */
+ 
 .activity-copy {
   margin-top: auto;
 }
-
+ 
 .activity-copy h2 {
   color: white;
   font-size: 3rem;
@@ -192,12 +206,13 @@
   transition: opacity 0.3s ease-out;
   text-align: left;
 }
-
+ 
 .activity-copy p {
   color: rgba(255, 255, 255, 0.95);
   font-size: 0.96rem;
   line-height: 1.35;
   text-align: left;
+  /* Clamp description to 4 lines */
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
@@ -206,16 +221,18 @@
   opacity: var(--active);
   transition: opacity 0.3s ease-out;
 }
-
+ 
+/*vote buttons yes/maybe/no */
+ 
 .vote-buttons {
   display: flex;
   justify-content: space-between;
   gap: 14px;
   margin-top: 18px;
-  opacity: var(--active);
+  opacity: var(--active); /* hidden on the non active cards */
   transition: opacity 0.3s ease-out;
 }
-
+ 
 .vote-button {
   width: 80px;
   height: 80px;
@@ -231,31 +248,33 @@
 .vote-button.selected {
   background: #2364aa;
 }
-
+ 
+/* maybe button is slightly smaller than thumb icons */
 .maybe-icon {
   width: 25px;
   height: 25px;
   display: block;
 }
-
+ 
 .vote-icon {
   width: 35px;
   height: 35px;
   display: block;
-  filter: brightness(0) invert(1);
+  filter: brightness(0) invert(1); /* Make icon white */
 }
-
+ 
 .maybe-button {
   width: 50px;
   height: 50px;
 }
-
+ 
 .maybe-button img {
   width: 25px;
   height: 25px;
   object-fit: contain;
 }
-
+ 
+/* carousel navgation buttons */
 .nav-btn {
   position: absolute;
   top: 50%;
@@ -269,16 +288,16 @@
   justify-content: center;
   cursor: pointer;
 }
-
+ 
 .nav-btn.left {
-  transform: translateX(-120%) translateY(-50%);
+  transform: translateX(-120%) translateY(-50%); /*position outside left edge of carousel */
 }
-
+ 
 .nav-btn.right {
   right: 0;
-  transform: translateX(120%) translateY(-50%);
+  transform: translateX(120%) translateY(-50%); /*position outside right edge of carousel */
 }
-
+ 
 .nav-icon {
   width: 60px;
   height: 60px;
@@ -289,153 +308,119 @@
 .share-icon {
   filter: brightness(0) invert(1);
 }
-
-.submit-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 44px;
-}
-
-.submit-votes-button {
-  border: none;
-  border-radius: 999px;
-  background: #ff9811;
-  color: #111;
-  font-size: 1rem;
-  font-weight: 600;
-  padding: 14px 24px;
-  cursor: pointer;
-}
-
-.submit-votes-button:hover {
-  background: #feb75b;
-}
+ 
+/* responsive foir tablet */
 
 @media (max-width: 900px) {
   .carousel-3d {
     width: 21rem;
     height: 29rem;
   }
-
+ 
   .activity-copy h2 {
     font-size: 2.4rem;
   }
 }
-
+ 
+/*responsive for mobile */
+ 
 @media (max-width: 640px) {
   .voting-page {
     padding: 24px 16px 36px;
   }
-
+ 
   .voting-header h1 {
     font-size: 2.8rem;
   }
-
+ 
   .carousel-3d {
     width: 18rem;
     height: 26rem;
   }
-
+ 
   .nav-btn {
     width: 44px;
     height: 44px;
   }
-
+ 
   .nav-icon {
     width: 22px;
     height: 22px;
   }
 }
+
+/* Allows the voting page to stretch inside a tab layout without overflow */
 .gp-tab-with-overlay {
   flex: 1;
   display: flex;
   overflow: hidden;
   position: relative;
 }
-
+ 
 .gp-tab-with-overlay .voting-page {
   flex: 1;
 }
+
+/* brief message shown after voting*/
 .vote-feedback {
   text-align: center;
   padding: 10px 20px;
-  margin: 0 auto 16px;
+  margin: 20px auto 16px;
   border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   max-width: 400px;
   animation: vfadeIn 0.3s ease;
 }
+ 
 .vote-feedback--upvote {
   background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
+  color: #22c55e; /*green for yes */
 }
+ 
 .vote-feedback--bookmark {
   background: rgba(234, 179, 8, 0.15);
-  color: #eab308;
+  color: #eab308; /*yellow for maybe */
 }
+ 
 .vote-feedback--downvote {
   background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-@keyframes vfadeIn {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  color: #ef4444; /*red for no */
 }
 
-.vote-card {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: 3rem;
-  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
-  background: #ccc;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  will-change: transform, opacity;
+@keyframes vfadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+ 
+/* swipe animations */
 
 .vote-card.swipe-right {
   animation: swipeRight 0.3s ease forwards;
 }
-
+ 
 .vote-card.swipe-left {
   animation: swipeLeft 0.3s ease forwards;
 }
-
+ 
 .vote-card.swipe-down {
   animation: swipeDown 0.3s ease forwards;
 }
-
+ 
+/* yes - card flies right with a slight clockwise tilt */
 @keyframes swipeRight {
-  0% {
-    transform: translateX(0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(120px) rotate(10deg);
-    opacity: 0;
-  }
+  0%   { transform: translateX(0) rotate(0deg);     opacity: 1; }
+  100% { transform: translateX(120px) rotate(10deg); opacity: 0; }
 }
-
+ 
+/*no — card flies left with a slight counter-clockwise tilt */
 @keyframes swipeLeft {
-  0% {
-    transform: translateX(0) rotate(0deg);
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(-120px) rotate(-10deg);
-    opacity: 0;
-  }
+  0%   { transform: translateX(0) rotate(0deg);      opacity: 1; }
+  100% { transform: translateX(-120px) rotate(-10deg); opacity: 0; }
 }
-
+ 
+/*maybe — card slides down and shrinks */
 @keyframes swipeDown {
-  0% {
-    transform: translateY(0) scale(1);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(80px) scale(0.96);
-    opacity: 0;
-  }
+  0%   { transform: translateY(0) scale(1);      opacity: 1; }
+  100% { transform: translateY(80px) scale(0.96); opacity: 0; }
 }
