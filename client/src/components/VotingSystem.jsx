@@ -12,9 +12,9 @@ var icons = {
   maybe: "/icons/maybe-icon.svg",
 };
 
-function ActivityCard({ activity, vote, onVote, onShare }) {
+function ActivityCard({ activity, vote, onVote, onShare, animation }) {
   return (
-    <div className="vote-card">
+    <div className={"vote-card" + (animation ? " " + animation : "")}>
       <img src={activity.image} alt={activity.name} className="vote-card-image" />
       <div className="vote-card-overlay" />
 
@@ -178,6 +178,10 @@ export default function VotingSystem(props) {
   var feedback = feedbackState[0];
   var setFeedback = feedbackState[1];
 
+  var animatingState = useState(null);
+  var animating = animatingState[0];
+  var setAnimating = animatingState[1];
+
   var preferences = useMemo(function () {
     if (props.savedActivities && props.savedActivities.length > 0) {
       return props.savedActivities.split(",").map(function (s) {
@@ -235,13 +239,24 @@ export default function VotingSystem(props) {
 
   var safeActive = visibleActivities.length === 0 ? 0 : Math.min(active, visibleActivities.length - 1);
 
-  var handleVote = function (activity, choice) {
-    if (isVoting || !groupId) return;
-    setIsVoting(true);
+var handleVote = function (activity, choice) {
+  if (isVoting || !groupId) return;
+  setIsVoting(true);
 
-    var voteType = choice === "yes" ? "upvote" : choice === "maybe" ? "bookmark" : "downvote";
-    var label = voteType === "upvote" ? "Upvoted" : voteType === "bookmark" ? "Bookmarked" : "Dismissed";
+  var voteType = choice === "yes" ? "upvote" : choice === "maybe" ? "bookmark" : "downvote";
+  var label = voteType === "upvote" ? "Upvoted" : voteType === "bookmark" ? "Bookmarked" : "Dismissed";
 
+  var animationType =
+    choice === "yes" ? "swipe-right" :
+    choice === "no" ? "swipe-left" :
+    "swipe-down";
+
+  setAnimating({
+    id: activity.id,
+    type: animationType
+  });
+
+  setTimeout(function () {
     fetch("/api/votes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -266,6 +281,8 @@ export default function VotingSystem(props) {
         setFeedback({ text: label + ": " + activity.name, type: voteType });
         setTimeout(function () { setFeedback(null); }, 1500);
 
+        setAnimating(null);
+
         setActive(function (prev) {
           var remaining = visibleActivities.length - 1;
           if (remaining <= 0) return 0;
@@ -274,8 +291,12 @@ export default function VotingSystem(props) {
 
         setIsVoting(false);
       })
-      .catch(function () { setIsVoting(false); });
-  };
+      .catch(function () {
+        setAnimating(null);
+        setIsVoting(false);
+      });
+  }, 300);
+};
 
   // Share activity to group chat via socket
   var handleShare = function (activity) {
@@ -382,10 +403,6 @@ export default function VotingSystem(props) {
           <p>Vote on things to do in {destination}. Upvote, bookmark, or dismiss.</p>
         </header>
 
-        {feedback && (
-          <div className={"vote-feedback vote-feedback--" + feedback.type}>{feedback.text}</div>
-        )}
-
         <Carousel active={safeActive} setActive={setActive}>
           {visibleActivities.map(function (activity) {
             return (
@@ -397,10 +414,19 @@ export default function VotingSystem(props) {
                   handleVote(activity, choice);
                 }}
                 onShare={function (a) { handleShare(a); }}
+                animation={
+                  animating && animating.id === activity.id
+                    ? animating.type
+                    : ""
+                }
               />
             );
           })}
         </Carousel>
+
+        {feedback && (
+          <div className={"vote-feedback vote-feedback--" + feedback.type}>{feedback.text}</div>
+        )}
 
       </section>
     </main>

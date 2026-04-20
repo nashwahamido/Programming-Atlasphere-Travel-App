@@ -4,19 +4,20 @@
   var currentUserId = String(navEl.dataset.userId || '');
   var PREFIX = 'atlas_unread_';
 
-  // Track which group the user is currently viewing (starts from URL, updated by sidebar)
+  console.log('[NOTIF] init — userId:', currentUserId);
+
   var pathMatch = window.location.pathname.match(/\/groups\/([^\/]+)$/);
   var activeGroupId = pathMatch ? String(pathMatch[1]) : null;
+  console.log('[NOTIF] activeGroupId from URL:', activeGroupId);
 
-  // When user switches group in sidebar (no page reload), update activeGroupId
   window.addEventListener('atlas-active-group-changed', function(e) {
     if (e.detail && e.detail.groupId) {
       activeGroupId = String(e.detail.groupId);
+      console.log('[NOTIF] activeGroupId changed to:', activeGroupId);
       clearGroup(activeGroupId);
     }
   });
 
-  /* ── Read total unread from localStorage ── */
   function getTotalUnread() {
     var total = 0;
     try {
@@ -29,7 +30,6 @@
     return total;
   }
 
-  /* ── Refresh all badges (navbar chat icon + Groups nav link) ── */
   function updateBadge() {
     var count = getTotalUnread();
     var label = count > 99 ? '99+' : String(count);
@@ -46,23 +46,19 @@
       groupsBadge.style.display = count > 0 ? 'inline-flex' : 'none';
     }
 
-    // Notify React TabSwitcher via custom event
     window.dispatchEvent(new CustomEvent('atlas-unread-update', { detail: { count: count } }));
   }
 
-  /* ── Clear unread for a specific group ── */
   function clearGroup(groupId) {
     try { localStorage.removeItem(PREFIX + groupId); } catch (e) { }
     updateBadge();
   }
 
-  /* ── On page load: if viewing a group page, clear its unread count ── */
   if (activeGroupId) {
     clearGroup(activeGroupId);
   }
   updateBadge();
 
-  /* ── Clear group count when user opens chat tab or chat overlay ── */
   document.addEventListener('click', function (e) {
     var chatTarget =
       e.target.closest('[data-tab="chat"]') ||
@@ -72,41 +68,55 @@
     }
   });
 
-  /* ── Storage events: sync badge across browser tabs ── */
   window.addEventListener('storage', function (e) {
     if (e.key && e.key.startsWith(PREFIX)) updateBadge();
   });
 
-  if (!currentUserId) return;
+  if (!currentUserId) {
+    console.warn('[NOTIF] No userId — skipping socket init');
+    return;
+  }
 
-  /* ── Connect socket and subscribe to all user's groups ── */
   function initSocket(groups) {
-    if (!window.io || !groups.length) return;
+    if (!window.io || !groups.length) {
+      console.warn('[NOTIF] initSocket skipped — io:', !!window.io, 'groups:', groups.length);
+      return;
+    }
     var socket = window.io();
+    console.log('[NOTIF] Socket connected, joining', groups.length, 'groups');
 
-    socket.emit('join-notifications', {
-      groupIds: groups.map(function (g) { return g.id; })
-    });
+    var groupIds = groups.map(function (g) { return String(g.id); });
+    socket.emit('join-notifications', { groupIds: groupIds });
 
     socket.on('new-message', function (msg) {
       if (!msg.groupId) return;
-      // Ignore own messages
-      if (String(msg.userId) === currentUserId) return;
-      // Ignore if user is already viewing this group (URL or sidebar-selected)
-      if (activeGroupId && String(activeGroupId) === String(msg.groupId)) return;
+      var msgGroupId = String(msg.groupId);
+      var msgUserId = String(msg.userId);
+
+      if (msgUserId === currentUserId) return;
+      if (activeGroupId && activeGroupId === msgGroupId) return;
+
+      console.log('[NOTIF] Unread +1 for group', msgGroupId);
 
       try {
-        var prev = parseInt(localStorage.getItem(PREFIX + msg.groupId) || '0', 10);
-        localStorage.setItem(PREFIX + msg.groupId, prev + 1);
+        var prev = parseInt(localStorage.getItem(PREFIX + msgGroupId) || '0', 10);
+        localStorage.setItem(PREFIX + msgGroupId, prev + 1);
       } catch (e) { }
       updateBadge();
     });
+
+    socket.on('connect_error', function(err) {
+      console.error('[NOTIF] Socket error:', err.message);
+    });
   }
 
-  /* ── Fetch user's group list, then start socket ── */
   fetch('/groups/api/my-groups')
-    .then(function (r) { return r.json(); })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(function (groups) {
+      console.log('[NOTIF] my-groups returned', groups.length, 'groups');
       if (!groups || !groups.length) return;
       if (window.io) {
         initSocket(groups);
@@ -125,6 +135,6 @@
       }
     })
     .catch(function (e) {
-      console.warn('Chat notification init failed:', e);
+      console.error('[NOTIF] Init failed:', e);
     });
 })();
