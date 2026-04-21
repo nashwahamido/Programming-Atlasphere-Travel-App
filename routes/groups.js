@@ -1,5 +1,6 @@
 var express = require("express");
 var sharp = require("sharp");
+var axios = require("axios");
 var router = express.Router();
 var crypto = require("crypto");
 var countries = require("../data/countries");
@@ -273,29 +274,24 @@ router.post("/invite", requireGroupAuth, async function (req, res) {
       });
     }
 
-    var transporter = req.app.locals.transporter;
-
-    if (!transporter) {
-      return res.render("groups/create-confirm", {
-        title: "Group Created", user: user, group: group,
-        inviteLink: inviteLink,
-        inviteSuccess: "Invite link generated (email not configured): " + inviteLink,
-        inviteError: null
-      });
-    }
-
     var senderName = user ? user.username : "Someone";
-    transporter.sendMail({
-      from: "Atlasphere <noreply@atlasphere.com>",
-      to: friendEmail,
-      subject: senderName + " invited you to join " + group.name + " on Atlasphere!",
-      html: "<div style=\"font-family:Arial;max-width:480px;margin:0 auto;padding:32px\">" +
-            "<h1 style=\"color:#0B3856\">You're invited!</h1>" +
-            "<p style=\"font-size:16px;color:#555\">" + senderName + " wants you to join their trip group <strong>" + group.name + "</strong> on Atlasphere.</p>" +
-            "<div style=\"text-align:center;margin:32px 0\">" +
-            "<a href=\"" + inviteLink + "\" style=\"display:inline-block;padding:14px 40px;background:#E8933A;color:#fff;text-decoration:none;border-radius:30px;font-weight:700;font-size:16px\">Join Group</a>" +
-            "</div></div>"
-    }).then(function () {
+    axios.post(
+      "https://api.mailjet.com/v3.1/send",
+      {
+        Messages: [{
+          From: { Email: process.env.MAIL_FROM || "atlasphretravelapp@gmail.com", Name: "Atlasphere" },
+          To: [{ Email: friendEmail }],
+          Subject: senderName + " invited you to join " + group.name + " on Atlasphere!",
+          HTMLPart: "<div style=\"font-family:Arial;max-width:480px;margin:0 auto;padding:32px\">" +
+                "<h1 style=\"color:#0B3856\">You're invited!</h1>" +
+                "<p style=\"font-size:16px;color:#555\">" + senderName + " wants you to join their trip group <strong>" + group.name + "</strong> on Atlasphere.</p>" +
+                "<div style=\"text-align:center;margin:32px 0\">" +
+                "<a href=\"" + inviteLink + "\" style=\"display:inline-block;padding:14px 40px;background:#E8933A;color:#fff;text-decoration:none;border-radius:30px;font-weight:700;font-size:16px\">Join Group</a>" +
+                "</div></div>"
+        }]
+      },
+      { auth: { username: process.env.MAILJET_API_KEY, password: process.env.MAILJET_SECRET_KEY } }
+    ).then(function () {
       res.render("groups/create-confirm", {
         title: "Group Created", user: user, group: group,
         inviteLink: inviteLink,
@@ -303,6 +299,7 @@ router.post("/invite", requireGroupAuth, async function (req, res) {
         inviteError: null
       });
     }).catch(function (mailErr) {
+      console.error("Invite email error:", mailErr.response ? JSON.stringify(mailErr.response.data) : mailErr.message);
       res.render("groups/create-confirm", {
         title: "Group Created", user: user, group: group,
         inviteLink: inviteLink,
