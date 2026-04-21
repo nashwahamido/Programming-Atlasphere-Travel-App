@@ -1,4 +1,5 @@
 var express = require("express");
+var sharp = require("sharp");
 var router = express.Router();
 var crypto = require("crypto");
 var countries = require("../data/countries");
@@ -191,16 +192,19 @@ router.post("/upload-photo", requireGroupAuth, function (req, res) {
   var fileName = "group_" + groupId + "_" + timestamp + "_" + safeName;
   var filePath = path.join(uploadDir, fileName);
 
-  file.mv(filePath, function (err) {
-    if (err) {
-      console.error("Group photo upload error:", err);
+  sharp(file.data)
+    .resize(800, 600, { fit: 'cover', position: 'centre' })
+    .jpeg({ quality: 85 })
+    .toFile(filePath, function(sharpErr) {
+    if (sharpErr) {
+      console.error("Group photo upload error:", sharpErr);
       return res.redirect("/groups/create/activities?groupId=" + groupId);
     }
     var dbPath = "/uploads/" + fileName;
 
     db.query("UPDATE tbl_groups SET photo = ? WHERE id = ?", [dbPath, groupId], function (dbErr) {
       if (dbErr) console.error("Group photo DB error:", dbErr.message);
-      else console.log("Group photo saved:", dbPath);
+      else console.log("Group photo saved (resized):", dbPath);
       res.redirect("/groups/create/activities?groupId=" + groupId);
     });
   });

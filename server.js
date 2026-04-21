@@ -8,6 +8,7 @@ const bcrypt = require("bcrypt");
 const fileUpload = require("express-fileupload");
 const fs = require("fs");
 const axios = require("axios");
+const sharp = require("sharp");
 
 
 // ── Validation Rules ────────────────────────────────────────────────────
@@ -654,9 +655,12 @@ app.post("/setup/upload", requireAuth, (req, res) => {
   var fileName = timestamp + "_" + safeName;
   var filePath = path.join(uploadDir, fileName);
 
-  file.mv(filePath, function (err) {
-    if (err) {
-      console.error("File upload error:", err);
+  sharp(file.data)
+    .resize(400, 400, { fit: 'cover', position: 'centre' })
+    .jpeg({ quality: 85 })
+    .toFile(filePath, function(sharpErr) {
+    if (sharpErr) {
+      console.error("File upload error:", sharpErr);
       return res.redirect("/setup/countries");
     }
 
@@ -670,7 +674,7 @@ app.post("/setup/upload", requireAuth, (req, res) => {
           console.error("DB update error:", dbErr);
         } else {
           req.session.user.profilePictureUrl = dbPath;
-          console.log("Profile picture saved:", dbPath);
+          console.log("Profile picture saved (resized):", dbPath);
         }
 
         req.session.save(function () {
@@ -699,9 +703,12 @@ app.post("/profile/upload", requireAuth, (req, res) => {
   var fileName = timestamp + "_" + safeName;
   var filePath = path.join(uploadDir, fileName);
 
-  file.mv(filePath, function (err) {
-    if (err) {
-      console.error("File upload error:", err);
+  sharp(file.data)
+    .resize(400, 400, { fit: 'cover', position: 'centre' })
+    .jpeg({ quality: 85 })
+    .toFile(filePath, function(sharpErr) {
+    if (sharpErr) {
+      console.error("File upload error:", sharpErr);
       return res.redirect("/profile");
     }
 
@@ -715,7 +722,7 @@ app.post("/profile/upload", requireAuth, (req, res) => {
           console.error("DB update error:", dbErr);
         } else {
           req.session.user.profilePictureUrl = dbPath;
-          console.log("Profile picture updated:", dbPath);
+          console.log("Profile picture updated (resized):", dbPath);
         }
 
         req.session.save(function () {
