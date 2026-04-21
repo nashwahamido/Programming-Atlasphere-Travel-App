@@ -29,7 +29,8 @@ if (mount) {
   var groupActivities = mount.dataset.groupActivities || "";
 
   var App = function() {
-    var tabState = React.useState('chat');
+    var initialTab = (new URLSearchParams(window.location.search)).get('tab') || 'chat';
+    var tabState = React.useState(initialTab);
     var activeTab = tabState[0];
     var setActiveTab = tabState[1];
 

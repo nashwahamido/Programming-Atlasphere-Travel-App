@@ -107,7 +107,10 @@
             '</div>';
           item.addEventListener('click', function() {
             var gid = n.groupId ? String(n.groupId) : null;
-            if (gid) window.location.href = '/groups/' + gid;
+            if (gid) {
+              var isVote = n.type === 'vote' || n.type === 'vote-summary';
+              window.location.href = '/groups/' + gid + (isVote ? '?tab=itinerary' : '');
+            }
           });
           list.appendChild(item);
         });
