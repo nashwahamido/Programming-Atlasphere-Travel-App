@@ -818,23 +818,24 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 }
 
 #fig1 {
-  transform: rotate(-4deg) translate(50px, -70px);
-  z-index: 3;
+  transform: rotate(-4deg) translate(-10px, 40px);
+  z-index: 1;
 }
 
 #fig2 {
-  transform: rotate(7deg) translate(0px, 20px);
+  transform: rotate(7deg) translate(-80px, 20px);
   z-index: 2;
 }
 
 #fig3 {
-  transform: rotate(3deg) translate(110px, 30px);
-  z-index: 1;
+  transform: rotate(-2deg) translate(30px, -150px);
+  z-index: 3;
 }
 
 #welcome1, #welcome2, #welcome3 {
   border: 8px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
 }
 
 
