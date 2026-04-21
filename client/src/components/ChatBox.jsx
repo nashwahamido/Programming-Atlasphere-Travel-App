@@ -9,6 +9,7 @@ var ChatBox = function(props) {
   var groupName = props.groupName || 'Rome';
   var groupColor = props.groupColor || '#3B5F8A';
   var groupPhoto = props.groupPhoto || '';
+  var groupFlag = props.groupFlag || '';
   var compact = props.compact || false;
 
   var msgState = useState([]);
@@ -142,6 +143,18 @@ var ChatBox = function(props) {
   if (groupPhoto) {
     headerIcon = React.createElement('div', { className: 'cb__header-icon', style: { overflow: 'hidden' } },
       React.createElement('img', { src: groupPhoto, alt: '', style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' } })
+    );
+  } else if (groupFlag) {
+    var flagCode = Array.from(groupFlag).map(function(c) {
+      return String.fromCharCode(c.codePointAt(0) - 127397);
+    }).join('').toLowerCase();
+    headerIcon = React.createElement('div', { className: 'cb__header-icon', style: { overflow: 'hidden' } },
+      React.createElement('img', {
+        src: 'https://flagcdn.com/w80/' + flagCode + '.png',
+        alt: groupFlag,
+        style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px' },
+        onError: function(e) { e.target.style.display = 'none'; }
+      })
     );
   } else {
     headerIcon = React.createElement('div', { className: 'cb__header-icon', style: { backgroundColor: groupColor } });

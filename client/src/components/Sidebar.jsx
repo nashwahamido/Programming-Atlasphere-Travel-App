@@ -115,15 +115,27 @@ var Sidebar = function(props) {
     }
   },
     React.createElement('div', { className: 'sb__item-icon', style: { backgroundColor: g.color || '#3B5F8A', overflow: 'hidden' } },
-      g.photo
-        ? React.createElement('img', {
-            src: g.photo,
-            alt: '',
+      (function() {
+        if (g.photo) {
+          return React.createElement('img', {
+            src: g.photo, alt: '',
             style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }
-          })
-        : g.flag
-          ? React.createElement('span', { style: { fontSize: '22px', lineHeight: '44px' } }, g.flag)
-          : null
+          });
+        }
+        if (g.flag) {
+          // Convert flag emoji to ISO country code for flagcdn.com
+          var code = Array.from(g.flag).map(function(c) {
+            return String.fromCharCode(c.codePointAt(0) - 127397);
+          }).join('').toLowerCase();
+          return React.createElement('img', {
+            src: 'https://flagcdn.com/w80/' + code + '.png',
+            alt: g.flag,
+            style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' },
+            onError: function(e) { e.target.style.display = 'none'; }
+          });
+        }
+        return React.createElement('span', { style: { fontSize: '18px', lineHeight: '44px', fontWeight: '700', color: '#fff' } }, g.name ? g.name[0].toUpperCase() : '?');
+      })()
     ),
     React.createElement('div', { className: 'sb__item-info' },
       React.createElement('div', { className: 'sb__item-name' }, g.name)

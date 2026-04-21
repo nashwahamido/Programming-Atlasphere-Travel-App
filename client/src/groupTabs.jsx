@@ -39,12 +39,15 @@ if (mount) {
       return function() { delete window.atlasphereSwitchTab; };
     }, []);
 
+    var groupFlag = mount.dataset.groupFlag || '';
+
     var groupState = React.useState({
       id: groupId,
       name: groupName || 'Rome',
       color: '#3B5F8A',
       destination: groupDestination || '',
-      photo: groupPhoto || ''
+      photo: groupPhoto || '',
+      flag: groupFlag || ''
     });
     var activeGroup = groupState[0];
     var setActiveGroup = groupState[1];
@@ -56,7 +59,8 @@ if (mount) {
       userAvatar: userAvatar,
       groupName: activeGroup.name || groupName || 'Rome',
       groupColor: activeGroup.color || '#3B5F8A',
-      groupPhoto: activeGroup.photo !== undefined ? activeGroup.photo : groupPhoto
+      groupPhoto: activeGroup.photo !== undefined ? activeGroup.photo : groupPhoto,
+      groupFlag: activeGroup.flag || groupFlag || ''
     };
 
     console.log("ACTIVE GROUP:", activeGroup);

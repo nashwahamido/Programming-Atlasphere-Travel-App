@@ -925,8 +925,8 @@ app.get("/settings", requireAuth, (req, res) => {
       
       const user = results[0] || req.session.user;
       // Parse visited countries and cities from DB
-      const visitedCountryCodes = (user.visitedCountries || '').split(',').filter(Boolean);
-      const visitedCityNames = (user.visitedCities || '').split(',').filter(Boolean);
+      const visitedCountryCodes = (typeof user.visitedCountries === 'string' ? user.visitedCountries : '').split(',').filter(Boolean);
+      const visitedCityNames = (typeof user.visitedCities === 'string' ? user.visitedCities : '').split(',').filter(Boolean);
       user.visitedCountries = visitedCountryCodes;
       user.visitedCities = visitedCityNames;
 
