@@ -914,7 +914,7 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 .auth-fg input:focus, .auth-fg select:focus { outline: 2px solid #E8933A; }
 .auth-fg input::placeholder { color: #999; }
 .auth-phone-row { display: flex; gap: 8px; }
-.auth-phone-row .phone-prefix { width: 70px; text-align: center; }
+.auth-phone-row .phone-prefix { width: 110px; text-align: center; }
 
 .auth-submit { width: 100%; padding: 14px; border-radius: 30px; border: none; background: #E8933A; color: #fff; font-weight: 700; font-size: 16px; cursor: pointer; font-family: inherit; margin-top: 8px; transition: all 0.3s; }
 .auth-submit:hover { background: #D4822F; transform: translateY(-1px); }
