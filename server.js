@@ -463,9 +463,36 @@ app.post("/auth/verify", validationVerifyRules, (req, res) => {
 
       delete req.session.pendingVerification;
 
-      req.session.save(() => {
-        res.redirect("/setup");
-      });
+      // If user registered via invite link, add them to the group
+      var pendingInvite = req.session.pendingInvite;
+      if (pendingInvite) {
+        delete req.session.pendingInvite;
+        connection.query(
+          "SELECT * FROM tbl_groups WHERE inviteCode = ?",
+          [pendingInvite],
+          function(invErr, invRows) {
+            if (!invErr && invRows && invRows.length > 0) {
+              var group = invRows[0];
+              connection.query(
+                "INSERT IGNORE INTO tbl_group_members (groupId, userId, username, email) VALUES (?, ?, ?, ?)",
+                [group.id, pending.userId, pending.username, pending.email],
+                function() {
+                  console.log(pending.username + " auto-joined group via invite: " + group.name);
+                  req.session.save(() => {
+                    res.redirect("/groups/" + group.id);
+                  });
+                }
+              );
+            } else {
+              req.session.save(() => { res.redirect("/setup"); });
+            }
+          }
+        );
+      } else {
+        req.session.save(() => {
+          res.redirect("/setup");
+        });
+      }
     }
   );
 });
