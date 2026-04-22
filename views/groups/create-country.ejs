@@ -6,10 +6,32 @@
   <title>Choose Destination - Atlasphere</title>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    /* scrollbar styles for countries */
+    #countryGrid {
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    #countryGrid::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #countryGrid::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+    }
+
+    #countryGrid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
 </head>
 <body>
 <%- include('../partials/navbar', { user: typeof user !== 'undefined' ? user : null }) %>
 
+<!--background image-->
 <div class="framed-page">
   <div class="framed-box">
     <div class="framed-box__bg"><img src="/images/setup-desert.jpg" alt="Desert landscape"></div>
@@ -17,22 +39,26 @@
       <div class="group-creation-content">
         <h1>What is your destination<br>for your group holiday?</h1>
 
+        <!--search bar -->
         <div class="search-input" style="margin: 24px auto;">
-          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.5;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <!--input filter for countries-->
           <input type="text" id="countrySearch" placeholder="Search countries...">
         </div>
 
+        <!--form sends selected country to next step -->
         <form action="/groups/create/city" method="get" id="countryForm">
           <input type="hidden" name="country" id="selectedCountry" value="">
           <div class="destination-grid" id="countryGrid">
             <% if (typeof countries !== 'undefined') { %>
-              <% countries.forEach(function(c, i) { %>
-                <div class="destination-card<%= i >= 6 ? ' hidden-card' : '' %>" data-value="<%= c.name %>" data-index="<%= i %>">
+              <% countries.forEach(function(c) { %>
+                <div class="destination-card" data-value="<%= c.name %>">
                   <div class="card-flag">
+                    <!--flag images -->
                     <img src="https://flagcdn.com/w80/<%= c.code.toLowerCase() %>.png"
                          alt="<%= c.flag %>"
-                         style="width:64px;height:auto;border-radius:4px;"
+                         style="width:120px;height:auto;border-radius:4px;"
                          onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
+                    <!--emoji fallback for flags -->
                     <span style="display:none;font-size:48px;"><%= c.flag %></span>
                   </div>
                   <span class="card-name"><%= c.name %></span>
@@ -41,8 +67,8 @@
             <% } %>
           </div>
 
+          <!-- continue button -->
           <div class="setup-actions" style="margin-top: 24px; flex-direction: column; gap: 16px;">
-            <button type="button" class="btn-load-more" id="loadMoreBtn">Load more countries</button>
             <button type="submit" class="btn btn-primary" id="nextBtn" disabled>Next</button>
           </div>
         </form>
@@ -52,14 +78,12 @@
 </div>
 
 <script>
-  var PAGE_SIZE = 6;
-  var visible = PAGE_SIZE;
   var cards = document.querySelectorAll('#countryGrid .destination-card');
   var selectedInput = document.getElementById('selectedCountry');
   var nextBtn = document.getElementById('nextBtn');
-  var loadMoreBtn = document.getElementById('loadMoreBtn');
   var searchInput = document.getElementById('countrySearch');
 
+   //click event to each card
   cards.forEach(function(card) {
     card.addEventListener('click', function() {
       cards.forEach(function(c) { c.classList.remove('selected'); });
@@ -69,47 +93,23 @@
     });
   });
 
-  function updateVisibility() {
-    var hiddenCount = 0;
-    cards.forEach(function(card) {
-      var idx = parseInt(card.dataset.index);
-      if (idx < visible) {
-        card.classList.remove('hidden-card');
-      } else {
-        card.classList.add('hidden-card');
-        hiddenCount++;
-      }
-    });
-    loadMoreBtn.style.display = hiddenCount > 0 ? '' : 'none';
-  }
-
-  loadMoreBtn.addEventListener('click', function() {
-    visible += PAGE_SIZE;
-    updateVisibility();
-  });
-
+  // filter countries when typing in search bar
   searchInput.addEventListener('input', function(e) {
     var q = e.target.value.toLowerCase().trim();
-    if (q.length > 0) {
-      cards.forEach(function(card) {
-        var name = card.querySelector('.card-name').textContent.toLowerCase();
-        card.classList.toggle('hidden-card', !name.includes(q));
-      });
-      loadMoreBtn.style.display = 'none';
-    } else {
-      visible = PAGE_SIZE;
-      updateVisibility();
-    }
+
+    cards.forEach(function(card) {
+      var name = card.querySelector('.card-name').textContent.toLowerCase();
+      card.classList.toggle('hidden-card', q.length > 0 && !name.includes(q));
+    });
   });
 
+  //prevents moving onto next page if nothing is selected
   document.getElementById('countryForm').addEventListener('submit', function(e) {
     if (!selectedInput.value) {
       e.preventDefault();
       alert('Please select a country first.');
     }
   });
-
-  updateVisibility();
 </script>
 </body>
 </html>
