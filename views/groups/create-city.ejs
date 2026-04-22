@@ -70,7 +70,6 @@
         <h1>Which cities in &ldquo;<%= typeof countryName !== 'undefined' ? countryName : 'Country' %>&rdquo;?</h1>
         <p>Select at least one city</p>
         <div class="search-input" style="margin: 24px auto;">
-          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.5;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="citySearch" placeholder="Search cities...">
         </div>
         <form action="/groups/create/days" method="get" id="cityForm">
