@@ -6,6 +6,28 @@
   <title>Cities Visited - Atlasphere</title>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
+
+  <style>
+    /* scrollbar for cities */
+    #cityGrid {
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    #cityGrid::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #cityGrid::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+    }
+
+    #cityGrid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
 </head>
 <body>
 <%- include('../../partials/navbar', { user: typeof user !== 'undefined' ? user : null }) %>
@@ -23,15 +45,28 @@
             Showing cities in: <strong><%= selectedCountryNames.join(', ') %></strong>
           </p>
         <% } %>
-        <div class="sel-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.6;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Search cities..." id="citySearch"></div>
+
+        <!--search bar -->
+        <div class="sel-search">
+          <!--input filter for cities-->
+          <input type="text" placeholder="Search cities..." id="citySearch">
+        </div>
+
         <form action="/setup/save-visited" method="post" id="cityForm">
           <input type="hidden" name="countries" value="<%= typeof selectedCodes !== 'undefined' ? selectedCodes.join(',') : '' %>">
           <div class="flag-grid" id="cityGrid">
             <% if (typeof cities !== 'undefined' && cities.length > 0) { %>
-              <% cities.forEach(function(city, i) { %>
-                <label class="flag-card<%= i >= 12 ? ' hidden-card' : '' %>" data-index="<%= i %>">
+              <% cities.forEach(function(city) { %>
+                <label class="flag-card">
                   <input type="checkbox" name="cities[]" value="<%= city.name %>">
-                  <span class="flag-card__img"><img src="https://flagcdn.com/w80/<%= city.countryCode.toLowerCase() %>.png" alt="" style="width:56px;height:auto;border-radius:4px;"></span>
+
+                  <span class="flag-card__img">
+                    <img
+                      src="https://flagcdn.com/w80/<%= city.countryCode.toLowerCase() %>.png"
+                      alt=""
+                      style="width:56px;height:auto;border-radius:4px;">
+                  </span>
+
                   <span class="flag-card__name"><%= city.name %></span>
                 </label>
               <% }); %>
@@ -41,10 +76,8 @@
               </p>
             <% } %>
           </div>
+
           <div class="sel-actions">
-            <% if (typeof cities !== 'undefined' && cities.length > 12) { %>
-              <button type="button" class="btn-load-more" id="loadMoreBtn" style="margin-bottom:12px;">Load more cities</button>
-            <% } %>
             <button type="submit" class="btn-next">Save & Continue</button>
           </div>
         </form>
@@ -53,12 +86,11 @@
   </div>
 </div>
 <script>
-  var s=localStorage.getItem('atlasphere-theme');if(s)document.documentElement.setAttribute('data-theme',s);
+  var s = localStorage.getItem('atlasphere-theme');
+  if (s) document.documentElement.setAttribute('data-theme', s);
 
-  var PAGE_SIZE = 12;
-  var visible = PAGE_SIZE;
   var cards = document.querySelectorAll('#cityGrid .flag-card');
-  var loadMoreBtn = document.getElementById('loadMoreBtn');
+  var searchInput = document.getElementById('citySearch');
 
   // Toggle selection via checkbox change
   cards.forEach(function(card) {
@@ -70,43 +102,14 @@
     }
   });
 
-  // Load more
-  function updateVisibility() {
-    if (!loadMoreBtn) return;
-    var hiddenCount = 0;
-    cards.forEach(function(card) {
-      var idx = parseInt(card.dataset.index);
-      if (idx < visible) {
-        card.classList.remove('hidden-card');
-      } else {
-        card.classList.add('hidden-card');
-        hiddenCount++;
-      }
-    });
-    loadMoreBtn.style.display = hiddenCount > 0 ? '' : 'none';
-  }
-
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener('click', function() {
-      visible += PAGE_SIZE;
-      updateVisibility();
-    });
-    updateVisibility();
-  }
-
-  // Search
-  document.getElementById('citySearch').addEventListener('input', function(e) {
+  // filter cities when typing in search bar
+  searchInput.addEventListener('input', function(e) {
     var q = e.target.value.toLowerCase().trim();
-    if (q.length > 0) {
-      cards.forEach(function(card) {
-        var name = card.querySelector('.flag-card__name').textContent.toLowerCase();
-        card.classList.toggle('hidden-card', !name.includes(q));
-      });
-      if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-    } else {
-      visible = PAGE_SIZE;
-      updateVisibility();
-    }
+
+    cards.forEach(function(card) {
+      var name = card.querySelector('.flag-card__name').textContent.toLowerCase();
+      card.classList.toggle('hidden-card', q.length > 0 && !name.includes(q));
+    });
   });
 </script>
 </body>

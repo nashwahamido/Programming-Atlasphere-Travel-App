@@ -6,6 +6,28 @@
   <title>Countries Visited - Atlasphere</title>
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/styles.css">
+
+  <style>
+    /* scrollbar for countries */
+    #countryGrid {
+      max-height: 420px;
+      overflow-y: auto;
+      padding-right: 8px;
+    }
+
+    #countryGrid::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #countryGrid::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 999px;
+    }
+
+    #countryGrid::-webkit-scrollbar-track {
+      background: transparent;
+    }
+  </style>
 </head>
 <body>
 <%- include('../../partials/navbar', { user: typeof user !== 'undefined' ? user : null }) %>
@@ -18,21 +40,33 @@
           <h1>What countries have you visited?</h1>
           <a href="/setup/cities" class="skip-btn">Skip</a>
         </div>
-        <div class="sel-search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.6;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Search countries..." id="countrySearch"></div>
+
+        <!--search bar -->
+        <div class="sel-search">
+          <!--input filter for countries-->
+          <input type="text" placeholder="Search countries..." id="countrySearch">
+        </div>
+
         <form action="/setup/cities" method="get" id="countryForm">
           <div class="flag-grid" id="countryGrid">
             <% if (typeof countries !== 'undefined') { %>
-              <% countries.forEach(function(c, i) { %>
-                <label class="flag-card<%= i >= 12 ? ' hidden-card' : '' %>" data-index="<%= i %>">
+              <% countries.forEach(function(c) { %>
+                <label class="flag-card">
                   <input type="checkbox" name="countries[]" value="<%= c.code %>">
-                  <span class="flag-card__img"><img src="https://flagcdn.com/w80/<%= c.code.toLowerCase() %>.png" alt="<%= c.name %>" style="width:56px;height:auto;border-radius:4px;"></span>
+
+                  <span class="flag-card__img">
+                    <img
+                      src="https://flagcdn.com/w80/<%= c.code.toLowerCase() %>.png"
+                      alt="<%= c.name %>"
+                      style="width:56px;height:auto;border-radius:4px;">
+                  </span>
+
                   <span class="flag-card__name"><%= c.name %></span>
                 </label>
               <% }); %>
             <% } %>
           </div>
           <div class="sel-actions">
-            <button type="button" class="btn-load-more" id="loadMoreBtn" style="margin-bottom:12px;">Load more countries</button>
             <button type="submit" class="btn-next">Next</button>
           </div>
         </form>
@@ -41,14 +75,13 @@
   </div>
 </div>
 <script>
-  var s=localStorage.getItem('atlasphere-theme');if(s)document.documentElement.setAttribute('data-theme',s);
+  var s = localStorage.getItem('atlasphere-theme');
+  if (s) document.documentElement.setAttribute('data-theme', s);
 
-  var PAGE_SIZE = 12;
-  var visible = PAGE_SIZE;
   var cards = document.querySelectorAll('#countryGrid .flag-card');
-  var loadMoreBtn = document.getElementById('loadMoreBtn');
+  var searchInput = document.getElementById('countrySearch');
 
-  // Toggle selection via checkbox change (not click, to avoid double-toggle)
+  // Toggle selection via checkbox change
   cards.forEach(function(card) {
     var cb = card.querySelector('input[type="checkbox"]');
     if (cb) {
@@ -58,42 +91,15 @@
     }
   });
 
-  // Load more
-  function updateVisibility() {
-    var hiddenCount = 0;
-    cards.forEach(function(card) {
-      var idx = parseInt(card.dataset.index);
-      if (idx < visible) {
-        card.classList.remove('hidden-card');
-      } else {
-        card.classList.add('hidden-card');
-        hiddenCount++;
-      }
-    });
-    loadMoreBtn.style.display = hiddenCount > 0 ? '' : 'none';
-  }
-
-  loadMoreBtn.addEventListener('click', function() {
-    visible += PAGE_SIZE;
-    updateVisibility();
-  });
-
-  // Search
-  document.getElementById('countrySearch').addEventListener('input', function(e) {
+  // filter countries when typing in search bar
+  searchInput.addEventListener('input', function(e) {
     var q = e.target.value.toLowerCase().trim();
-    if (q.length > 0) {
-      cards.forEach(function(card) {
-        var name = card.querySelector('.flag-card__name').textContent.toLowerCase();
-        card.classList.toggle('hidden-card', !name.includes(q));
-      });
-      loadMoreBtn.style.display = 'none';
-    } else {
-      visible = PAGE_SIZE;
-      updateVisibility();
-    }
-  });
 
-  updateVisibility();
+    cards.forEach(function(card) {
+      var name = card.querySelector('.flag-card__name').textContent.toLowerCase();
+      card.classList.toggle('hidden-card', q.length > 0 && !name.includes(q));
+    });
+  });
 </script>
 </body>
 </html>
