@@ -961,14 +961,71 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
 .sel-search input { background: none; border: none; color: #fff; font-size: 13px; font-family: inherit; outline: none; width: 100%; }
 .sel-search input::placeholder { color: rgba(255,255,255,0.5); }
 
-.flag-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 16px; }
-.flag-card { background: rgba(255,255,255,0.1); backdrop-filter: blur(8px); border: 2px solid transparent; border-radius: 16px; padding: 14px 10px; text-align: center; cursor: pointer; transition: all 0.2s; }
-.flag-card:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.15); }
-.flag-card.selected { border-color: #E8933A; background: rgba(232,147,58,0.15); }
-.flag-card input { display: none; }
-.flag-card__img { display: block; margin: 0 auto 8px; line-height: 0; }
-.flag-card__img img { display: block; margin: 0 auto; border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
-.flag-card__name { font-size: 12px; font-weight: 600; color: #fff; }
+.flag-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.flag-card {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 14px 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.flag-card:hover {
+  border-color: rgba(255,255,255,0.3);
+  background: rgba(255,255,255,0.15);
+}
+
+.flag-card.selected {
+  border-color: #E8933A;
+  background: rgba(232,147,58,0.15);
+}
+
+.flag-card input {
+  display: none;
+}
+
+.flag-card__img {
+  width: 80px;
+  height: 52px;
+  margin: 0 auto 8px;
+  overflow: hidden;
+  border-radius: 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flag-card__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.flag-card__name {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: #fff;
+  text-align: center;
+}
 
 .sel-actions { display: flex; gap: 12px; margin-top: 32px; justify-content: center; }
 .btn-next { padding: 14px 40px; border-radius: 30px; background: #E8933A; color: #fff; font-weight: 700; font-size: 16px; text-decoration: none; border: none; cursor: pointer; font-family: inherit; transition: all 0.3s; }

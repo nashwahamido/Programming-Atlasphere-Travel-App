@@ -47,26 +47,26 @@
           <input type="text" placeholder="Search countries..." id="countrySearch">
         </div>
 
-        <form action="/setup/cities" method="get" id="countryForm">
-          <div class="flag-grid" id="countryGrid">
-            <% if (typeof countries !== 'undefined') { %>
-              <% countries.forEach(function(c) { %>
-                <label class="flag-card">
-                  <input type="checkbox" name="countries[]" value="<%= c.code %>">
+<form action="/setup/cities" method="get" id="countryForm">
+  <div class="flag-grid" id="countryGrid">
+    <% if (typeof countries !== 'undefined') { %>
+      <% countries.forEach(function(c) { %>
+        <label class="flag-card">
+          <input type="checkbox" name="countries[]" value="<%= c.code %>">
 
-                  <span class="flag-card__img">
-                    <img
-                      src="https://flagcdn.com/w80/<%= c.code.toLowerCase() %>.png"
-                      alt="<%= c.name %>"
-                      style="width:56px;height:auto;border-radius:4px;">
-                  </span>
+          <span class="flag-card__img">
+            <img
+              src="https://flagcdn.com/w80/<%= c.code.toLowerCase() %>.png"
+              alt="<%= c.name %>">
+          </span>
 
-                  <span class="flag-card__name"><%= c.name %></span>
-                </label>
-              <% }); %>
-            <% } %>
-          </div>
-          <div class="sel-actions">
+          <span class="flag-card__name"><%= c.name %></span>
+        </label>
+      <% }); %>
+    <% } %>
+  </div>
+
+  <div class="sel-actions">
             <button type="submit" class="btn-next">Next</button>
           </div>
         </form>
